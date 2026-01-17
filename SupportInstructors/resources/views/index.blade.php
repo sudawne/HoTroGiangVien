@@ -1,2 +1,2 @@
 <h1>Trang index</h1>
-<h2>Hihihihihihihi</h2>
+<h2>Mắc đái quá</h2>

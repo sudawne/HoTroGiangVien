@@ -6,7 +6,7 @@ use App\Http\Controllers\Admin\ClassController;
 use App\Http\Controllers\Admin\StudentController;
 use App\Http\Controllers\Admin\MeetingMinuteController;
 use App\Http\Controllers\Admin\ImportController;
-
+use App\Http\Controllers\Admin\AcademicWarningController;
 /*
 |--------------------------------------------------------------------------
 | Admin Routes
@@ -18,6 +18,8 @@ Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard
 Route::resource('classes', ClassController::class);
 Route::resource('students', StudentController::class);
 Route::resource('minutes', MeetingMinuteController::class);
+
+Route::get('/academic-warnings', [AcademicWarningController::class, 'index'])->name('academic_warnings.index');
 
 Route::controller(ImportController::class)->group(function () {
     // Import chung

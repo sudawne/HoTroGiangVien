@@ -22,37 +22,43 @@ class StudentsImport implements ToCollection, WithStartRow
 
     public function startRow(): int
     {
-        return 8;
+        return 8; // Bắt đầu đọc từ dòng 8 như mẫu file của bạn
     }
 
     public function collection(Collection $rows)
     {
         $duplicates = [];
+        $validRows = [];
 
-        // 1. Kiểm tra trùng lặp trước
-        foreach ($rows as $row) {
-            if (!isset($row[1]) || empty($row[1])) continue;
+        // BƯỚC 1: QUÉT TRÙNG LẶP
+        foreach ($rows as $index => $row) {
+            // Bỏ qua dòng trống hoặc không có mã SV
+            if (!isset($row[1]) || empty(trim($row[1]))) continue;
+
             $mssv = trim($row[1]);
 
-            // Kiểm tra xem MSSV đã tồn tại trong hệ thống chưa (bất kể lớp nào)
+            // Kiểm tra trong Database xem mã này đã có chưa (Toàn hệ thống)
             if (Student::where('student_code', $mssv)->exists()) {
-                $duplicates[] = $mssv;
+                // Lưu lại mã trùng để báo lỗi
+                $duplicates[] = "$mssv (dòng " . ($index + 8) . ")";
             }
+
+            $validRows[] = $row; // Lưu dòng hợp lệ vào mảng tạm
         }
 
-        // Nếu có sinh viên trùng, dừng lại và báo lỗi ngay
+        // BƯỚC 2: NẾU CÓ MÃ TRÙNG -> DỪNG NGAY LẬP TỨC
         if (!empty($duplicates)) {
-            $listMssv = implode(', ', $duplicates);
-            throw new Exception("Không thể Import! Các mã sinh viên sau đã tồn tại trên hệ thống: " . $listMssv);
+            $errorMsg = "Không thể Import! Các mã sinh viên sau đã tồn tại trên hệ thống: " . implode(', ', $duplicates);
+            throw new Exception($errorMsg);
         }
 
-        // 2. Nếu không trùng, tiến hành thêm mới
-        foreach ($rows as $row) {
-            if (!isset($row[1]) || empty($row[1])) continue;
-
+        // BƯỚC 3: NẾU KHÔNG TRÙNG -> TIẾN HÀNH LƯU
+        foreach ($validRows as $row) {
             $mssv = trim($row[1]);
+            // Ghép họ và tên
             $fullname = trim($row[2]) . ' ' . trim($row[3]);
 
+            // Xử lý ngày sinh
             $dob = null;
             if (isset($row[5])) {
                 try {
@@ -63,6 +69,7 @@ class StudentsImport implements ToCollection, WithStartRow
                 }
             }
 
+            // Xử lý trạng thái
             $statusRaw = trim($row[6] ?? '');
             $status = match ($statusRaw) {
                 'Còn học' => 'studying',
@@ -72,17 +79,17 @@ class StudentsImport implements ToCollection, WithStartRow
                 default => 'studying'
             };
 
-            // Tạo User
+            // 1. Tạo User
             $user = User::create([
                 'username' => $mssv,
                 'name' => $fullname,
-                'email' => $mssv . '@sv.kiengiang.edu.vn',
+                'email' => $mssv . '@sv.kiengiang.edu.vn', // Email giả định
                 'password' => Hash::make($mssv . '@123'),
-                'role_id' => 3,
+                'role_id' => 3, // Role Student
                 'is_active' => true
             ]);
 
-            // Tạo Sinh viên
+            // 2. Tạo Student
             Student::create([
                 'user_id' => $user->id,
                 'class_id' => $this->class_id,
@@ -90,7 +97,7 @@ class StudentsImport implements ToCollection, WithStartRow
                 'fullname' => $fullname,
                 'dob' => $dob,
                 'status' => $status,
-                'enrollment_year' => 2024,
+                'enrollment_year' => 2024, // Có thể sửa logic lấy năm động sau này
             ]);
         }
     }

@@ -9,11 +9,15 @@ use Illuminate\Support\Facades\Hash;
 
 class StudentSeeder extends Seeder
 {
+    /**
+     * Run the database seeds.
+     */
     public function run(): void
     {
+        // Mật khẩu chung cho tất cả sinh viên
         $password = Hash::make('123456');
 
-        // Danh sách 15 sinh viên mẫu
+        // Danh sách sinh viên mẫu (Demo Data)
         $students = [
             ['name' => 'Nguyễn Thị Lan', 'code' => '20110001'],
             ['name' => 'Trần Văn Hùng', 'code' => '20110002'],
@@ -33,16 +37,21 @@ class StudentSeeder extends Seeder
         ];
 
         foreach ($students as $data) {
+            // 1. Tạo tài khoản User cho sinh viên
             $user = User::create([
                 'name' => $data['name'],
-                'email' => $data['code'] . '@st.domain.com',
+                'email' => $data['code'] . '@st.domain.com', // Email theo mã SV
                 'password' => $password,
-                'role_id' => 3,
+                'role_id' => 3, // Giả sử ID 3 là role STUDENT
             ]);
 
+            // 2. Tạo thông tin chi tiết Student
             Student::create([
                 'user_id' => $user->id,
-                'student_code' => $data['code']
+                'student_code' => $data['code'],
+                'fullname' => $data['name'], // <-- QUAN TRỌNG: Gán tên vào fullname
+                'enrollment_year' => 2020,   // Giá trị mặc định (nếu cần)
+                'status' => 'studying',      // Trạng thái mặc định (nếu cần)
             ]);
         }
     }

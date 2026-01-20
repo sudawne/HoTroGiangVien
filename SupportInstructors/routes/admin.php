@@ -16,7 +16,7 @@ use App\Http\Controllers\Admin\AcademicWarningController;
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
 Route::post('/classes/upload-preview', [ClassController::class, 'previewUpload'])->name('classes.upload.preview');
-
+Route::post('/classes/send-emails', [ClassController::class, 'sendEmails'])->name('classes.send_emails');
 Route::resource('classes', ClassController::class);
 Route::resource('students', StudentController::class);
 Route::resource('minutes', MeetingMinuteController::class);

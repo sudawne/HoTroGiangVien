@@ -11,14 +11,12 @@ use Illuminate\Support\Facades\Storage;
 
 class ImportController extends Controller
 {
-    // 1. Hiển thị trang Import cho một lớp cụ thể
     public function showImportClass($id)
     {
         $class = Classes::findOrFail($id);
         return view('admin.classes.import', compact('class'));
     }
 
-    // 2. Xử lý Preview (Xem trước)
     public function previewImport(Request $request)
     {
         $request->validate([
@@ -28,32 +26,39 @@ class ImportController extends Controller
 
         try {
             $class = Classes::findOrFail($request->class_id);
-
-            // Lưu file tạm thời để bước sau dùng lại
             $path = $request->file('file')->store('temp');
-
-            // Đọc dữ liệu ra mảng để hiển thị (chưa lưu vào DB)
-            // StudentsImport cần implement ToArray hoặc dùng Excel::toArray
             $data = Excel::toArray(new StudentsImport($class->id), $path);
-
-            // Giả sử dữ liệu ở sheet đầu tiên [0]
             $rows = $data[0] ?? [];
-
-            // Loại bỏ các dòng trống hoặc header (logic tùy file excel của bạn)
-            // Ví dụ file của bạn bắt đầu data từ dòng 8 (index 7 trong mảng)
             $previewData = array_slice($rows, 7);
 
-            return view('admin.classes.import', [
-                'class' => $class,
-                'previewData' => $previewData,
-                'tempPath' => $path // Truyền đường dẫn file tạm để bước sau import
+            $formattedPreview = [];
+            foreach ($previewData as $index => $row) {
+                if (!isset($row[1]) || empty(trim($row[1]))) continue;
+
+                $mssv = trim($row[1]);
+                $exists = \App\Models\Student::where('student_code', $mssv)->exists();
+
+                $formattedPreview[] = [
+                    'mssv' => $mssv,
+                    'name' => trim($row[2]) . ' ' . trim($row[3]),
+                    'dob' => $row[5] ?? '',
+                    'status' => $row[6] ?? '',
+                    'is_duplicate' => $exists
+                ];
+            }
+
+            $html = view('admin.classes.partials.preview_table', ['previewData' => $formattedPreview])->render();
+
+            return response()->json([
+                'html' => $html,
+                'temp_path' => $path,
+                'hasError' => collect($formattedPreview)->contains('is_duplicate', true)
             ]);
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Lỗi đọc file: ' . $e->getMessage());
+            return response()->json(['error' => 'Lỗi đọc file: ' . $e->getMessage()], 500);
         }
     }
 
-    // 3. Xử lý Lưu chính thức
     public function storeImport(Request $request)
     {
         $request->validate([
@@ -62,19 +67,15 @@ class ImportController extends Controller
         ]);
 
         try {
-            // Import từ file tạm
-            Excel::import(new StudentsImport($request->class_id), $request->temp_path);
-
-            // Xóa file tạm sau khi xong
+            $shouldSendEmail = $request->boolean('send_email');
+            Excel::import(new StudentsImport($request->class_id, $shouldSendEmail), $request->temp_path);
             Storage::delete($request->temp_path);
 
             return redirect()->route('admin.classes.index')
-                ->with('success', 'Đã import danh sách sinh viên thành công!');
+                ->with('success', 'Đã import danh sách sinh viên và tạo tài khoản thành công!');
         } catch (\Exception $e) {
-            // Xóa file tạm nếu lỗi
             Storage::delete($request->temp_path);
-            return redirect()->route('admin.classes.import', $request->class_id)
-                ->with('error', 'Lỗi Import: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Lỗi Import: ' . $e->getMessage());
         }
     }
 }

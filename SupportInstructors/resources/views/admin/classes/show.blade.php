@@ -9,7 +9,8 @@
             <div class="flex items-center gap-4">
                 <a href="{{ route('admin.classes.index') }}"
                     class="p-2 bg-white border border-slate-300 rounded-sm text-slate-600 hover:bg-slate-50 shadow-sm transition-colors">
-                    <span class="material-symbols-outlined !text-[20px] block">arrow_back</span>
+                    {{-- Icon 20px -> 16px --}}
+                    <span class="material-symbols-outlined !text-[16px] block">arrow_back</span>
                 </a>
                 <div>
                     <h1 class="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
@@ -21,18 +22,21 @@
                     </h1>
                     <div class="flex items-center gap-4 mt-1 text-sm text-slate-500">
                         <span class="flex items-center gap-1">
-                            <span class="material-symbols-outlined !text-[16px]">school</span>
+                            {{-- Icon 16px -> 14px --}}
+                            <span class="material-symbols-outlined !text-[14px]">school</span>
                             GV: <span
                                 class="font-semibold text-slate-700 dark:text-slate-300">{{ $class->advisor->user->name ?? 'Chưa phân công' }}</span>
                         </span>
                         <span class="w-1 h-1 rounded-full bg-slate-300"></span>
                         <span class="flex items-center gap-1">
-                            <span class="material-symbols-outlined !text-[16px]">calendar_month</span>
+                            {{-- Icon 16px -> 14px --}}
+                            <span class="material-symbols-outlined !text-[14px]">calendar_month</span>
                             Niên khóa: {{ $class->academic_year }}
                         </span>
                         <span class="w-1 h-1 rounded-full bg-slate-300"></span>
                         <span class="flex items-center gap-1">
-                            <span class="material-symbols-outlined !text-[16px]">groups</span>
+                            {{-- Icon 16px -> 14px --}}
+                            <span class="material-symbols-outlined !text-[14px]">groups</span>
                             Sĩ số: <span class="font-bold text-primary">{{ $class->students()->count() }}</span>
                         </span>
                     </div>
@@ -44,7 +48,8 @@
                 {{-- Nút Sửa Lớp --}}
                 <a href="{{ route('admin.classes.edit', $class->id) }}"
                     class="flex items-center gap-2 px-3 py-2 bg-white border border-slate-300 rounded-sm text-slate-700 hover:bg-slate-50 transition-colors text-sm font-medium">
-                    <span class="material-symbols-outlined !text-[18px]">settings</span> Cài đặt
+                    {{-- Icon 18px -> 15px --}}
+                    <span class="material-symbols-outlined !text-[15px]">settings</span> Cài đặt
                 </a>
             </div>
         </div>
@@ -58,16 +63,18 @@
                 <h3 class="font-bold text-slate-800 dark:text-white text-base">Danh sách Sinh viên</h3>
 
                 <div class="flex gap-2">
-                    {{-- Nút Import Excel (Dẫn tới trang import riêng của lớp này) --}}
+                    {{-- Nút Import Excel --}}
                     <a href="{{ route('admin.classes.import', $class->id) }}"
                         class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-sm hover:bg-green-700 transition-colors shadow-sm">
-                        <span class="material-symbols-outlined !text-[18px]">upload_file</span> Import Excel
+                        {{-- Icon 18px -> 15px --}}
+                        <span class="material-symbols-outlined !text-[15px]">upload_file</span> Import Excel
                     </a>
 
                     {{-- Nút Thêm Mới --}}
                     <a href="{{ route('admin.students.create', ['class_id' => $class->id]) }}"
                         class="flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-semibold rounded-sm hover:bg-primary/90 transition-colors shadow-sm">
-                        <span class="material-symbols-outlined !text-[18px]">person_add</span> Thêm SV
+                        {{-- Icon 18px -> 15px --}}
+                        <span class="material-symbols-outlined !text-[15px]">person_add</span> Thêm SV
                     </a>
                 </div>
             </div>
@@ -129,11 +136,13 @@
                                         class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <a href="{{ route('admin.students.show', $st->id) }}"
                                             class="p-1.5 hover:bg-blue-50 text-blue-600 rounded" title="Xem hồ sơ">
-                                            <span class="material-symbols-outlined !text-[18px]">visibility</span>
+                                            {{-- Icon 18px -> 15px --}}
+                                            <span class="material-symbols-outlined !text-[15px]">visibility</span>
                                         </a>
                                         <a href="{{ route('admin.students.edit', $st->id) }}"
                                             class="p-1.5 hover:bg-orange-50 text-orange-600 rounded" title="Sửa">
-                                            <span class="material-symbols-outlined !text-[18px]">edit</span>
+                                            {{-- Icon 18px -> 15px --}}
+                                            <span class="material-symbols-outlined !text-[15px]">edit</span>
                                         </a>
                                     </div>
                                 </td>
@@ -142,8 +151,9 @@
                             <tr>
                                 <td colspan="6" class="px-6 py-12 text-center">
                                     <div class="flex flex-col items-center justify-center text-slate-400">
+                                        {{-- Icon 48px -> 36px --}}
                                         <span
-                                            class="material-symbols-outlined !text-[48px] mb-2 opacity-50">group_off</span>
+                                            class="material-symbols-outlined !text-[36px] mb-2 opacity-50">group_off</span>
                                         <p class="text-sm">Lớp này chưa có sinh viên nào.</p>
                                         <p class="text-xs mt-1">Hãy bấm nút "Import Excel" để thêm nhanh danh sách.</p>
                                     </div>

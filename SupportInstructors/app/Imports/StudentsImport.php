@@ -8,21 +8,28 @@ use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithStartRow;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Carbon\Carbon;
+use App\Mail\StudentAccountCreated;
 use Exception;
+use Illuminate\Support\Facades\Log;
 
 class StudentsImport implements ToCollection, WithStartRow
 {
     protected $class_id;
+    protected $sendEmail;
+    public $newStudentIds = []; // Mảng lưu ID sinh viên vừa tạo
 
-    public function __construct($class_id)
+    public function __construct($class_id, $sendEmail = false)
     {
         $this->class_id = $class_id;
+        $this->sendEmail = $sendEmail;
     }
 
     public function startRow(): int
     {
-        return 8; // Bắt đầu đọc từ dòng 8 như mẫu file của bạn
+        return 8;
     }
 
     public function collection(Collection $rows)
@@ -30,35 +37,24 @@ class StudentsImport implements ToCollection, WithStartRow
         $duplicates = [];
         $validRows = [];
 
-        // BƯỚC 1: QUÉT TRÙNG LẶP
         foreach ($rows as $index => $row) {
-            // Bỏ qua dòng trống hoặc không có mã SV
             if (!isset($row[1]) || empty(trim($row[1]))) continue;
-
             $mssv = trim($row[1]);
-
-            // Kiểm tra trong Database xem mã này đã có chưa (Toàn hệ thống)
             if (Student::where('student_code', $mssv)->exists()) {
-                // Lưu lại mã trùng để báo lỗi
                 $duplicates[] = "$mssv (dòng " . ($index + 8) . ")";
             }
-
-            $validRows[] = $row; // Lưu dòng hợp lệ vào mảng tạm
+            $validRows[] = $row;
         }
 
-        // BƯỚC 2: NẾU CÓ MÃ TRÙNG -> DỪNG NGAY LẬP TỨC
         if (!empty($duplicates)) {
-            $errorMsg = "Không thể Import! Các mã sinh viên sau đã tồn tại trên hệ thống: " . implode(', ', $duplicates);
+            $errorMsg = "Không thể Import! Các mã sinh viên sau đã tồn tại: " . implode(', ', $duplicates);
             throw new Exception($errorMsg);
         }
 
-        // BƯỚC 3: NẾU KHÔNG TRÙNG -> TIẾN HÀNH LƯU
         foreach ($validRows as $row) {
             $mssv = trim($row[1]);
-            // Ghép họ và tên
             $fullname = trim($row[2]) . ' ' . trim($row[3]);
 
-            // Xử lý ngày sinh
             $dob = null;
             if (isset($row[5])) {
                 try {
@@ -69,7 +65,6 @@ class StudentsImport implements ToCollection, WithStartRow
                 }
             }
 
-            // Xử lý trạng thái
             $statusRaw = trim($row[6] ?? '');
             $status = match ($statusRaw) {
                 'Còn học' => 'studying',
@@ -79,26 +74,45 @@ class StudentsImport implements ToCollection, WithStartRow
                 default => 'studying'
             };
 
-            // 1. Tạo User
-            $user = User::create([
-                'username' => $mssv,
-                'name' => $fullname,
-                'email' => $mssv . '@sv.kiengiang.edu.vn', // Email giả định
-                'password' => Hash::make($mssv . '@123'),
-                'role_id' => 3, // Role Student
-                'is_active' => true
-            ]);
+            $parts = explode(' ', $fullname);
+            $firstName = array_pop($parts);
+            $slugName = Str::slug($firstName, '');
+            $email = $slugName . $mssv . '@vnkgu.edu.vn';
+            $rawPassword = $slugName . $mssv;
 
-            // 2. Tạo Student
-            Student::create([
+            $user = User::where('username', $mssv)->orWhere('email', $email)->first();
+
+            if (!$user) {
+                $user = User::create([
+                    'name' => $fullname,
+                    'email' => $email,
+                    'username' => $mssv,
+                    'password' => Hash::make($rawPassword),
+                    'role_id' => 3,
+                    'is_active' => true,
+                ]);
+
+                if ($this->sendEmail) {
+                    try {
+                        Mail::to($email)->send(new StudentAccountCreated($fullname, $mssv, $rawPassword));
+                    } catch (\Exception $e) {
+                        Log::error("Failed to send email to $email: " . $e->getMessage());
+                    }
+                }
+            }
+
+            // Lưu ID của sinh viên mới vào mảng
+            $student = Student::create([
                 'user_id' => $user->id,
                 'class_id' => $this->class_id,
                 'student_code' => $mssv,
                 'fullname' => $fullname,
                 'dob' => $dob,
                 'status' => $status,
-                'enrollment_year' => 2024, // Có thể sửa logic lấy năm động sau này
+                'enrollment_year' => 2024,
             ]);
+
+            $this->newStudentIds[] = $student->id;
         }
     }
 }

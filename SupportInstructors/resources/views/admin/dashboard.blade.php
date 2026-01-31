@@ -40,7 +40,7 @@
                     </span>
                 </div>
                 <div class="flex items-end gap-2 relative z-10">
-                    <h2 class="text-3xl font-bold text-red-600">3</h2>
+                    <h2 class="text-3xl font-bold text-red-600">10</h2>
                     <span class="text-xs text-slate-400 mb-1">sinh viên</span>
                 </div>
             </div>
@@ -152,17 +152,121 @@
                         </thead>
                         <tbody class="text-sm divide-y divide-slate-100 dark:divide-slate-700">
                             <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
-                                <td class="px-4 py-2.5 font-mono text-slate-600 dark:text-slate-300 text-xs">20110452</td>
-                                <td class="px-4 py-2.5 font-medium text-slate-800 dark:text-slate-200">Nguyễn Văn A</td>
-                                <td class="px-4 py-2.5 text-slate-500 text-xs">20DTHA2</td>
-                                <td class="px-4 py-2.5 text-center font-bold text-slate-700 dark:text-slate-300">3.4</td>
+                                <td class="px-4 py-2.5 font-mono text-slate-600 dark:text-slate-300 text-xs">22082006073</td>
+                                <td class="px-4 py-2.5 font-medium text-slate-800 dark:text-slate-200">Huỳnh Phúc Ký</td>
+                                <td class="px-4 py-2.5 text-slate-500 text-xs">B022TT2</td>
+                                <td class="px-4 py-2.5 text-center font-bold text-slate-700 dark:text-slate-300">3.24</td>
                                 <td class="px-4 py-2.5">
                                     <div class="flex items-center gap-2">
                                         <div
                                             class="flex-1 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                                            <div class="h-full bg-emerald-500 rounded-full" style="width: 85%;"></div>
+                                            <div class="h-full bg-emerald-500 rounded-full" style="width: 83%;"></div>
                                         </div>
-                                        <span class="text-xs font-medium text-emerald-600">85</span>
+                                        <span class="text-xs font-medium text-emerald-600">83</span>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-2.5">
+                                    <span
+                                        class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
+                                        Đang học
+                                    </span>
+                                </td>
+                                <td class="px-4 py-2.5 text-right">
+                                    <button class="text-slate-400 hover:text-primary transition-colors">
+                                        <span class="material-symbols-outlined !text-[15px]">edit_square</span>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+                                <td class="px-4 py-2.5 font-mono text-slate-600 dark:text-slate-300 text-xs">22082006095</td>
+                                <td class="px-4 py-2.5 font-medium text-slate-800 dark:text-slate-200">Trần Hoàng Long</td>
+                                <td class="px-4 py-2.5 text-slate-500 text-xs">B022TT2</td>
+                                <td class="px-4 py-2.5 text-center font-bold text-slate-700 dark:text-slate-300">3.82</td>
+                                <td class="px-4 py-2.5">
+                                    <div class="flex items-center gap-2">
+                                        <div
+                                            class="flex-1 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                                            <div class="h-full bg-emerald-500 rounded-full" style="width: 90%;"></div>
+                                        </div>
+                                        <span class="text-xs font-medium text-emerald-600">90</span>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-2.5">
+                                    <span
+                                        class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
+                                        Đang học
+                                    </span>
+                                </td>
+                                <td class="px-4 py-2.5 text-right">
+                                    <button class="text-slate-400 hover:text-primary transition-colors">
+                                        <span class="material-symbols-outlined !text-[15px]">edit_square</span>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+                                <td class="px-4 py-2.5 font-mono text-slate-600 dark:text-slate-300 text-xs">22082006204</td>
+                                <td class="px-4 py-2.5 font-medium text-slate-800 dark:text-slate-200">Trần Tô Khánh Nguyên</td>
+                                <td class="px-4 py-2.5 text-slate-500 text-xs">B022TT2</td>
+                                <td class="px-4 py-2.5 text-center font-bold text-slate-700 dark:text-slate-300">4.0</td>
+                                <td class="px-4 py-2.5">
+                                    <div class="flex items-center gap-2">
+                                        <div
+                                            class="flex-1 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                                            <div class="h-full bg-emerald-500 rounded-full" style="width: 100%;"></div>
+                                        </div>
+                                        <span class="text-xs font-medium text-emerald-600">100</span>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-2.5">
+                                    <span
+                                        class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
+                                        Đang học
+                                    </span>
+                                </td>
+                                <td class="px-4 py-2.5 text-right">
+                                    <button class="text-slate-400 hover:text-primary transition-colors">
+                                        <span class="material-symbols-outlined !text-[15px]">edit_square</span>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+                                <td class="px-4 py-2.5 font-mono text-slate-600 dark:text-slate-300 text-xs">22082006212</td>
+                                <td class="px-4 py-2.5 font-medium text-slate-800 dark:text-slate-200">Tăng Nhật Phát</td>
+                                <td class="px-4 py-2.5 text-slate-500 text-xs">B022TT2</td>
+                                <td class="px-4 py-2.5 text-center font-bold text-slate-700 dark:text-slate-300">4.0</td>
+                                <td class="px-4 py-2.5">
+                                    <div class="flex items-center gap-2">
+                                        <div
+                                            class="flex-1 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                                            <div class="h-full bg-emerald-500 rounded-full" style="width: 95%;"></div>
+                                        </div>
+                                        <span class="text-xs font-medium text-emerald-600">95</span>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-2.5">
+                                    <span
+                                        class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
+                                        Đang học
+                                    </span>
+                                </td>
+                                <td class="px-4 py-2.5 text-right">
+                                    <button class="text-slate-400 hover:text-primary transition-colors">
+                                        <span class="material-symbols-outlined !text-[15px]">edit_square</span>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+                                <td class="px-4 py-2.5 font-mono text-slate-600 dark:text-slate-300 text-xs">22082006193</td>
+                                <td class="px-4 py-2.5 font-medium text-slate-800 dark:text-slate-200">Phạm Thị Mỹ Quyên</td>
+                                <td class="px-4 py-2.5 text-slate-500 text-xs">B022TT1</td>
+                                <td class="px-4 py-2.5 text-center font-bold text-slate-700 dark:text-slate-300">3.47</td>
+                                <td class="px-4 py-2.5">
+                                    <div class="flex items-center gap-2">
+                                        <div
+                                            class="flex-1 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                                            <div class="h-full bg-emerald-500 rounded-full" style="width: 88%;"></div>
+                                        </div>
+                                        <span class="text-xs font-medium text-emerald-600">88</span>
                                     </div>
                                 </td>
                                 <td class="px-4 py-2.5">

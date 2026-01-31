@@ -12,7 +12,6 @@ use App\Http\Controllers\Admin\AcademicWarningController;
 | Admin Routes
 |--------------------------------------------------------------------------
 */
-
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 Route::get('classes/{id}/export', [ClassController::class, 'exportStudents'])->name('classes.export');
 Route::put('students/{id}', [StudentController::class, 'update'])->name('students.update');
@@ -23,8 +22,13 @@ Route::resource('classes', ClassController::class);
 Route::resource('students', StudentController::class);
 Route::resource('minutes', MeetingMinuteController::class);
 
-Route::get('/academic-warnings', [AcademicWarningController::class, 'index'])->name('academic_warnings.index');
-
+Route::prefix('academic-warnings')->name('academic_warnings.')->group(function () {
+    Route::get('/', [AcademicWarningController::class, 'index'])->name('index');
+    Route::get('/import', [AcademicWarningController::class, 'showImport'])->name('import');
+    Route::post('/preview', [AcademicWarningController::class, 'preview'])->name('preview');
+    Route::post('/store', [AcademicWarningController::class, 'store'])->name('store');
+    Route::post('/quick-add-student', [AcademicWarningController::class, 'quickAddStudent'])->name('quick_add_student');
+});
 Route::controller(ImportController::class)->group(function () {
     // Import chung
     Route::get('/imports', 'index')->name('imports.index');

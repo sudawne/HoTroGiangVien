@@ -76,88 +76,68 @@
 
         {{-- BỘ LỌC & CÔNG CỤ --}}
         <div class="bg-white dark:bg-[#1e1e2d] p-4 rounded-sm shadow-sm border border-slate-200 dark:border-slate-700 mb-6">
-            <form method="GET" action="{{ route('admin.academic_warnings.index') }}">
-                {{-- Hàng 1: Tìm kiếm & Các nút thao tác --}}
+            {{-- Form này không cần action submit vì ta dùng JS, nhưng để method GET để giữ URL clean --}}
+            <form id="filterForm" method="GET">
                 <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                    {{-- Tìm kiếm nhanh --}}
+                    
+                    {{-- [SỬA] Input Tìm kiếm: Thêm ID và sự kiện oninput --}}
                     <div class="relative flex-1 max-w-md">
                         <span class="material-symbols-outlined absolute left-3 top-2.5 text-slate-400 !text-[16px]">search</span>
-                        <input name="search" value="{{ request('search') }}"
+                        <input id="searchInput" name="search" value="{{ request('search') }}"
                             class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-sm text-sm py-2 pl-9 pr-3 focus:ring-primary focus:border-primary text-slate-700 dark:text-slate-300"
-                            placeholder="Tìm nhanh tên hoặc MSSV..." type="text" />
+                            placeholder="Tìm nhanh tên hoặc MSSV..." type="text" autocomplete="off" />
+                        {{-- Icon loading xoay xoay (Mặc định ẩn) --}}
+                        <span id="searchSpinner" class="material-symbols-outlined absolute right-3 top-2.5 text-primary !text-[16px] animate-spin hidden">sync</span>
                     </div>
 
                     {{-- Nhóm nút thao tác --}}
                     <div class="flex flex-wrap items-center gap-2">
-                        {{-- Nút Bật/Tắt Bộ lọc --}}
-                        <button type="button" id="toggleFilterBtn"
-                            class="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-sm font-medium py-2 px-3 rounded-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-all flex items-center gap-2">
-                            <span class="material-symbols-outlined !text-[16px]">filter_list</span>
-                            Bộ lọc
-                            <span id="filterArrow" class="material-symbols-outlined !text-[16px] transition-transform duration-200">expand_more</span>
+                        <button type="button" id="toggleFilterBtn" class="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-sm font-medium py-2 px-3 rounded-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-all flex items-center gap-2">
+                            <span class="material-symbols-outlined !text-[16px]">filter_list</span> Bộ lọc
                         </button>
-
-                        {{-- Nút Nhập Excel --}}
-                        <a href="{{ route('admin.academic_warnings.import') }}"
-                            class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium py-2 px-3 rounded-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-2">
+                        
+                        {{-- Nút Excel giữ nguyên --}}
+                        <a href="{{ route('admin.academic_warnings.import') }}" class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium py-2 px-3 rounded-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-2">
                             <span class="material-symbols-outlined !text-[16px] text-blue-600">upload_file</span>
                             <span class="hidden sm:inline">Nhập Excel</span>
                         </a>
-
-                        <button type="submit" class="bg-primary hover:bg-indigo-700 text-white text-sm font-medium py-2 px-3 rounded-sm transition-colors flex items-center gap-2 shadow-sm">
-                            <span class="material-symbols-outlined !text-[16px]">search</span>
-                            <span class="hidden sm:inline">Tìm kiếm</span>
-                        </button>
                     </div>
                 </div>
 
-                {{-- Hàng 2: Khu vực Lọc nâng cao --}}
+                {{-- [SỬA] Khu vực Lọc nâng cao: Thêm class 'live-filter' để JS bắt sự kiện change --}}
                 <div id="filterPanel" class="{{ request()->hasAny(['semester_id', 'level', 'class_id']) ? '' : 'hidden' }} mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        {{-- Select Học kỳ --}}
                         <div class="relative">
                             <label class="block text-xs font-medium text-slate-500 mb-1">Học kỳ</label>
-                            <select name="semester_id" onchange="this.form.submit()"
-                                class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-sm text-sm py-2 pl-3 pr-8">
+                            <select name="semester_id" class="live-filter w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-sm text-sm py-2 pl-3 pr-8">
                                 <option value="">Tất cả học kỳ</option>
                                 @foreach($semesters as $sem)
-                                    <option value="{{ $sem->id }}" {{ request('semester_id') == $sem->id ? 'selected' : '' }}>
-                                        {{ $sem->name }} ({{ $sem->academic_year }})
-                                    </option>
+                                    <option value="{{ $sem->id }}" {{ request('semester_id') == $sem->id ? 'selected' : '' }}>{{ $sem->name }}</option>
                                 @endforeach
                             </select>
                         </div>
-
-                        {{-- Select Mức độ --}}
                         <div class="relative">
-                            <label class="block text-xs font-medium text-slate-500 mb-1">Mức cảnh báo</label>
-                            <select name="level" onchange="this.form.submit()"
-                                class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-sm text-sm py-2 pl-3 pr-8">
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Mức độ</label>
+                            <select name="level" class="live-filter w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-sm text-sm py-2 pl-3 pr-8">
                                 <option value="">Tất cả mức độ</option>
                                 <option value="1" {{ request('level') == '1' ? 'selected' : '' }}>Mức 1</option>
                                 <option value="2" {{ request('level') == '2' ? 'selected' : '' }}>Mức 2</option>
                                 <option value="3" {{ request('level') == '3' ? 'selected' : '' }}>Buộc thôi học</option>
                             </select>
                         </div>
-
-                        {{-- Select Lớp --}}
                         <div class="relative">
-                            <label class="block text-xs font-medium text-slate-500 mb-1">Lớp sinh hoạt</label>
-                            <select name="class_id" onchange="this.form.submit()"
-                                class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-sm text-sm py-2 pl-3 pr-8">
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Lớp</label>
+                            <select name="class_id" class="live-filter w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-sm text-sm py-2 pl-3 pr-8">
                                 <option value="">Tất cả lớp</option>
                                 @foreach($classes as $class)
-                                    <option value="{{ $class->id }}" {{ request('class_id') == $class->id ? 'selected' : '' }}>
-                                        {{ $class->code }}
-                                    </option>
+                                    <option value="{{ $class->id }}" {{ request('class_id') == $class->id ? 'selected' : '' }}>{{ $class->code }}</option>
                                 @endforeach
                             </select>
                         </div>
-                        
-                         <div class="flex items-end">
-                            <a href="{{ route('admin.academic_warnings.index') }}" class="w-full text-center bg-gray-100 hover:bg-gray-200 text-slate-700 text-sm font-medium py-2 px-4 rounded-sm transition-colors h-[38px] flex items-center justify-center">
+                        <div class="flex items-end">
+                             <button type="button" onclick="resetFilters()" class="w-full text-center bg-gray-100 hover:bg-gray-200 text-slate-700 text-sm font-medium py-2 px-4 rounded-sm transition-colors h-[38px]">
                                 Xóa bộ lọc
-                            </a>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -165,7 +145,10 @@
         </div>
 
         {{-- BẢNG DỮ LIỆU --}}
-        <div class="bg-white dark:bg-[#1e1e2d] rounded-sm shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div class="bg-white dark:bg-[#1e1e2d] rounded-sm shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden relative">
+            {{-- Lớp phủ Loading (Mờ đi khi đang search) --}}
+            <div id="tableOverlay" class="absolute inset-0 bg-white/50 dark:bg-black/20 z-10 hidden"></div>
+
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
@@ -180,90 +163,87 @@
                             <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase text-right">Tác vụ</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                        @forelse($warnings as $warning)
-                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
-                                <td class="px-6 py-4 text-sm font-medium text-primary font-mono">
-                                    {{ $warning->student->student_code }}
-                                </td>
-                                <td class="px-6 py-4">
-                                    <div class="flex items-center gap-3">
-                                        {{-- Avatar giả lập lấy 2 chữ cái đầu --}}
-                                        <div class="w-8 h-8 rounded-sm bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-300">
-                                            {{ substr(strtoupper($warning->student->fullname), 0, 1) }}
-                                        </div>
-                                        <div class="text-sm font-medium dark:text-slate-200">
-                                            {{ $warning->student->fullname }}
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
-                                    {{ $warning->student->class->code ?? 'N/A' }}
-                                </td>
-                                <td class="px-6 py-4 text-sm text-center font-bold {{ $warning->gpa_term < 2.0 ? 'text-red-500' : 'text-slate-700' }}">
-                                    {{ $warning->gpa_term }}
-                                </td>
-                                <td class="px-6 py-4 text-sm text-center text-slate-600">
-                                    {{ $warning->credits_owed }}
-                                </td>
-                                <td class="px-6 py-4">
-                                    @if($warning->warning_level == 1)
-                                        <span class="px-2.5 py-0.5 rounded-sm text-xs font-semibold bg-yellow-100 text-yellow-700">Mức 1</span>
-                                    @elseif($warning->warning_level == 2)
-                                        <span class="px-2.5 py-0.5 rounded-sm text-xs font-semibold bg-orange-100 text-orange-700">Mức 2</span>
-                                    @elseif($warning->warning_level >= 3)
-                                        <span class="px-2.5 py-0.5 rounded-sm text-xs font-bold bg-red-200 text-red-800">Buộc thôi học</span>
-                                    @else
-                                        <span class="px-2.5 py-0.5 rounded-sm text-xs font-semibold bg-slate-100 text-slate-600">Khác</span>
-                                    @endif
-                                </td>
-                                <td class="px-6 py-4 text-xs text-slate-500 max-w-[150px] truncate" title="{{ $warning->reason }}">
-                                    {{ $warning->reason }}
-                                </td>
-                                <td class="px-6 py-4 text-right">
-                                    <div class="flex items-center justify-end gap-2">
-                                        <button class="p-1.5 text-slate-400 hover:text-primary transition-colors" title="Xem chi tiết">
-                                            <span class="material-symbols-outlined !text-[15px]">visibility</span>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="8" class="px-6 py-8 text-center text-slate-500">
-                                    Không có dữ liệu cảnh báo nào phù hợp.
-                                </td>
-                            </tr>
-                        @endforelse
+                    {{-- [SỬA] Thêm ID tableBody để JS cập nhật nội dung vào đây --}}
+                    <tbody id="tableBody" class="divide-y divide-slate-100 dark:divide-slate-800">
+                        @include('admin.academic_warnings.partials.table_rows')
                     </tbody>
                 </table>
             </div>
 
-            {{-- Phân trang thật --}}
-            <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-800">
-                {{ $warnings->links() }} 
-                {{-- Lưu ý: Bạn cần publish pagination view của Laravel nếu muốn style giống hệt Tailwind, 
-                     mặc định nó dùng Tailwind nên sẽ khá ổn --}}
+            {{-- Phân trang (Cần bọc ID để update luôn nếu muốn) --}}
+            <div id="paginationContainer" class="px-6 py-4 border-t border-slate-100 dark:border-slate-800">
+                {{ $warnings->links() }}
             </div>
         </div>
     </div>
 
-    {{-- SCRIPT XỬ LÝ ĐÓNG MỞ BỘ LỌC --}}
+    {{-- SCRIPT LIVE SEARCH --}}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchInput');
+            const tableBody = document.getElementById('tableBody');
+            const searchSpinner = document.getElementById('searchSpinner');
+            const tableOverlay = document.getElementById('tableOverlay');
+            const liveFilters = document.querySelectorAll('.live-filter');
+
+            // Biến debounce để tránh gọi server liên tục khi gõ nhanh
+            let timeout = null;
+
+            // Hàm gọi Ajax
+            function fetchResults() {
+                // Hiện loading
+                searchSpinner.classList.remove('hidden');
+                tableOverlay.classList.remove('hidden');
+
+                // Lấy dữ liệu từ Form
+                const formData = new FormData(document.getElementById('filterForm'));
+                const params = new URLSearchParams(formData).toString();
+
+                // Cập nhật URL trên browser (để F5 không mất kết quả lọc)
+                const newUrl = `${window.location.pathname}?${params}`;
+                window.history.pushState({path: newUrl}, '', newUrl);
+
+                fetch(newUrl, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest' // Đánh dấu là Ajax để Controller biết
+                    }
+                })
+                .then(response => response.text())
+                .then(html => {
+                    tableBody.innerHTML = html; // Cập nhật nội dung bảng
+                    searchSpinner.classList.add('hidden');
+                    tableOverlay.classList.add('hidden');
+                })
+                .catch(error => {
+                    console.error('Lỗi search:', error);
+                    searchSpinner.classList.add('hidden');
+                    tableOverlay.classList.add('hidden');
+                });
+            }
+
+            // 1. Sự kiện khi gõ phím vào ô Search (Debounce 500ms)
+            searchInput.addEventListener('input', function() {
+                clearTimeout(timeout);
+                timeout = setTimeout(fetchResults, 500);
+            });
+
+            // 2. Sự kiện khi thay đổi các Select (Học kỳ, Mức độ, Lớp)
+            liveFilters.forEach(select => {
+                select.addEventListener('change', fetchResults);
+            });
+
+            // Hàm Reset bộ lọc
+            window.resetFilters = function() {
+                searchInput.value = '';
+                liveFilters.forEach(el => el.value = '');
+                fetchResults();
+            }
+
+            // Script đóng mở bộ lọc cũ (Giữ nguyên)
             const toggleBtn = document.getElementById('toggleFilterBtn');
             const filterPanel = document.getElementById('filterPanel');
-            const arrow = document.getElementById('filterArrow');
-
             toggleBtn.addEventListener('click', function() {
                 filterPanel.classList.toggle('hidden');
-                if (filterPanel.classList.contains('hidden')) {
-                    arrow.style.transform = 'rotate(0deg)';
-                    toggleBtn.classList.remove('bg-slate-200', 'dark:bg-slate-700');
-                } else {
-                    arrow.style.transform = 'rotate(180deg)';
-                    toggleBtn.classList.add('bg-slate-200', 'dark:bg-slate-700');
-                }
             });
         });
     </script>

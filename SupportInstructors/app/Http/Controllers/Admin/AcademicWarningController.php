@@ -51,10 +51,12 @@ class AcademicWarningController extends Controller
         // 3. Lấy dữ liệu phân trang
         $warnings = $query->latest('id')->paginate(10)->withQueryString();
 
-        // 4. Tính toán Thống kê (Stats Cards)
-        // Lưu ý: Thống kê này tính trên TOÀN BỘ dữ liệu của học kỳ hiện tại (hoặc theo bộ lọc nếu muốn)
-        // Ở đây tôi tính theo dữ liệu đang lọc để số liệu khớp với bảng
-        $statsQuery = clone $query; // Clone để không ảnh hưởng query chính
+        if ($request->ajax()) {
+            // Chỉ trả về các dòng <tr> thay vì cả trang web
+            return view('admin.academic_warnings.partials.table_rows', compact('warnings'))->render();
+        }
+
+        $statsQuery = clone $query; 
         // Bỏ phân trang để đếm tổng
         $allWarnings = $statsQuery->get(); 
         
@@ -157,9 +159,11 @@ class AcademicWarningController extends Controller
                 return back()->with('error', 'Không đọc được dòng dữ liệu nào hợp lệ (Có thể do sai cột Mã SV).');
             }
 
-            return view('admin.academic_warnings.preview', [
+            return view('admin.academic_warnings.import', [
+                'semesters' => Semester::orderBy('start_date', 'desc')->get(), 
                 'previewData' => $previewData,
-                'semester_id' => $request->semester_id
+                'semester_id' => $request->semester_id,
+                'selected_file_name' => $request->file('file')->getClientOriginalName() 
             ]);
 
         } catch (\Exception $e) {

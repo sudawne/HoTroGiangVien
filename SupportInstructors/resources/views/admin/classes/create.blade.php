@@ -24,10 +24,9 @@
             </div>
 
             <form action="{{ route('admin.classes.store') }}" method="POST" enctype="multipart/form-data" class="p-6"
-                id="createClassForm">
+                id="createClassForm" novalidate>
                 @csrf
 
-                {{-- INPUT HIDDEN ĐỂ LƯU TRẠNG THÁI GỬI MAIL --}}
                 <input type="hidden" name="send_email" id="send_email_input" value="0">
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -130,7 +129,6 @@
                     <a href="{{ route('admin.classes.index') }}"
                         class="px-5 py-2.5 bg-white border border-slate-300 text-slate-700 font-semibold rounded-sm hover:bg-slate-50 text-sm">Hủy
                         bỏ</a>
-                    {{-- Nút Lưu này sẽ kích hoạt JS check file --}}
                     <button type="button" id="btn-pre-submit"
                         class="px-5 py-2.5 bg-primary text-white font-semibold rounded-sm hover:bg-primary/90 shadow-sm flex items-center gap-2 text-sm">
                         <span class="material-symbols-outlined !text-[16px]">save</span> Lưu Lớp Học
@@ -140,8 +138,8 @@
         </div>
     </div>
 
-
-    @include('admin.classes.partials.confirm_modal')
+    {{-- INCLUDE MODAL ĐA NĂNG --}}
+    @include('admin.classes.partials.universal_confirm_modal')
     @include('admin.classes.partials.loading_modal')
 
     <script>
@@ -149,18 +147,92 @@
             const fileInput = document.getElementById('student_file_input');
             const previewArea = document.getElementById('preview-area');
             const errorArea = document.getElementById('upload-error');
-
             const form = document.getElementById('createClassForm');
             const btnPreSubmit = document.getElementById('btn-pre-submit');
-
-            const confirmMailModal = document.getElementById('confirmMailModal');
-            const btnNoMail = document.getElementById('btn-no-mail');
-            const btnYesMail = document.getElementById('btn-yes-mail');
-
             const sendEmailInput = document.getElementById('send_email_input');
             const loadingModal = document.getElementById('loadingModal');
 
-            // 1. Logic Preview File (Giữ nguyên)
+            // --- 1. LOGIC MODAL ĐA NĂNG ---
+            const universalModal = document.getElementById('universalModal');
+            const uniTitle = document.getElementById('uni-modal-title');
+            const uniDesc = document.getElementById('uni-modal-desc');
+            const uniBtnConfirm = document.getElementById('btn-uni-confirm');
+            const uniBtnCancel = document.getElementById('btn-uni-cancel');
+            const uniBtnText = document.getElementById('uni-modal-btn-text');
+            const uniIcon = document.getElementById('uni-modal-icon');
+            const uniIconBg = document.getElementById('uni-modal-icon-bg');
+            let pendingCallback = null;
+            let cancelCallback = null; // Thêm callback cho nút Hủy
+
+            function showConfirm({
+                title,
+                message,
+                btnText,
+                btnColor = 'blue',
+                icon = 'help',
+                callback,
+                onCancel = null
+            }) {
+                uniTitle.innerText = title;
+                uniDesc.innerText = message;
+                uniBtnText.innerText = btnText;
+                uniIcon.innerText = icon;
+                pendingCallback = callback;
+                cancelCallback = onCancel;
+
+                const colors = {
+                    blue: {
+                        btn: 'bg-blue-600 hover:bg-blue-700',
+                        icon: 'text-blue-600',
+                        bg: 'bg-blue-100'
+                    },
+                    red: {
+                        btn: 'bg-red-600 hover:bg-red-700',
+                        icon: 'text-red-600',
+                        bg: 'bg-red-100'
+                    },
+                    green: {
+                        btn: 'bg-green-600 hover:bg-green-700',
+                        icon: 'text-green-600',
+                        bg: 'bg-green-100'
+                    },
+                };
+                const style = colors[btnColor] || colors.blue;
+
+                uniBtnConfirm.className =
+                    `px-4 py-2 text-white font-medium rounded-sm shadow-sm text-sm flex items-center gap-2 ${style.btn}`;
+                uniIcon.className = `material-symbols-outlined text-[24px] ${style.icon}`;
+                uniIconBg.className =
+                    `flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center ${style.bg}`;
+
+                // Đổi text nút Hủy tùy ngữ cảnh (Ví dụ: "Không gửi" thay vì "Hủy bỏ")
+                const cancelBtn = document.getElementById('btn-uni-cancel');
+                if (onCancel) {
+                    cancelBtn.innerText = 'Không gửi (Chỉ tạo)';
+                } else {
+                    cancelBtn.innerText = 'Hủy bỏ';
+                }
+
+                universalModal.classList.remove('hidden');
+            }
+
+            if (uniBtnConfirm) {
+                uniBtnConfirm.addEventListener('click', function() {
+                    if (pendingCallback) pendingCallback();
+                    universalModal.classList.add('hidden');
+                });
+            }
+            if (uniBtnCancel) {
+                uniBtnCancel.addEventListener('click', function() {
+                    if (cancelCallback)
+                cancelCallback(); // Chạy hàm cancel nếu có (để submit form mà ko gửi mail)
+                    universalModal.classList.add('hidden');
+                    pendingCallback = null;
+                    cancelCallback = null;
+                });
+            }
+
+            // --- 2. PREVIEW FILE ---
             if (fileInput) {
                 fileInput.addEventListener('change', function(e) {
                     let file = e.target.files[0];
@@ -193,13 +265,12 @@
                                 previewArea.innerHTML = data.html;
                                 if (data.hasError) {
                                     errorArea.innerText =
-                                        'Cảnh báo: File có chứa Mã sinh viên đã tồn tại (dòng màu đỏ). Vui lòng kiểm tra lại trước khi lưu!';
+                                        'Cảnh báo: File có chứa Mã sinh viên đã tồn tại (dòng màu đỏ). Vui lòng kiểm tra lại!';
                                     errorArea.classList.remove('hidden');
                                 }
                             }
                         })
                         .catch(error => {
-                            console.error('Error:', error);
                             previewArea.innerHTML = '';
                             errorArea.innerText = 'Có lỗi xảy ra khi tải file.';
                             errorArea.classList.remove('hidden');
@@ -207,51 +278,38 @@
                 });
             }
 
-            // 2. Logic Nút Lưu -> Check có file không -> Show Confirm Mail hoặc Submit luôn
+            // --- 3. SUBMIT FORM ---
             if (btnPreSubmit) {
                 btnPreSubmit.addEventListener('click', function() {
-                    // Check validation form cơ bản
-                    if (!form.checkValidity()) {
-                        form.reportValidity();
-                        return;
-                    }
-
-                    // Nếu có chọn file -> Hiện Modal hỏi gửi mail
+                    // Nếu có file -> Hỏi gửi mail (Dùng Modal Đa năng)
                     if (fileInput.files.length > 0) {
-                        confirmMailModal.classList.remove('hidden');
+                        showConfirm({
+                            title: 'Gửi thông tin tài khoản?',
+                            message: 'Bạn có muốn hệ thống tự động gửi email (MSSV & Mật khẩu) cho danh sách sinh viên vừa import không?',
+                            btnText: 'Đồng ý gửi',
+                            btnColor: 'blue',
+                            icon: 'mark_email_unread',
+                            callback: function() {
+                                sendEmailInput.value = "1"; // Có gửi
+                                submitForm();
+                            },
+                            onCancel: function() {
+                                sendEmailInput.value = "0"; // Không gửi
+                                submitForm();
+                            }
+                        });
                     } else {
-                        // Không có file -> Submit luôn (chỉ tạo lớp)
+                        // Nếu không có file -> Submit luôn (hoặc hỏi xác nhận lưu nếu muốn)
                         submitForm();
                     }
                 });
             }
 
-            // 3. Xử lý Modal Confirm Mail
-            if (btnNoMail) {
-                btnNoMail.addEventListener('click', function() {
-                    sendEmailInput.value = "0"; // Không gửi
-                    confirmMailModal.classList.add('hidden');
-                    submitForm();
-                });
-            }
-
-            if (btnYesMail) {
-                btnYesMail.addEventListener('click', function() {
-                    sendEmailInput.value = "1"; // Có gửi
-                    confirmMailModal.classList.add('hidden');
-                    submitForm();
-                });
-            }
-
-            // 4. Hàm Submit Form & Hiện Loading
             function submitForm() {
                 loadingModal.classList.remove('hidden');
-                // Disable nút để tránh bấm nhiều lần
                 btnPreSubmit.disabled = true;
                 btnPreSubmit.innerHTML =
                     '<span class="material-symbols-outlined !text-[16px] animate-spin">progress_activity</span> Đang xử lý...';
-
-                // Submit thật
                 form.submit();
             }
         });

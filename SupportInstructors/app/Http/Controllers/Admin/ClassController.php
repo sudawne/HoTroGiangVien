@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\ClassStudentsExport;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Classes;
@@ -14,6 +15,7 @@ use App\Imports\StudentsImport;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\StudentAccountCreated;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Log;
 
 class ClassController extends Controller
@@ -120,23 +122,135 @@ class ClassController extends Controller
         }
     }
 
-    public function show(string $id)
+    public function show(Request $request, string $id)
     {
-        $class = Classes::with(['advisor.user', 'department'])->findOrFail($id);
-        $students = $class->students()->orderBy('student_code', 'asc')->paginate(20);
+        // 1. Load thông tin lớp và tổng sĩ số
+        $class = Classes::with(['advisor.user', 'department'])
+            ->withCount('students') // Lấy sĩ số gốc
+            ->findOrFail($id);
+
+        // 2. Lấy TOÀN BỘ sinh viên trong lớp ra trước (get() thay vì paginate())
+        $allStudents = $class->students()->with('user')->orderBy('student_code', 'asc')->get();
+
+        // 3. Lọc bằng PHP (Convert cả 2 về không dấu rồi so sánh)
+        if ($request->has('search') && !empty($request->search)) {
+            // Chuyển từ khóa tìm kiếm về dạng không dấu, thường (vd: "Đình" -> "dinh")
+            $keyword = $this->vn_to_str($request->search);
+
+            $allStudents = $allStudents->filter(function ($student) use ($keyword) {
+                // Chuyển tên và MSSV trong Database về dạng không dấu
+                $name = $this->vn_to_str($student->fullname);
+                $code = $this->vn_to_str($student->student_code);
+
+                // So sánh: chỉ cần tên hoặc MSSV chứa từ khóa là giữ lại
+                return str_contains($name, $keyword) || str_contains($code, $keyword);
+            });
+        }
+
+        // 4. Phân trang thủ công (Manual Pagination) cho danh sách đã lọc
+        $currentPage = LengthAwarePaginator::resolveCurrentPage();
+        $perPage = 20; // Số dòng trên 1 trang
+        $currentResults = $allStudents->slice(($currentPage - 1) * $perPage, $perPage)->all();
+
+        $students = new LengthAwarePaginator(
+            $currentResults,
+            $allStudents->count(), // Tổng số bản ghi SAU KHI LỌC
+            $perPage,
+            $currentPage,
+            ['path' => LengthAwarePaginator::resolveCurrentPath(), 'query' => $request->query()]
+        );
+
+        // 5. Trả về JSON nếu là Ajax (Tìm kiếm Live)
+        if ($request->ajax()) {
+            return response()->json([
+                'html' => view('admin.classes.partials.student_rows', compact('students'))->render(),
+                'pagination' => (string) $students->links(),
+                'total' => $class->students_count, // Sĩ số lớp cố định
+                'total_found' => $students->total() // Số lượng tìm thấy (để hiển thị trên thanh tìm kiếm)
+            ]);
+        }
 
         return view('admin.classes.show', compact('class', 'students'));
     }
 
-    public function edit(string $id)
+    public function edit(Request $request, string $id)
     {
         $class = Classes::findOrFail($id);
         $lecturers = Lecturer::with('user')->get();
         $department = Department::where('code', 'CNTT')->first();
 
-        $students = $class->students()->with('user')->orderBy('student_code', 'asc')->get();
+        // 1. Lấy toàn bộ sinh viên của lớp (Kèm user để lấy email)
+        $allStudents = $class->students()->with('user')->orderBy('student_code', 'asc')->get();
+
+        // 2. Xử lý Tìm kiếm (PHP Filter - Chính xác tuyệt đối về dấu/hoa thường)
+        if ($request->has('search') && !empty($request->search)) {
+            $keyword = $this->vn_to_str($request->search); // Chuyển từ khóa về không dấu, chữ thường
+
+            $allStudents = $allStudents->filter(function ($student) use ($keyword) {
+                // Chuyển tên và MSSV trong DB về không dấu, chữ thường
+                $name = $this->vn_to_str($student->fullname);
+                $code = $this->vn_to_str($student->student_code);
+
+                // So sánh: Chỉ cần chứa từ khóa là lấy
+                return str_contains($name, $keyword) || str_contains($code, $keyword);
+            });
+        }
+
+        // 3. Phân trang thủ công (Manual Pagination) cho Collection sau khi lọc
+        $currentPage = LengthAwarePaginator::resolveCurrentPage();
+        $perPage = 50; // Số lượng hiển thị 1 trang
+        $currentResults = $allStudents->slice(($currentPage - 1) * $perPage, $perPage)->all();
+
+        $students = new LengthAwarePaginator(
+            $currentResults,
+            $allStudents->count(),
+            $perPage,
+            $currentPage,
+            ['path' => LengthAwarePaginator::resolveCurrentPath(), 'query' => $request->query()]
+        );
+
+        // Nếu là request AJAX (khi gõ phím), chỉ trả về phần bảng và phân trang
+        if ($request->ajax()) {
+            return response()->json([
+                'html' => view('admin.classes.partials.student_rows', compact('students'))->render(),
+                'pagination' => (string) $students->links(),
+                'total' => $students->total()
+            ]);
+        }
 
         return view('admin.classes.edit', compact('class', 'lecturers', 'department', 'students'));
+    }
+
+    // Hàm hỗ trợ chuyển Tiếng Việt có dấu thành không dấu (Helper)
+    private function vn_to_str($str)
+    {
+        $str = $str ?? '';
+        $unicode = array(
+            'a' => 'á|à|ả|ã|ạ|ă|ắ|ằ|ẳ|ẵ|ặ|â|ấ|ầ|ẩ|ẫ|ậ',
+            'd' => 'đ',
+            'e' => 'é|è|ẻ|ẽ|ẹ|ê|ế|ề|ể|ễ|ệ',
+            'i' => 'í|ì|ỉ|ĩ|ị',
+            'o' => 'ó|ò|ỏ|õ|ọ|ô|ố|ồ|ổ|ỗ|ộ|ơ|ớ|ờ|ở|ỡ|ợ',
+            'u' => 'ú|ù|ủ|ũ|ụ|ư|ứ|ừ|ử|ữ|ự',
+            'y' => 'ý|ỳ|ỷ|ỹ|ỵ',
+            'A' => 'Á|À|Ả|Ã|Ạ|Ă|Ắ|Ằ|Ẳ|Ẵ|Ặ|Â|Ấ|Ầ|Ẩ|Ẫ|Ậ',
+            'D' => 'Đ',
+            'E' => 'É|È|Ẻ|Ẽ|Ẹ|Ê|Ế|Ề|Ể|Ễ|Ệ',
+            'I' => 'Í|Ì|Ỉ|Ĩ|Ị',
+            'O' => 'Ó|Ò|Ỏ|Õ|Ọ|Ô|Ố|Ồ|Ổ|Ỗ|Ộ|Ơ|Ớ|Ờ|Ở|Ỡ|Ợ',
+            'U' => 'Ú|Ù|Ủ|Ũ|Ụ|Ư|Ứ|Ừ|Ử|Ữ|Ự',
+            'Y' => 'Ý|Ỳ|Ỷ|Ỹ|Ỵ',
+        );
+        foreach ($unicode as $nonUnicode => $uni) {
+            $str = preg_replace("/($uni)/i", $nonUnicode, $str);
+        }
+        return strtolower(str_replace(' ', '', $str)); // Xóa khoảng trắng để tìm kiếm linh hoạt hơn
+    }
+
+    public function exportStudents($id)
+    {
+        $class = Classes::findOrFail($id);
+        return Excel::download(new ClassStudentsExport($id), 'Danh_sach_lop_' . $class->code . '.xlsx');
     }
 
     public function update(Request $request, string $id)
@@ -209,23 +323,27 @@ class ClassController extends Controller
         $studentIds = $request->input('student_ids');
         $count = 0;
 
-        foreach ($studentIds as $id) {
-            $student = Student::with('user')->find($id);
-            if ($student && $student->user) {
+        // Vì đã dùng Queue trong Mailable, vòng lặp này sẽ chạy rất nhanh
+        // Nó chỉ đẩy job vào hàng đợi chứ không đợi gửi mail xong mới chạy tiếp
+        $students = Student::with('user')->whereIn('id', $studentIds)->get();
+
+        foreach ($students as $student) {
+            if ($student->user) {
                 $parts = explode(' ', $student->fullname);
                 $firstName = array_pop($parts);
                 $slugName = \Illuminate\Support\Str::slug($firstName, '');
+                // Lưu ý: Logic password này nên đồng nhất với lúc Import
                 $rawPassword = $slugName . $student->student_code;
 
                 try {
                     Mail::to($student->user->email)->send(new StudentAccountCreated($student->fullname, $student->student_code, $rawPassword));
                     $count++;
                 } catch (\Exception $e) {
-                    Log::error("Failed to send email to {$student->user->email}: " . $e->getMessage());
+                    Log::error("Failed to queue email for {$student->user->email}: " . $e->getMessage());
                 }
             }
         }
 
-        return response()->json(['message' => "Đã gửi email thành công cho $count sinh viên!"]);
+        return response()->json(['message' => "Đã thêm $count email vào hàng đợi gửi đi!"]);
     }
 }

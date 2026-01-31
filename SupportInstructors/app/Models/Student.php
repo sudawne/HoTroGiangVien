@@ -2,11 +2,30 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes; // [QUAN TRỌNG] Import SoftDeletes
 
 class Student extends Model
 {
-    protected $fillable = ['user_id', 'class_id', 'student_code', 'fullname', 'dob', 'pob', 'status', 'enrollment_year'];
+    // [QUAN TRỌNG] Sử dụng trait SoftDeletes để kích hoạt xóa mềm
+    use HasFactory, SoftDeletes;
+
+    protected $fillable = [
+        'user_id',
+        'class_id',
+        'student_code',
+        'fullname',
+        'dob',
+        'pob',
+        'status',
+        'enrollment_year'
+    ];
+
+    // Ép kiểu dữ liệu để xử lý ngày tháng dễ hơn
+    protected $casts = [
+        'dob' => 'date',
+    ];
 
     public function user()
     {
@@ -15,6 +34,8 @@ class Student extends Model
 
     public function class()
     {
+        // Lưu ý: Model lớp học của bạn tên là "Classes" (số nhiều),
+        // nếu tên file model là Class.php thì sửa thành Class::class
         return $this->belongsTo(Classes::class, 'class_id');
     }
 

@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\AcademicWarningController;
 | Admin Routes
 |--------------------------------------------------------------------------
 */
+
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 Route::get('classes/{id}/export', [ClassController::class, 'exportStudents'])->name('classes.export');
 Route::put('students/{id}', [StudentController::class, 'update'])->name('students.update');
@@ -20,6 +21,7 @@ Route::post('/classes/upload-preview', [ClassController::class, 'previewUpload']
 Route::post('/classes/send-emails', [ClassController::class, 'sendEmails'])->name('classes.send_emails');
 Route::resource('classes', ClassController::class);
 Route::resource('students', StudentController::class);
+Route::post('students/bulk-delete', [StudentController::class, 'bulkDestroy'])->name('students.bulk_destroy');
 Route::resource('minutes', MeetingMinuteController::class);
 
 Route::prefix('academic-warnings')->name('academic_warnings.')->group(function () {
@@ -29,6 +31,7 @@ Route::prefix('academic-warnings')->name('academic_warnings.')->group(function (
     Route::post('/store', [AcademicWarningController::class, 'store'])->name('store');
     Route::post('/quick-add-student', [AcademicWarningController::class, 'quickAddStudent'])->name('quick_add_student');
 });
+
 Route::controller(ImportController::class)->group(function () {
     // Import chung
     Route::get('/imports', 'index')->name('imports.index');

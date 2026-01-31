@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\StudentAccountCreated;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class ClassController extends Controller
 {
@@ -88,14 +89,6 @@ class ClassController extends Controller
             'advisor_id' => 'required|exists:lecturers,id',
             'academic_year' => 'required',
             'student_file' => 'nullable|mimes:xlsx,csv,xls|max:10240',
-        ], [
-            'code.required' => 'Vui lòng nhập mã lớp.',
-            'code.unique' => 'Mã lớp này đã tồn tại.',
-            'name.required' => 'Vui lòng nhập tên lớp.',
-            'advisor_id.required' => 'Vui lòng chọn cố vấn.',
-            'academic_year.required' => 'Vui lòng nhập niên khóa.',
-            'student_file.mimes' => 'File phải có định dạng .xlsx, .xls hoặc .csv.',
-            'student_file.max' => 'File không được quá 10MB.',
         ]);
 
         DB::beginTransaction();
@@ -109,15 +102,41 @@ class ClassController extends Controller
             $class->academic_year = $request->academic_year;
             $class->save();
 
+            $newIds = [];
+
             if ($request->hasFile('student_file')) {
-                $shouldSendEmail = $request->boolean('send_email');
-                Excel::import(new StudentsImport($class->id, $shouldSendEmail), $request->file('student_file'));
+                // QUAN TRỌNG: Luôn truyền false vào biến send_email
+                // Để Server KHÔNG gửi mail, để dành việc đó cho Client (JS) làm
+                $import = new StudentsImport($class->id, false);
+
+                Excel::import($import, $request->file('student_file'));
+
+                // Giả sử trong file StudentsImport bạn có biến public $newStudentIds chứa danh sách ID vừa thêm
+                // Nếu chưa có, bạn cần thêm logic thu thập ID vào file Import
+                if (property_exists($import, 'newStudentIds')) {
+                    $newIds = $import->newStudentIds;
+                }
             }
 
             DB::commit();
-            return redirect()->route('admin.classes.index')->with('success', 'Tạo lớp và import danh sách thành công!');
+
+            // [LOGIC MỚI] Trả về JSON nếu là AJAX request
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Tạo lớp và import thành công!',
+                    'redirect_url' => route('admin.classes.index'),
+                    'new_student_ids' => $newIds // Trả về mảng ID để JS xử lý gửi mail
+                ]);
+            }
+
+            // Fallback cho submit thường
+            return redirect()->route('admin.classes.index')->with('success', 'Tạo lớp thành công!');
         } catch (\Exception $e) {
             DB::rollBack();
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            }
             return redirect()->back()->withInput()->withErrors(['student_file' => $e->getMessage()]);
         }
     }
@@ -315,6 +334,7 @@ class ClassController extends Controller
 
     public function sendEmails(Request $request)
     {
+        // 1. Validate
         $request->validate([
             'student_ids' => 'required|array',
             'student_ids.*' => 'exists:students,id',
@@ -322,28 +342,34 @@ class ClassController extends Controller
 
         $studentIds = $request->input('student_ids');
         $count = 0;
+        $errors = 0;
 
-        // Vì đã dùng Queue trong Mailable, vòng lặp này sẽ chạy rất nhanh
-        // Nó chỉ đẩy job vào hàng đợi chứ không đợi gửi mail xong mới chạy tiếp
+        // 2. Lấy danh sách (Batch nhỏ được gửi từ JS)
         $students = Student::with('user')->whereIn('id', $studentIds)->get();
 
         foreach ($students as $student) {
             if ($student->user) {
+                // Tạo lại mật khẩu thô để gửi mail (Lưu ý: Logic này phải khớp logic lúc tạo user)
                 $parts = explode(' ', $student->fullname);
                 $firstName = array_pop($parts);
-                $slugName = \Illuminate\Support\Str::slug($firstName, '');
-                // Lưu ý: Logic password này nên đồng nhất với lúc Import
+                $slugName = Str::slug($firstName, '');
                 $rawPassword = $slugName . $student->student_code;
 
                 try {
+                    // Gửi mail đồng bộ (Vì đã bỏ ShouldQueue)
                     Mail::to($student->user->email)->send(new StudentAccountCreated($student->fullname, $student->student_code, $rawPassword));
                     $count++;
                 } catch (\Exception $e) {
-                    Log::error("Failed to queue email for {$student->user->email}: " . $e->getMessage());
+                    $errors++;
+                    Log::error("Error sending mail to {$student->user->email}: " . $e->getMessage());
                 }
             }
         }
 
-        return response()->json(['message' => "Đã thêm $count email vào hàng đợi gửi đi!"]);
+        return response()->json([
+            'success' => true,
+            'sent_count' => $count,
+            'error_count' => $errors
+        ]);
     }
 }

@@ -3,11 +3,11 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
-class StudentAccountCreated extends Mailable implements ShouldQueue
+// Bỏ "implements ShouldQueue" để gửi trực tiếp
+class StudentAccountCreated extends Mailable
 {
     use Queueable, SerializesModels;
 

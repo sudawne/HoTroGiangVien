@@ -308,32 +308,33 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // --- 1. KHAI BÁO BIẾN TOÀN CỤC ---
+            // --- 1. BIẾN ---
             const fileInput = document.getElementById('student_file_input');
             const previewArea = document.getElementById('preview-area');
             const errorArea = document.getElementById('upload-error');
             const formClass = document.getElementById('editClassForm');
-            const loadingModal = document.getElementById('loadingModal');
             const btnPreSubmit = document.getElementById('btn-pre-submit');
+            const sendEmailInput = document.getElementById('send_email_import_input');
 
-            // Modal & Input Import Mail
-            const confirmImportMailModal = document.getElementById('confirmImportMailModal');
-            const btnNoMailImport = document.getElementById('btn-no-mail-import');
-            const btnYesMailImport = document.getElementById('btn-yes-mail-import');
-            const sendEmailImportInput = document.getElementById('send_email_import_input');
-
-            // Các biến cho bảng sinh viên
+            // Table Variables
             const selectAll = document.getElementById('select-all');
             const btnSendSelectedEmail = document.getElementById('btn-send-selected-email');
+            const btnExportExcel = document.getElementById('btn-export-excel');
             const searchInput = document.getElementById('live-search-input');
             const searchSpinner = document.getElementById('search-spinner');
             const tableOverlay = document.getElementById('table-loading-overlay');
             const tableBody = document.getElementById('students-table-body');
             const paginationLinks = document.getElementById('pagination-links');
-            const btnExportExcel = document.getElementById('btn-export-excel');
             const studentCountSpan = document.getElementById('student-count');
+            const filteredCountSpan = document.getElementById('filtered-count');
 
-            // Modal Đa năng
+            // Modals
+            const loadingModal = document.getElementById('loadingModal');
+            const progressContainer = document.getElementById('progress-container');
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+            const loadingTitle = document.getElementById('loading-modal-title');
+
             const universalModal = document.getElementById('universalModal');
             const uniTitle = document.getElementById('uni-modal-title');
             const uniDesc = document.getElementById('uni-modal-desc');
@@ -342,22 +343,26 @@
             const uniBtnText = document.getElementById('uni-modal-btn-text');
             const uniIcon = document.getElementById('uni-modal-icon');
             const uniIconBg = document.getElementById('uni-modal-icon-bg');
-            let pendingCallback = null;
 
-            // --- 2. HÀM MODAL ĐA NĂNG ---
+            let pendingCallback = null;
+            let cancelCallback = null;
+
+            // --- 2. MODAL & HELPER ---
             function showConfirm({
                 title,
                 message,
                 btnText,
                 btnColor = 'blue',
                 icon = 'help',
-                callback
+                callback,
+                onCancel = null
             }) {
                 uniTitle.innerText = title;
                 uniDesc.innerText = message;
                 uniBtnText.innerText = btnText;
                 uniIcon.innerText = icon;
                 pendingCallback = callback;
+                cancelCallback = onCancel;
 
                 const colors = {
                     blue: {
@@ -378,14 +383,43 @@
                 };
                 const style = colors[btnColor] || colors.blue;
 
-                // Reset class cũ và thêm class mới
                 uniBtnConfirm.className =
                     `px-4 py-2 text-white font-medium rounded-sm shadow-sm text-sm flex items-center gap-2 ${style.btn}`;
                 uniIcon.className = `material-symbols-outlined text-[24px] ${style.icon}`;
                 uniIconBg.className =
                     `flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center ${style.bg}`;
 
+                // Reset nút
+                uniBtnConfirm.classList.remove('hidden');
+                uniBtnCancel.classList.remove('hidden');
+
+                const btnCancel = document.getElementById('btn-uni-cancel');
+                btnCancel.innerText = onCancel ? 'Không gửi (Chỉ tạo)' : 'Hủy bỏ';
+
                 universalModal.classList.remove('hidden');
+            }
+
+            // Hàm thông báo thành công đẹp (Dùng lại universal modal)
+            function showNotification(message) {
+                uniTitle.innerText = "Thành công!";
+                uniDesc.innerText = message;
+                uniIcon.innerText = "check_circle";
+                uniIconBg.className =
+                    "flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center bg-green-100 text-green-600";
+
+                // Ẩn các nút bấm đi vì chỉ là thông báo
+                uniBtnConfirm.classList.add('hidden');
+                uniBtnCancel.classList.add('hidden');
+
+                universalModal.classList.remove('hidden');
+
+                // Tự tắt sau 2 giây
+                setTimeout(() => {
+                    universalModal.classList.add('hidden');
+                    // Reset lại modal
+                    uniBtnConfirm.classList.remove('hidden');
+                    uniBtnCancel.classList.remove('hidden');
+                }, 2000);
             }
 
             if (uniBtnConfirm) {
@@ -396,12 +430,22 @@
             }
             if (uniBtnCancel) {
                 uniBtnCancel.addEventListener('click', function() {
+                    if (cancelCallback) cancelCallback();
                     universalModal.classList.add('hidden');
                     pendingCallback = null;
+                    cancelCallback = null;
                 });
             }
 
-            // --- 3. LOGIC UPLOAD FILE PREVIEW ---
+            function chunkArray(myArray, chunk_size) {
+                var results = [];
+                while (myArray.length) {
+                    results.push(myArray.splice(0, chunk_size));
+                }
+                return results;
+            }
+
+            // --- 3. CLASS UPDATE FORM ---
             if (fileInput) {
                 fileInput.addEventListener('change', function(e) {
                     let file = e.target.files[0];
@@ -430,7 +474,7 @@
                             previewArea.innerHTML = data.html;
                             if (data.hasError) {
                                 errorArea.innerText =
-                                    'Cảnh báo: File chứa Mã sinh viên trùng (dòng đỏ). Vui lòng kiểm tra lại!';
+                                    'Cảnh báo: File chứa Mã sinh viên trùng (dòng đỏ).';
                                 errorArea.classList.remove('hidden');
                             }
                         }
@@ -442,9 +486,10 @@
                 });
             }
 
-            // --- 4. LOGIC SUBMIT FORM CẬP NHẬT LỚP ---
             function submitClassForm() {
                 loadingModal.classList.remove('hidden');
+                progressContainer.classList.add('hidden');
+                loadingTitle.innerText = "Đang cập nhật...";
                 btnPreSubmit.disabled = true;
                 btnPreSubmit.innerHTML =
                     '<span class="material-symbols-outlined !text-[16px] animate-spin">progress_activity</span> Đang xử lý...';
@@ -453,11 +498,28 @@
 
             if (btnPreSubmit) {
                 btnPreSubmit.addEventListener('click', function() {
+                    if (!formClass.checkValidity()) {
+                        formClass.reportValidity();
+                        return;
+                    }
+
                     if (fileInput.files.length > 0) {
-                        // Nếu có file -> Hỏi gửi mail cho danh sách import
-                        confirmImportMailModal.classList.remove('hidden');
+                        showConfirm({
+                            title: 'Gửi thông tin tài khoản?',
+                            message: 'Bạn có muốn hệ thống tự động gửi email cho danh sách import không?',
+                            btnText: 'Đồng ý gửi',
+                            btnColor: 'blue',
+                            icon: 'mark_email_unread',
+                            callback: function() {
+                                sendEmailInput.value = "1";
+                                submitClassForm();
+                            },
+                            onCancel: function() {
+                                sendEmailInput.value = "0";
+                                submitClassForm();
+                            }
+                        });
                     } else {
-                        // Nếu không có file -> Hỏi xác nhận lưu bình thường
                         showConfirm({
                             title: 'Lưu thay đổi',
                             message: 'Bạn có chắc chắn muốn cập nhật thông tin lớp học này không?',
@@ -470,223 +532,201 @@
                 });
             }
 
-            if (btnNoMailImport) {
-                btnNoMailImport.addEventListener('click', () => {
-                    sendEmailImportInput.value = "0";
-                    confirmImportMailModal.classList.add('hidden');
-                    submitClassForm();
-                });
-            }
-            if (btnYesMailImport) {
-                btnYesMailImport.addEventListener('click', () => {
-                    sendEmailImportInput.value = "1";
-                    confirmImportMailModal.classList.add('hidden');
-                    submitClassForm();
-                });
-            }
-
-            // --- 5. HÀM KHỞI TẠO SỰ KIỆN CHO BẢNG SINH VIÊN (QUAN TRỌNG CHO AJAX) ---
+            // --- 4. TABLE EVENTS ---
             function initStudentTableEvents() {
-                // A. Sự kiện Checkbox Select All
-                const studentCheckboxes = document.querySelectorAll('.student-checkbox');
+                const checkboxes = document.querySelectorAll('.student-checkbox');
 
-                function toggleSendButtonState() {
-                    const anyChecked = Array.from(document.querySelectorAll('.student-checkbox')).some(cb => cb
-                        .checked);
+                function toggleSendBtn() {
+                    const any = Array.from(checkboxes).some(cb => cb.checked);
                     if (btnSendSelectedEmail) {
-                        btnSendSelectedEmail.disabled = !anyChecked;
-                        btnSendSelectedEmail.classList.toggle('opacity-50', !anyChecked);
-                        btnSendSelectedEmail.classList.toggle('cursor-not-allowed', !anyChecked);
+                        btnSendSelectedEmail.disabled = !any;
+                        btnSendSelectedEmail.classList.toggle('opacity-50', !any);
+                        btnSendSelectedEmail.classList.toggle('cursor-not-allowed', !any);
                     }
                 }
-
                 if (selectAll) {
-                    selectAll.checked = false; // Reset khi reload bảng
+                    selectAll.checked = false;
                     selectAll.onclick = function() {
-                        const isChecked = this.checked;
-                        document.querySelectorAll('.student-checkbox').forEach(cb => cb.checked = isChecked);
-                        toggleSendButtonState();
+                        checkboxes.forEach(cb => cb.checked = selectAll.checked);
+                        toggleSendBtn();
                     };
                 }
+                checkboxes.forEach(cb => cb.addEventListener('change', toggleSendBtn));
+                toggleSendBtn();
 
-                studentCheckboxes.forEach(cb => {
-                    cb.addEventListener('change', toggleSendButtonState);
-                });
-                toggleSendButtonState(); // Init state
-
-                // B. Sự kiện Nút Sửa
+                // Edit
                 document.querySelectorAll('.btn-edit-student').forEach(btn => {
                     btn.addEventListener('click', function() {
                         const id = this.getAttribute('data-id');
-                        const fullname = this.getAttribute('data-fullname');
-                        const email = this.getAttribute('data-email');
-                        const dob = this.getAttribute('data-dob');
-                        const status = this.getAttribute('data-status');
-
-                        const editModal = document.getElementById('editStudentModal');
                         const formEdit = document.getElementById('formEditStudent');
+                        const editModal = document.getElementById('editStudentModal');
 
                         formEdit.action = `/admin/students/${id}`;
-                        document.getElementById('edit_fullname').value = fullname;
-                        document.getElementById('edit_email').value = email;
-                        document.getElementById('edit_dob').value = dob;
-                        document.getElementById('edit_status').value = status;
+                        document.getElementById('edit_fullname').value = this.getAttribute(
+                            'data-fullname');
+                        document.getElementById('edit_email').value = this.getAttribute(
+                            'data-email');
+                        document.getElementById('edit_dob').value = this.getAttribute('data-dob');
+                        document.getElementById('edit_status').value = this.getAttribute(
+                            'data-status');
 
                         editModal.classList.remove('hidden');
                     });
                 });
 
-                // C. Sự kiện Nút Xóa
+                // Delete
                 document.querySelectorAll('.btn-delete-student').forEach(btn => {
                     btn.addEventListener('click', function() {
                         const form = this.closest('form');
-                        const studentCode = this.getAttribute('data-code');
                         showConfirm({
                             title: 'Xóa Sinh Viên?',
-                            message: `Bạn có chắc chắn muốn xóa sinh viên ${studentCode}? Hành động này không thể hoàn tác.`,
+                            message: `Hành động này không thể hoàn tác.`,
                             btnText: 'Xóa ngay',
                             btnColor: 'red',
                             icon: 'warning',
-                            callback: function() {
-                                form.submit();
-                            }
+                            callback: () => form.submit()
                         });
                     });
                 });
 
-                // D. Sự kiện Nút Gửi Mail Cá Nhân
+                // Single Email
                 document.querySelectorAll('.btn-send-single-email').forEach(btn => {
                     btn.addEventListener('click', function() {
-                        const studentId = this.getAttribute('data-id');
+                        const id = this.getAttribute('data-id');
                         showConfirm({
-                            title: 'Gửi Email Cá Nhân',
-                            message: 'Gửi email thông tin tài khoản cho sinh viên này?',
-                            btnText: 'Gửi luôn',
+                            title: 'Gửi Email',
+                            message: 'Gửi thông tin tài khoản cho sinh viên này?',
+                            btnText: 'Gửi',
                             btnColor: 'blue',
-                            icon: 'forward_to_inbox',
-                            callback: function() {
-                                sendEmailsAjax([studentId]);
-                            }
+                            icon: 'send',
+                            callback: () => sendEmailsAjax([id])
                         });
                     });
                 });
             }
-
-            // Gọi lần đầu khi trang load xong
             initStudentTableEvents();
 
-            // --- 6. LOGIC TÌM KIẾM LIVE (AJAX) ---
+            // Live Search
             let debounceTimer;
             if (searchInput) {
                 searchInput.addEventListener('input', function() {
                     const query = this.value;
-
-                    // UI Loading
                     searchSpinner.classList.remove('hidden');
                     tableOverlay.classList.remove('hidden');
 
                     clearTimeout(debounceTimer);
                     debounceTimer = setTimeout(() => {
-                        // Update URL
                         const url = new URL(window.location.href);
-                        if (query) {
-                            url.searchParams.set('search', query);
-                        } else {
-                            url.searchParams.delete('search');
-                        }
-                        // Reset page về 1 khi search
+                        if (query) url.searchParams.set('search', query);
+                        else url.searchParams.delete('search');
                         url.searchParams.delete('page');
                         window.history.pushState({}, '', url);
 
-                        // Fetch Data
                         fetch(url, {
                                 headers: {
                                     'X-Requested-With': 'XMLHttpRequest'
                                 }
                             })
-                            .then(response => response.json())
+                            .then(res => res.json())
                             .then(data => {
-                                // Replace nội dung bảng và phân trang
-                                if (tableBody) tableBody.innerHTML = data.html;
-                                if (paginationLinks) paginationLinks.innerHTML = data
-                                    .pagination;
+                                tableBody.innerHTML = data.html;
+                                paginationLinks.innerHTML = data.pagination;
                                 if (studentCountSpan) studentCountSpan.innerText =
                                     `(${data.total})`;
-
-                                // Re-bind events cho các phần tử mới
                                 initStudentTableEvents();
                             })
-                            .catch(err => console.error('Lỗi tìm kiếm:', err))
                             .finally(() => {
                                 searchSpinner.classList.add('hidden');
                                 tableOverlay.classList.add('hidden');
                             });
-                    }, 400); // Debounce 400ms
+                    }, 400);
                 });
             }
 
-            // --- 7. CÁC NÚT CHỨC NĂNG KHÁC ---
-
-            // Gửi Mail Hàng Loạt
-            if (btnSendSelectedEmail) {
-                btnSendSelectedEmail.addEventListener('click', function() {
-                    const selectedIds = Array.from(document.querySelectorAll('.student-checkbox'))
-                        .filter(cb => cb.checked)
-                        .map(cb => cb.value);
-
-                    if (selectedIds.length === 0) return;
-
-                    showConfirm({
-                        title: 'Gửi Email Hàng Loạt',
-                        message: `Bạn có chắc muốn gửi thông tin tài khoản cho ${selectedIds.length} sinh viên đã chọn?`,
-                        btnText: 'Gửi ngay',
-                        btnColor: 'blue',
-                        icon: 'send',
-                        callback: function() {
-                            sendEmailsAjax(selectedIds);
-                        }
-                    });
-                });
-            }
-
-            // Xuất Excel
+            // Export
             if (btnExportExcel) {
                 btnExportExcel.addEventListener('click', function(e) {
                     e.preventDefault();
                     const url = this.getAttribute('href');
                     showConfirm({
-                        title: 'Xuất danh sách sinh viên',
-                        message: 'Bạn có muốn tải xuống file Excel danh sách sinh viên lớp này không?',
+                        title: 'Xuất Excel',
+                        message: 'Tải xuống danh sách sinh viên?',
                         btnText: 'Tải xuống',
                         btnColor: 'green',
                         icon: 'download',
-                        callback: function() {
-                            window.location.href = url;
-                        }
+                        callback: () => window.location.href = url
                     });
                 });
             }
 
-            // Hàm AJAX gửi mail chung
-            function sendEmailsAjax(ids) {
-                loadingModal.classList.remove('hidden');
-                fetch('{{ route('admin.classes.send_emails') }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    },
-                    body: JSON.stringify({
-                        student_ids: ids
-                    })
-                }).then(response => response.json()).then(data => {
-                    loadingModal.classList.add('hidden');
-                    alert(data.message || 'Đã thêm vào hàng đợi gửi mail!');
-                }).catch(error => {
-                    loadingModal.classList.add('hidden');
-                    console.error('Error:', error);
-                    alert('Lỗi khi gửi yêu cầu.');
+            // Bulk Email
+            if (btnSendSelectedEmail) {
+                btnSendSelectedEmail.addEventListener('click', function() {
+                    const ids = Array.from(document.querySelectorAll('.student-checkbox'))
+                        .filter(cb => cb.checked).map(cb => cb.value);
+                    if (ids.length === 0) return;
+
+                    showConfirm({
+                        title: 'Gửi Email Hàng Loạt',
+                        message: `Gửi cho ${ids.length} sinh viên đã chọn?`,
+                        btnText: 'Gửi ngay',
+                        btnColor: 'blue',
+                        icon: 'send',
+                        callback: () => sendEmailsAjax(ids)
+                    });
                 });
+            }
+
+            // --- 5. BATCH SENDING LOGIC ---
+            async function sendEmailsAjax(allIds) {
+                loadingModal.classList.remove('hidden');
+                progressContainer.classList.remove('hidden');
+
+                const total = allIds.length;
+                let processed = 0;
+                const batches = chunkArray([...allIds], 3);
+
+                loadingTitle.innerText = "Đang gửi Email...";
+                progressBar.style.width = "0%";
+                progressText.innerText = `Đã gửi 0/${total}`;
+
+                for (const batch of batches) {
+                    try {
+                        const response = await fetch('{{ route('admin.classes.send_emails') }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            },
+                            body: JSON.stringify({
+                                student_ids: batch
+                            })
+                        });
+
+                        if (!response.ok) throw new Error('Error');
+                        processed += batch.length;
+
+                        const percent = Math.round((processed / total) * 100);
+                        progressBar.style.width = `${percent}%`;
+                        progressText.innerText = `Đã gửi ${processed}/${total} (${percent}%)`;
+
+                    } catch (error) {
+                        console.error('Batch error', error);
+                        processed += batch.length;
+                    }
+                }
+
+                // Tắt Loading và hiện thông báo đẹp
+                setTimeout(() => {
+                    loadingModal.classList.add('hidden');
+                    progressContainer.classList.add('hidden');
+
+                    showNotification(`Đã hoàn tất quy trình gửi ${processed}/${total} email!`);
+
+                    // Reset checkbox
+                    document.querySelectorAll('.student-checkbox').forEach(cb => cb.checked = false);
+                    if (selectAll) selectAll.checked = false;
+                }, 500);
             }
         });
     </script>

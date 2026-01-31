@@ -263,7 +263,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // 1. VARIABLE DECLARATION
+            // --- 1. BIẾN ---
             const selectAll = document.getElementById('select-all');
             const btnSendSelectedEmail = document.getElementById('btn-send-selected-email');
             const btnExportExcel = document.getElementById('btn-export-excel');
@@ -273,9 +273,16 @@
             const tableBody = document.getElementById('students-table-body');
             const paginationLinks = document.getElementById('pagination-links');
             const filteredCountSpan = document.getElementById('filtered-count');
+            const studentCountSpan = document.getElementById('student-count');
             const loadingModal = document.getElementById('loadingModal');
 
-            // 2. UNIVERSAL MODAL LOGIC
+            // Progress
+            const progressContainer = document.getElementById('progress-container');
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+            const loadingTitle = document.getElementById('loading-modal-title');
+
+            // Modal Universal
             const universalModal = document.getElementById('universalModal');
             const uniTitle = document.getElementById('uni-modal-title');
             const uniDesc = document.getElementById('uni-modal-desc');
@@ -286,6 +293,7 @@
             const uniIconBg = document.getElementById('uni-modal-icon-bg');
             let pendingCallback = null;
 
+            // --- 2. MODAL & HELPER ---
             function showConfirm({
                 title,
                 message,
@@ -318,12 +326,40 @@
                     },
                 };
                 const style = colors[btnColor] || colors.blue;
+
                 uniBtnConfirm.className =
                     `px-4 py-2 text-white font-medium rounded-sm shadow-sm text-sm flex items-center gap-2 ${style.btn}`;
                 uniIcon.className = `material-symbols-outlined text-[24px] ${style.icon}`;
                 uniIconBg.className =
                     `flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center ${style.bg}`;
+
+                // Reset nút
+                uniBtnConfirm.classList.remove('hidden');
+                uniBtnCancel.classList.remove('hidden');
+
                 universalModal.classList.remove('hidden');
+            }
+
+            // Hàm thông báo thành công đẹp
+            function showNotification(message) {
+                uniTitle.innerText = "Thành công!";
+                uniDesc.innerText = message;
+                uniIcon.innerText = "check_circle";
+                uniIconBg.className =
+                    "flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center bg-green-100 text-green-600";
+
+                // Ẩn nút
+                uniBtnConfirm.classList.add('hidden');
+                uniBtnCancel.classList.add('hidden');
+
+                universalModal.classList.remove('hidden');
+
+                setTimeout(() => {
+                    universalModal.classList.add('hidden');
+                    // Reset
+                    uniBtnConfirm.classList.remove('hidden');
+                    uniBtnCancel.classList.remove('hidden');
+                }, 2000);
             }
 
             if (uniBtnConfirm) {
@@ -339,9 +375,16 @@
                 });
             }
 
-            // 3. TABLE EVENTS (INIT)
+            function chunkArray(myArray, chunk_size) {
+                var results = [];
+                while (myArray.length) {
+                    results.push(myArray.splice(0, chunk_size));
+                }
+                return results;
+            }
+
+            // --- 3. TABLE EVENTS ---
             function initTableEvents() {
-                // Checkbox Logic
                 const checkboxes = document.querySelectorAll('.student-checkbox');
 
                 function toggleSendBtn() {
@@ -362,7 +405,7 @@
                 checkboxes.forEach(cb => cb.addEventListener('change', toggleSendBtn));
                 toggleSendBtn();
 
-                // Delete Button
+                // Delete
                 document.querySelectorAll('.btn-delete-student').forEach(btn => {
                     btn.addEventListener('click', function() {
                         const form = this.closest('form');
@@ -378,7 +421,7 @@
                     });
                 });
 
-                // Single Email Button
+                // Single Email
                 document.querySelectorAll('.btn-send-single-email').forEach(btn => {
                     btn.addEventListener('click', function() {
                         const id = this.getAttribute('data-id');
@@ -393,23 +436,21 @@
                     });
                 });
 
-                // Edit Button
+                // Edit
                 document.querySelectorAll('.btn-edit-student').forEach(btn => {
                     btn.addEventListener('click', function() {
                         const id = this.getAttribute('data-id');
-                        const fullname = this.getAttribute('data-fullname');
-                        const email = this.getAttribute('data-email');
-                        const dob = this.getAttribute('data-dob');
-                        const status = this.getAttribute('data-status');
-
-                        const editModal = document.getElementById('editStudentModal');
                         const formEdit = document.getElementById('formEditStudent');
+                        const editModal = document.getElementById('editStudentModal');
 
                         formEdit.action = `/admin/students/${id}`;
-                        document.getElementById('edit_fullname').value = fullname;
-                        document.getElementById('edit_email').value = email;
-                        document.getElementById('edit_dob').value = dob;
-                        document.getElementById('edit_status').value = status;
+                        document.getElementById('edit_fullname').value = this.getAttribute(
+                            'data-fullname');
+                        document.getElementById('edit_email').value = this.getAttribute(
+                            'data-email');
+                        document.getElementById('edit_dob').value = this.getAttribute('data-dob');
+                        document.getElementById('edit_status').value = this.getAttribute(
+                            'data-status');
 
                         editModal.classList.remove('hidden');
                     });
@@ -417,7 +458,7 @@
             }
             initTableEvents();
 
-            // 4. LIVE SEARCH LOGIC
+            // --- 4. LIVE SEARCH ---
             let debounceTimer;
             if (searchInput) {
                 searchInput.addEventListener('input', function() {
@@ -444,7 +485,7 @@
                                 paginationLinks.innerHTML = data.pagination;
                                 if (filteredCountSpan) filteredCountSpan.innerText =
                                     `(${data.total_found})`;
-                                initTableEvents(); // Re-bind events for new rows
+                                initTableEvents();
                             })
                             .finally(() => {
                                 searchSpinner.classList.add('hidden');
@@ -454,7 +495,7 @@
                 });
             }
 
-            // 5. OTHER ACTIONS
+            // --- 5. ACTIONS ---
             if (btnExportExcel) {
                 btnExportExcel.addEventListener('click', function(e) {
                     e.preventDefault();
@@ -487,24 +528,54 @@
                 });
             }
 
-            function sendEmailsAjax(ids) {
+            // --- 6. BATCH SENDING ---
+            async function sendEmailsAjax(allIds) {
                 loadingModal.classList.remove('hidden');
-                fetch('{{ route('admin.classes.send_emails') }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    },
-                    body: JSON.stringify({
-                        student_ids: ids
-                    })
-                }).then(res => res.json()).then(data => {
+                progressContainer.classList.remove('hidden');
+
+                const total = allIds.length;
+                let processed = 0;
+                const batches = chunkArray([...allIds], 3);
+
+                loadingTitle.innerText = "Đang gửi Email...";
+                progressBar.style.width = "0%";
+                progressText.innerText = `Đã gửi 0/${total}`;
+
+                for (const batch of batches) {
+                    try {
+                        const response = await fetch('{{ route('admin.classes.send_emails') }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            },
+                            body: JSON.stringify({
+                                student_ids: batch
+                            })
+                        });
+
+                        if (!response.ok) throw new Error('Error');
+                        processed += batch.length;
+
+                        const percent = Math.round((processed / total) * 100);
+                        progressBar.style.width = `${percent}%`;
+                        progressText.innerText = `Đã gửi ${processed}/${total} (${percent}%)`;
+
+                    } catch (error) {
+                        console.error('Batch error', error);
+                        processed += batch.length;
+                    }
+                }
+
+                setTimeout(() => {
                     loadingModal.classList.add('hidden');
-                    alert(data.message);
-                }).catch(err => {
-                    loadingModal.classList.add('hidden');
-                    alert('Lỗi gửi mail.');
-                });
+                    progressContainer.classList.add('hidden');
+
+                    showNotification(`Đã hoàn tất quy trình gửi ${processed}/${total} email!`);
+
+                    document.querySelectorAll('.student-checkbox').forEach(cb => cb.checked = false);
+                    if (selectAll) selectAll.checked = false;
+                }, 500);
             }
         });
     </script>

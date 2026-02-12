@@ -36,7 +36,11 @@ class ClassController extends Controller
 
     public function create()
     {
-        $lecturers = Lecturer::with('user')->get();
+        // CHỈ LẤY GIẢNG VIÊN MÀ USER CHƯA BỊ XÓA MỀM
+        $lecturers = Lecturer::whereHas('user', function ($query) {
+            $query->whereNull('deleted_at'); // Đảm bảo user chưa bị xóa mềm
+        })->with('user')->get();
+
         $department = Department::where('code', 'CNTT')->first();
         return view('admin.classes.create', compact('lecturers', 'department'));
     }
@@ -70,14 +74,12 @@ class ClassController extends Controller
                 ];
             }
 
-            // Logic cũ trả về HTML, nhưng để Edit form hoạt động tốt với JS giống create
-            // ta trả về cả Data để JS xử lý.
             $html = view('admin.classes.partials.preview_table', compact('previewData'))->render();
 
             return response()->json([
                 'html' => $html,
                 'hasError' => $hasError,
-                'data' => $previewData // Trả về data raw để JS bên Edit có thể merge
+                'data' => $previewData
             ]);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Lỗi đọc file: ' . $e->getMessage()], 500);
@@ -125,7 +127,6 @@ class ClassController extends Controller
         }
     }
 
-    // UPDATE CLASS (Cập nhật thông tin lớp + Thêm sinh viên mới)
     public function update(Request $request, $id)
     {
         $request->validate([
@@ -152,7 +153,6 @@ class ClassController extends Controller
             $class->save();
 
             $newIds = [];
-            // Nếu có danh sách sinh viên mới được gửi lên
             if ($request->filled('students_list')) {
                 $newIds = $this->processStudentList($request->students_list, $class->id);
             }
@@ -163,7 +163,7 @@ class ClassController extends Controller
                 return response()->json([
                     'success' => true,
                     'message' => 'Cập nhật lớp học thành công!',
-                    'redirect_url' => null, // Hoặc quay lại trang edit nếu muốn
+                    'redirect_url' => null,
                     'new_student_ids' => $newIds
                 ]);
             }
@@ -178,7 +178,6 @@ class ClassController extends Controller
         }
     }
 
-    // Helper function để xử lý thêm sinh viên (dùng chung cho store và update)
     private function processStudentList($jsonList, $classId)
     {
         $newIds = [];
@@ -188,14 +187,12 @@ class ClassController extends Controller
             foreach ($studentsData as $s) {
                 $mssv = trim($s['mssv']);
 
-                // Bỏ qua nếu đã tồn tại
                 if (Student::where('student_code', $mssv)->exists()) continue;
 
                 $parts = explode(' ', trim($s['name']));
                 $firstName = array_pop($parts);
                 $slugName = Str::slug($firstName, '');
 
-                // Tạo User
                 $user = User::create([
                     'name' => trim($s['name']),
                     'email' => $slugName . $mssv . '@vnkgu.edu.vn',
@@ -207,7 +204,6 @@ class ClassController extends Controller
 
                 $dob = null;
                 if (!empty($s['dob']) && $s['dob'] !== '-') {
-                    // Xử lý ngày tháng có thể dạng d/m/Y hoặc Y-m-d
                     $parsedDate = strtotime(str_replace('/', '-', $s['dob']));
                     if ($parsedDate) $dob = date('Y-m-d', $parsedDate);
                 }
@@ -218,7 +214,6 @@ class ClassController extends Controller
                 elseif (str_contains($rawStatus, 'thôi học') || str_contains($rawStatus, 'nghỉ')) $dbStatus = 'dropped';
                 elseif (str_contains($rawStatus, 'tốt nghiệp')) $dbStatus = 'graduated';
 
-                // Tạo Student
                 $student = Student::create([
                     'user_id' => $user->id,
                     'class_id' => $classId,
@@ -281,7 +276,12 @@ class ClassController extends Controller
     public function edit(Request $request, string $id)
     {
         $class = Classes::findOrFail($id);
-        $lecturers = Lecturer::with('user')->get();
+
+        // CHỈ LẤY GIẢNG VIÊN MÀ USER CHƯA BỊ XÓA MỀM
+        $lecturers = Lecturer::whereHas('user', function ($query) {
+            $query->whereNull('deleted_at');
+        })->with('user')->get();
+
         $department = Department::where('code', 'CNTT')->first();
 
         $allStudents = $class->students()->with('user')->orderBy('student_code', 'asc')->get();
@@ -309,11 +309,8 @@ class ClassController extends Controller
         return view('admin.classes.edit', compact('class', 'lecturers', 'department', 'students'));
     }
 
-    // Hàm updateStudent: Đổi tên từ hàm update cũ của bạn để tránh trùng lặp
-    // Bạn cần đảm bảo Route::put('/admin/students/{id}', [ClassController::class, 'updateStudent']) tồn tại
     public function updateStudent(Request $request, $id)
     {
-        // 1. Validate
         $request->validate([
             'fullname' => 'required|string|max:255',
             'email' => 'nullable|email|max:255',
@@ -329,20 +326,17 @@ class ClassController extends Controller
         try {
             $student = Student::findOrFail($id);
 
-            // 2. Cập nhật Student
             $student->update([
                 'fullname' => $request->fullname,
                 'dob' => $request->dob,
                 'status' => $request->status,
             ]);
 
-            // 3. Cập nhật User (nếu có)
             if ($student->user_id) {
                 $user = User::find($student->user_id);
                 if ($user) {
                     $user->name = $request->fullname;
                     if ($request->filled('email')) {
-                        // Check trùng email (ngoại trừ chính user này)
                         $exists = User::where('email', $request->email)
                             ->where('id', '!=', $user->id)
                             ->exists();
@@ -445,7 +439,6 @@ class ClassController extends Controller
 
         foreach ($students as $student) {
             if ($student->user) {
-                // Tái tạo lại mật khẩu thô để gửi mail
                 $parts = explode(' ', $student->fullname);
                 $firstName = array_pop($parts);
                 $slugName = Str::slug($firstName, '');

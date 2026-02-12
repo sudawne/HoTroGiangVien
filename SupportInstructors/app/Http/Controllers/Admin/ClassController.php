@@ -18,7 +18,8 @@ use App\Mail\StudentAccountCreated;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Hash; // <-- Bắt buộc phải có để tạo Password
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 
 class ClassController extends Controller
 {
@@ -69,12 +70,14 @@ class ClassController extends Controller
                 ];
             }
 
+            // Logic cũ trả về HTML, nhưng để Edit form hoạt động tốt với JS giống create
+            // ta trả về cả Data để JS xử lý.
             $html = view('admin.classes.partials.preview_table', compact('previewData'))->render();
 
             return response()->json([
                 'html' => $html,
                 'hasError' => $hasError,
-                'data' => $previewData
+                'data' => $previewData // Trả về data raw để JS bên Edit có thể merge
             ]);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Lỗi đọc file: ' . $e->getMessage()], 500);
@@ -107,57 +110,7 @@ class ClassController extends Controller
             $class->academic_year = $request->academic_year;
             $class->save();
 
-            $newIds = [];
-
-            if ($request->filled('students_list')) {
-                $studentsData = json_decode($request->students_list, true);
-
-                if (is_array($studentsData)) {
-                    foreach ($studentsData as $s) {
-                        $mssv = trim($s['mssv']);
-
-                        if (Student::where('student_code', $mssv)->exists()) continue;
-
-                        $parts = explode(' ', trim($s['name']));
-                        $firstName = array_pop($parts);
-                        $slugName = Str::slug($firstName, '');
-
-                        $user = User::create([
-                            'name' => trim($s['name']),
-                            'email' => $slugName . $mssv . '@vnkgu.edu.vn',
-                            'username' => $mssv,
-                            'password' => Hash::make($slugName . $mssv),
-                            'role_id' => 3,
-                            'is_active' => true,
-                        ]);
-
-                        $dob = null;
-                        if (!empty($s['dob']) && $s['dob'] !== '-') {
-                            $parsedDate = strtotime(str_replace('/', '-', $s['dob']));
-                            if ($parsedDate) $dob = date('Y-m-d', $parsedDate);
-                        }
-
-                        // --- Tự động dịch trạng thái ---
-                        $rawStatus = mb_strtolower(trim($s['status'] ?? ''), 'UTF-8');
-                        $dbStatus = 'studying';
-                        if (str_contains($rawStatus, 'bảo lưu')) $dbStatus = 'reserved';
-                        elseif (str_contains($rawStatus, 'thôi học') || str_contains($rawStatus, 'nghỉ')) $dbStatus = 'dropped';
-                        elseif (str_contains($rawStatus, 'tốt nghiệp')) $dbStatus = 'graduated';
-
-                        $student = Student::create([
-                            'user_id' => $user->id,
-                            'class_id' => $class->id,
-                            'student_code' => $mssv,
-                            'fullname' => trim($s['name']),
-                            'dob' => $dob,
-                            'status' => $dbStatus,
-                            'enrollment_year' => now()->year,
-                        ]);
-
-                        $newIds[] = $student->id;
-                    }
-                }
-            }
+            $newIds = $this->processStudentList($request->students_list, $class->id);
 
             DB::commit();
 
@@ -170,6 +123,116 @@ class ClassController extends Controller
             DB::rollBack();
             return response()->json(['success' => false, 'message' => 'Lỗi: ' . $e->getMessage()], 500);
         }
+    }
+
+    // UPDATE CLASS (Cập nhật thông tin lớp + Thêm sinh viên mới)
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'code' => 'required|unique:classes,code,' . $id,
+            'name' => 'required',
+            'advisor_id' => 'required|exists:lecturers,id',
+            'academic_year' => 'required',
+        ], [
+            'code.required' => 'Vui lòng nhập Mã lớp.',
+            'code.unique' => 'Mã lớp này đã tồn tại.',
+            'name.required' => 'Vui lòng nhập Tên lớp.',
+            'advisor_id.required' => 'Vui lòng chọn Cố vấn học tập.',
+            'academic_year.required' => 'Vui lòng nhập Niên khóa.',
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            $class = Classes::findOrFail($id);
+            $class->code = $request->code;
+            $class->name = $request->name;
+            $class->advisor_id = $request->advisor_id;
+            $class->academic_year = $request->academic_year;
+            $class->save();
+
+            $newIds = [];
+            // Nếu có danh sách sinh viên mới được gửi lên
+            if ($request->filled('students_list')) {
+                $newIds = $this->processStudentList($request->students_list, $class->id);
+            }
+
+            DB::commit();
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Cập nhật lớp học thành công!',
+                    'redirect_url' => null, // Hoặc quay lại trang edit nếu muốn
+                    'new_student_ids' => $newIds
+                ]);
+            }
+
+            return redirect()->route('admin.classes.index')->with('success', 'Cập nhật thành công!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Lỗi: ' . $e->getMessage()], 500);
+            }
+            return redirect()->back()->with('error', 'Lỗi: ' . $e->getMessage());
+        }
+    }
+
+    // Helper function để xử lý thêm sinh viên (dùng chung cho store và update)
+    private function processStudentList($jsonList, $classId)
+    {
+        $newIds = [];
+        $studentsData = json_decode($jsonList, true);
+
+        if (is_array($studentsData)) {
+            foreach ($studentsData as $s) {
+                $mssv = trim($s['mssv']);
+
+                // Bỏ qua nếu đã tồn tại
+                if (Student::where('student_code', $mssv)->exists()) continue;
+
+                $parts = explode(' ', trim($s['name']));
+                $firstName = array_pop($parts);
+                $slugName = Str::slug($firstName, '');
+
+                // Tạo User
+                $user = User::create([
+                    'name' => trim($s['name']),
+                    'email' => $slugName . $mssv . '@vnkgu.edu.vn',
+                    'username' => $mssv,
+                    'password' => Hash::make($slugName . $mssv),
+                    'role_id' => 3,
+                    'is_active' => true,
+                ]);
+
+                $dob = null;
+                if (!empty($s['dob']) && $s['dob'] !== '-') {
+                    // Xử lý ngày tháng có thể dạng d/m/Y hoặc Y-m-d
+                    $parsedDate = strtotime(str_replace('/', '-', $s['dob']));
+                    if ($parsedDate) $dob = date('Y-m-d', $parsedDate);
+                }
+
+                $rawStatus = mb_strtolower(trim($s['status'] ?? ''), 'UTF-8');
+                $dbStatus = 'studying';
+                if (str_contains($rawStatus, 'bảo lưu')) $dbStatus = 'reserved';
+                elseif (str_contains($rawStatus, 'thôi học') || str_contains($rawStatus, 'nghỉ')) $dbStatus = 'dropped';
+                elseif (str_contains($rawStatus, 'tốt nghiệp')) $dbStatus = 'graduated';
+
+                // Tạo Student
+                $student = Student::create([
+                    'user_id' => $user->id,
+                    'class_id' => $classId,
+                    'student_code' => $mssv,
+                    'fullname' => trim($s['name']),
+                    'dob' => $dob,
+                    'status' => $dbStatus,
+                    'enrollment_year' => now()->year,
+                ]);
+
+                $newIds[] = $student->id;
+            }
+        }
+        return $newIds;
     }
 
     public function show(Request $request, string $id)
@@ -221,7 +284,6 @@ class ClassController extends Controller
         $lecturers = Lecturer::with('user')->get();
         $department = Department::where('code', 'CNTT')->first();
 
-        // Logic lấy sinh viên tương tự show
         $allStudents = $class->students()->with('user')->orderBy('student_code', 'asc')->get();
         if ($request->has('search') && !empty($request->search)) {
             $keyword = $this->vn_to_str($request->search);
@@ -247,7 +309,9 @@ class ClassController extends Controller
         return view('admin.classes.edit', compact('class', 'lecturers', 'department', 'students'));
     }
 
-    public function update(Request $request, $id)
+    // Hàm updateStudent: Đổi tên từ hàm update cũ của bạn để tránh trùng lặp
+    // Bạn cần đảm bảo Route::put('/admin/students/{id}', [ClassController::class, 'updateStudent']) tồn tại
+    public function updateStudent(Request $request, $id)
     {
         // 1. Validate
         $request->validate([
@@ -284,13 +348,9 @@ class ClassController extends Controller
                             ->exists();
 
                         if ($exists) {
-                            // Nếu trùng, ném lỗi validation thủ công
-                            throw new \Illuminate\Validation\ValidationException(
-                                validator([], []),
-                                \Illuminate\Validation\ValidationException::withMessages([
-                                    'email' => ['Email này đã được sử dụng bởi tài khoản khác.']
-                                ])
-                            );
+                            throw ValidationException::withMessages([
+                                'email' => ['Email này đã được sử dụng bởi tài khoản khác.']
+                            ]);
                         }
                         $user->email = $request->email;
                     }
@@ -308,7 +368,7 @@ class ClassController extends Controller
             }
 
             return redirect()->back()->with('success', 'Cập nhật thành công!');
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             DB::rollBack();
             if ($request->ajax()) {
                 return response()->json([

@@ -106,8 +106,8 @@
 
                 {{-- [SỬA] Khu vực Lọc nâng cao: Thêm class 'live-filter' để JS bắt sự kiện change --}}
                 <div id="filterPanel" class="{{ request()->hasAny(['semester_id', 'level', 'class_id']) ? '' : 'hidden' }} mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div class="relative">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+                        <div class="relative group">
                             <label class="block text-xs font-medium text-slate-500 mb-1">Học kỳ</label>
                             <select name="semester_id" class="live-filter w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-sm text-sm py-2 pl-3 pr-8">
                                 <option value="">Tất cả học kỳ</option>
@@ -116,7 +116,7 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="relative">
+                        <div class="relative group">
                             <label class="block text-xs font-medium text-slate-500 mb-1">Mức độ</label>
                             <select name="level" class="live-filter w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-sm text-sm py-2 pl-3 pr-8">
                                 <option value="">Tất cả mức độ</option>
@@ -125,7 +125,7 @@
                                 <option value="3" {{ request('level') == '3' ? 'selected' : '' }}>Buộc thôi học</option>
                             </select>
                         </div>
-                        <div class="relative">
+                        <div class="relative group">
                             <label class="block text-xs font-medium text-slate-500 mb-1">Lớp</label>
                             <select name="class_id" class="live-filter w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-sm text-sm py-2 pl-3 pr-8">
                                 <option value="">Tất cả lớp</option>

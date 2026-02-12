@@ -27,6 +27,13 @@ Route::post('students/bulk-delete', [StudentController::class, 'bulkDestroy'])->
 Route::resource('minutes', MeetingMinuteController::class);
 
 // --- QUẢN LÝ GIẢNG VIÊN (MỚI) ---
+Route::prefix('lecturers')->name('lecturers.')->controller(LecturerController::class)->group(function () {
+    Route::post('/bulk-delete', 'bulkDelete')->name('bulk_delete');   // -> tên route: admin.lecturers.bulk_delete
+    Route::post('/bulk-restore', 'bulkRestore')->name('bulk_restore'); // -> tên route: admin.lecturers.bulk_restore
+    Route::post('/{id}/restore', 'restore')->name('restore');         // -> tên route: admin.lecturers.restore
+});
+
+// Route Resource mặc định
 Route::resource('lecturers', LecturerController::class);
 
 Route::prefix('academic-warnings')->name('academic_warnings.')->group(function () {

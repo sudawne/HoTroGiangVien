@@ -1,5 +1,5 @@
 @extends('layouts.admin')
-@section('title', 'Thêm Giảng viên')
+@section('title', 'Cập nhật Giảng viên')
 
 @section('content')
     <div class="w-full px-4 py-6">
@@ -11,8 +11,9 @@
                     <span class="material-symbols-outlined !text-[18px] block">arrow_back</span>
                 </a>
                 <div>
-                    <h1 class="text-2xl font-bold text-slate-800 dark:text-white uppercase">Thêm Giảng viên</h1>
-                    <p class="text-xs text-slate-500">Tạo tài khoản mới cho Giảng viên/Cố vấn học tập</p>
+                    <h1 class="text-2xl font-bold text-slate-800 dark:text-white uppercase">Cập nhật Giảng viên</h1>
+                    <p class="text-xs text-slate-500">Chỉnh sửa thông tin thầy/cô: <span
+                            class="font-bold text-primary">{{ $lecturer->user->name }}</span></p>
                 </div>
             </div>
         </div>
@@ -25,8 +26,11 @@
             </div>
         @endif
 
-        <form action="{{ route('admin.lecturers.store') }}" method="POST" enctype="multipart/form-data" novalidate>
+        <form action="{{ route('admin.lecturers.update', $lecturer->id) }}" method="POST" enctype="multipart/form-data"
+            novalidate>
             @csrf
+            @method('PUT')
+
             <div class="flex flex-col lg:flex-row gap-6">
 
                 {{-- SIDEBAR TRÁI: AVATAR --}}
@@ -36,8 +40,9 @@
                         <h4 class="text-xs font-bold text-slate-400 uppercase mb-6 w-full border-b pb-2">Ảnh đại diện</h4>
 
                         <div class="relative group w-40 h-40 mb-4">
+                            {{-- Logic hiển thị ảnh: Nếu có ảnh trong DB thì lấy, không thì dùng UI Avatars --}}
                             <img id="avatar-preview"
-                                src="https://ui-avatars.com/api/?name=Lecturer&background=f1f5f9&color=64748b&size=256"
+                                src="{{ $lecturer->user->avatar_url ? asset('storage/' . $lecturer->user->avatar_url) : 'https://ui-avatars.com/api/?name=' . urlencode($lecturer->user->name) . '&background=f1f5f9&color=64748b&size=256' }}"
                                 alt="Avatar Preview"
                                 class="w-full h-full rounded-full object-cover border-4 border-slate-50 shadow-md group-hover:border-primary/20 transition-all">
 
@@ -63,8 +68,8 @@
                         class="bg-white dark:bg-[#1e1e2d] border border-slate-200 dark:border-slate-700 rounded-sm shadow-sm">
                         <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/30">
                             <h3 class="font-bold text-slate-800 dark:text-white text-sm flex items-center gap-2">
-                                <span class="material-symbols-outlined text-primary !text-[18px]">assignment_ind</span>
-                                Thông tin tài khoản & Công tác
+                                <span class="material-symbols-outlined text-primary !text-[18px]">edit_square</span> Thông
+                                tin tài khoản & Công tác
                             </h3>
                         </div>
 
@@ -74,35 +79,36 @@
                                 <div class="md:col-span-2">
                                     <label class="block text-xs font-bold text-slate-700 mb-1.5 uppercase">Họ và Tên <span
                                             class="text-red-500">*</span></label>
-                                    <input type="text" name="name" id="lecturer_name" value="{{ old('name') }}"
-                                        required placeholder="Nhập tên Giảng viên (Ví dụ: Võ Hoàng Nhân)"
+                                    <input type="text" name="name" id="lecturer_name"
+                                        value="{{ old('name', $lecturer->user->name) }}" required
                                         class="w-full px-3 py-2.5 border border-slate-300 rounded-sm focus:ring-1 focus:ring-primary focus:border-primary text-sm @error('name') border-red-500 @enderror">
                                     @error('name')
                                         <span class="text-red-500 text-[11px] mt-1">{{ $message }}</span>
                                     @enderror
                                 </div>
 
-                                {{-- Email tự động --}}
+                                {{-- Email --}}
                                 <div>
-                                    <label class="block text-xs font-bold text-slate-700 mb-1.5 uppercase">Email Hệ
-                                        Thống</label>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1.5 uppercase">Email Hệ Thống
+                                        <span class="text-red-500">*</span></label>
                                     <div class="relative">
-                                        <input type="email" name="email" id="lecturer_email" value="{{ old('email') }}"
-                                            readonly
-                                            class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-sm text-sm text-slate-500 cursor-not-allowed font-medium">
+                                        {{-- Cho phép sửa email, không readonly như create --}}
+                                        <input type="email" name="email"
+                                            value="{{ old('email', $lecturer->user->email) }}" required
+                                            class="w-full px-3 py-2.5 border border-slate-300 rounded-sm focus:ring-1 focus:ring-primary text-sm @error('email') border-red-500 @enderror">
                                         <span
-                                            class="absolute right-3 top-2.5 text-slate-400 material-symbols-outlined !text-[16px]">lock</span>
+                                            class="absolute right-3 top-2.5 text-slate-400 material-symbols-outlined !text-[16px]">mail</span>
                                     </div>
-                                    <p class="text-[11px] text-blue-500 mt-1 italic">Email sẽ tự động tạo từ tên (vd:
-                                        vhnhan@vnkgu.edu.vn)</p>
+                                    @error('email')
+                                        <span class="text-red-500 text-[11px] mt-1">{{ $message }}</span>
+                                    @enderror
                                 </div>
 
                                 {{-- Số điện thoại --}}
                                 <div>
                                     <label class="block text-xs font-bold text-slate-700 mb-1.5 uppercase">Số điện
                                         thoại</label>
-                                    <input type="text" name="phone" value="{{ old('phone') }}"
-                                        placeholder="Nhập số điện thoại liên lạc"
+                                    <input type="text" name="phone" value="{{ old('phone', $lecturer->user->phone) }}"
                                         class="w-full px-3 py-2.5 border border-slate-300 rounded-sm focus:ring-1 focus:ring-primary text-sm">
                                 </div>
 
@@ -112,8 +118,8 @@
                                 <div>
                                     <label class="block text-xs font-bold text-slate-700 mb-1.5 uppercase">Mã Giảng viên
                                         <span class="text-red-500">*</span></label>
-                                    <input type="text" name="lecturer_code" value="{{ old('lecturer_code') }}" required
-                                        placeholder="VD: GV001"
+                                    <input type="text" name="lecturer_code"
+                                        value="{{ old('lecturer_code', $lecturer->lecturer_code) }}" required
                                         class="w-full px-3 py-2.5 border border-slate-300 rounded-sm focus:ring-1 focus:ring-primary font-mono text-sm uppercase @error('lecturer_code') border-red-500 @enderror">
                                     @error('lecturer_code')
                                         <span class="text-red-500 text-[11px] mt-1">{{ $message }}</span>
@@ -129,7 +135,7 @@
                                         <option value="">-- Chọn Khoa --</option>
                                         @foreach ($departments as $dept)
                                             <option value="{{ $dept->id }}"
-                                                {{ old('department_id') == $dept->id ? 'selected' : '' }}>
+                                                {{ old('department_id', $lecturer->department_id) == $dept->id ? 'selected' : '' }}>
                                                 {{ $dept->name }}</option>
                                         @endforeach
                                     </select>
@@ -143,18 +149,19 @@
                                     <label class="block text-xs font-bold text-slate-700 mb-1.5 uppercase">Học vị</label>
                                     <select name="degree"
                                         class="w-full px-3 py-2 border border-slate-300 rounded-sm focus:ring-1 focus:ring-primary text-sm cursor-pointer">
-                                        <option value="Cử nhân">Cử nhân</option>
-                                        <option value="Thạc sĩ">Thạc sĩ</option>
-                                        <option value="Tiến sĩ">Tiến sĩ</option>
-                                        <option value="PGS.TS">PGS.TS</option>
-                                        <option value="GS.TS">GS.TS</option>
+                                        @foreach (['Cử nhân', 'Thạc sĩ', 'Tiến sĩ', 'PGS.TS', 'GS.TS'] as $deg)
+                                            <option value="{{ $deg }}"
+                                                {{ old('degree', $lecturer->degree) == $deg ? 'selected' : '' }}>
+                                                {{ $deg }}</option>
+                                        @endforeach
                                     </select>
                                 </div>
 
                                 {{-- Chức vụ --}}
                                 <div>
                                     <label class="block text-xs font-bold text-slate-700 mb-1.5 uppercase">Chức vụ</label>
-                                    <input type="text" name="position" value="{{ old('position', 'Giảng viên') }}"
+                                    <input type="text" name="position"
+                                        value="{{ old('position', $lecturer->position) }}"
                                         class="w-full px-3 py-2.5 border border-slate-300 rounded-sm focus:ring-1 focus:ring-primary text-sm">
                                 </div>
                             </div>
@@ -165,7 +172,7 @@
                                     bỏ</a>
                                 <button type="submit"
                                     class="px-6 py-2.5 bg-primary text-white font-semibold rounded-sm hover:bg-primary/90 shadow-sm flex items-center gap-2 text-sm transition-all active:scale-95">
-                                    <span class="material-symbols-outlined !text-[18px]">save</span> Lưu Giảng viên
+                                    <span class="material-symbols-outlined !text-[18px]">save</span> Cập nhật
                                 </button>
                             </div>
                         </div>
@@ -176,7 +183,6 @@
     </div>
 
     <script>
-        // 1. Preview Ảnh
         function previewImage(input) {
             if (input.files && input.files[0]) {
                 var reader = new FileReader();
@@ -186,38 +192,6 @@
                 reader.readAsDataURL(input.files[0]);
             }
         }
-
-        // 2. Tự động tạo Email từ Tên
-        const nameInput = document.getElementById('lecturer_name');
-        const emailInput = document.getElementById('lecturer_email');
-
-        nameInput.addEventListener('input', function() {
-            const fullName = this.value;
-            if (!fullName) {
-                emailInput.value = '';
-                return;
-            }
-
-            // Chuyển sang tiếng Việt không dấu
-            let str = fullName.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-            str = str.replace(/đ/g, "d").replace(/Đ/g, "D");
-            str = str.trim().toLowerCase();
-
-            // Tách từ
-            const parts = str.split(/\s+/);
-            if (parts.length < 1) return;
-
-            const lastName = parts.pop(); // Lấy tên (ví dụ: nhan)
-            let initials = "";
-            parts.forEach(part => {
-                if (part.length > 0) initials += part.charAt(0); // Lấy chữ đầu họ và đệm (ví dụ: v, h)
-            });
-
-            // Ghép thành email
-            if (lastName) {
-                const generatedEmail = initials + lastName + "@vnkgu.edu.vn";
-                emailInput.value = generatedEmail;
-            }
-        });
+        // Ở trang Edit không cần script tự động tạo email vì dễ gây lỗi khi sửa tên
     </script>
 @endsection

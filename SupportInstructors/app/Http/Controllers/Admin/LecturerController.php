@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Admin;
 
-use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Models\Lecturer;
 use App\Models\User;
@@ -13,20 +12,27 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Mail;
-use App\Mail\LecturerAccountCreated; // Import Mail Class
+use App\Mail\LecturerAccountCreated;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class LecturerController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Lecturer::with(['user', 'department']);
+        // QUAN TRỌNG: withTrashed() trong closure của User để lấy được user đã bị xóa mềm
+        $query = Lecturer::with(['user' => function ($q) {
+            $q->withTrashed();
+        }, 'department']);
 
         if ($request->has('search') && $request->search != '') {
             $search = $request->search;
             $query->whereHas('user', function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
+                $q->withTrashed()
+                    ->where(function ($sub) use ($search) {
+                        $sub->where('name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%");
+                    });
             })->orWhere('lecturer_code', 'like', "%{$search}%");
         }
 
@@ -50,60 +56,45 @@ class LecturerController extends Controller
     {
         DB::beginTransaction();
         try {
-            // 1. Xử lý upload ảnh
             $avatarPath = null;
             if ($request->hasFile('avatar')) {
-                // Tham số thứ 2 là 'public' để chỉ định lưu vào storage/app/public
                 $path = $request->file('avatar')->store('avatars', 'public');
-
-                // Lúc này $path sẽ trả về "avatars/ten_anh.jpg" luôn, không cần str_replace nữa
                 $avatarPath = $path;
             }
 
-            // 2. Xử lý Tên và Email
             $fullName = trim($request->name);
             $email = $request->email;
-
-            // Xử lý tên để lấy phần Tên (FirstName) và Họ đệm (Initials)
-            // Hàm vn_to_str cần được định nghĩa bên dưới (private function)
             $nameUnaccent = $this->vn_to_str($fullName);
             $nameParts = explode(' ', $nameUnaccent);
-            $lastName = array_pop($nameParts); // Tên (ví dụ: Nhan)
+            $lastName = array_pop($nameParts);
 
-            // Nếu không nhập email => Tự động tạo
             if (empty($email)) {
                 $initials = '';
                 foreach ($nameParts as $part) {
-                    $initials .= substr($part, 0, 1); // Lấy chữ cái đầu của họ và đệm (v, h)
+                    if (!empty($part)) $initials .= substr($part, 0, 1);
                 }
-                // Email = vhnhan@vnkgu.edu.vn
                 $emailPrefix = strtolower($initials . $lastName);
                 $email = $emailPrefix . '@vnkgu.edu.vn';
-
-                // Kiểm tra trùng email (nếu trùng thì thêm số ngẫu nhiên)
                 if (User::where('email', $email)->exists()) {
                     $email = $emailPrefix . rand(10, 99) . '@vnkgu.edu.vn';
                 }
             }
 
-            // 3. Xử lý Mật khẩu tự động: Tên + Mã GV (ví dụ: nhanGV001)
             $rawPassword = strtolower($lastName) . $request->lecturer_code;
             $hashedPassword = Hash::make($rawPassword);
 
-            // 4. Tạo User
             $user = User::create([
                 'name' => $fullName,
                 'email' => $email,
                 'phone' => $request->phone,
                 'username' => $request->lecturer_code,
                 'password' => $hashedPassword,
-                'role_id' => 2, // 2 = Lecturer
+                'role_id' => 2,
                 'is_active' => true,
                 'avatar_url' => $avatarPath,
             ]);
 
-            // 5. Tạo Lecturer
-            Lecturer::create([
+            $newLecturer = Lecturer::create([
                 'user_id' => $user->id,
                 'department_id' => $request->department_id,
                 'lecturer_code' => $request->lecturer_code,
@@ -113,38 +104,40 @@ class LecturerController extends Controller
 
             DB::commit();
 
-            // 6. Gửi Email (Sử dụng Try-Catch riêng để không chặn quy trình tạo nếu lỗi mail)
             try {
-                // HARDCODE EMAIL NHẬN ĐỂ TEST
                 $testRecipient = 'nguyen22082006204@vnkgu.edu.vn';
-
-                // Sau này hoàn thành thì đổi thành: $recipient = $user->email;
                 Mail::to($testRecipient)->send(new LecturerAccountCreated($user, $rawPassword));
             } catch (\Exception $mailEx) {
-                // Log lỗi mail nhưng không rollback DB
                 Log::error('Lỗi gửi mail giảng viên: ' . $mailEx->getMessage());
             }
 
             return redirect()->route('admin.lecturers.index')
-                ->with('success', "Thêm giảng viên thành công! Email: $email, Mật khẩu: $rawPassword");
+                ->with('success', "Thêm giảng viên thành công!")
+                ->with('highlight_id', $newLecturer->id);
         } catch (\Exception $e) {
             DB::rollBack();
-            if (isset($path)) Storage::delete($path);
+            if (isset($path)) Storage::disk('public')->delete($path);
             return back()->with('error', 'Lỗi hệ thống: ' . $e->getMessage())->withInput();
         }
     }
 
-    // ... (Các hàm index, edit, update, destroy giữ nguyên) ...
     public function edit($id)
     {
-        $lecturer = Lecturer::with('user')->findOrFail($id);
+        // Lấy Lecturer và User (kể cả đã xóa mềm để sửa thông tin nếu cần)
+        $lecturer = Lecturer::where('id', $id)->with(['user' => function ($q) {
+            $q->withTrashed();
+        }])->firstOrFail();
+
         $departments = Department::all();
         return view('admin.lecturers.edit', compact('lecturer', 'departments'));
     }
 
     public function update(Request $request, $id)
     {
-        $lecturer = Lecturer::findOrFail($id);
+        $lecturer = Lecturer::where('id', $id)->with(['user' => function ($q) {
+            $q->withTrashed();
+        }])->firstOrFail();
+
         $user = $lecturer->user;
 
         $request->validate([
@@ -152,15 +145,25 @@ class LecturerController extends Controller
             'email' => 'required|email|unique:users,email,' . $user->id,
             'department_id' => 'required|exists:departments,id',
             'lecturer_code' => 'required|string|unique:lecturers,lecturer_code,' . $lecturer->id,
+            'avatar' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
         DB::beginTransaction();
         try {
+            $avatarPath = $user->avatar_url;
+            if ($request->hasFile('avatar')) {
+                if ($user->avatar_url) {
+                    Storage::disk('public')->delete($user->avatar_url);
+                }
+                $avatarPath = $request->file('avatar')->store('avatars', 'public');
+            }
+
             $user->update([
-                'name' => $request->name,
+                'name' => trim($request->name),
                 'email' => $request->email,
                 'phone' => $request->phone,
                 'username' => $request->lecturer_code,
+                'avatar_url' => $avatarPath,
             ]);
 
             $lecturer->update([
@@ -171,29 +174,83 @@ class LecturerController extends Controller
             ]);
 
             DB::commit();
-            return redirect()->route('admin.lecturers.index')->with('success', 'Cập nhật thông tin thành công!');
+
+            return redirect()->route('admin.lecturers.index')
+                ->with('success', 'Cập nhật thông tin thành công!')
+                ->with('highlight_id', $lecturer->id);
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Lỗi: ' . $e->getMessage());
         }
     }
 
+    // 1. Ẩn 1 dòng (Soft Delete)
     public function destroy($id)
     {
         $lecturer = Lecturer::findOrFail($id);
         if (\App\Models\Classes::where('advisor_id', $id)->exists()) {
-            return back()->with('error', 'Không thể xóa! Giảng viên này đang là Cố vấn học tập của một lớp.');
+            return back()->with('error', 'Không thể ẩn! Giảng viên đang là Cố vấn học tập.');
         }
-        $user = $lecturer->user;
-        $lecturer->delete();
-        if ($user) $user->delete();
-
-        return redirect()->route('admin.lecturers.index')->with('success', 'Đã xóa giảng viên.');
+        $lecturer->user->delete();
+        return redirect()->back()->with('success', 'Đã ẩn giảng viên (Chuyển sang trạng thái vô hiệu hóa).');
     }
 
-    // Hàm hỗ trợ chuyển tiếng Việt sang không dấu (để tạo mail/pass)
+    // 2. Khôi phục 1 dòng
+    public function restore($id)
+    {
+        $lecturer = Lecturer::where('id', $id)->with(['user' => function ($q) {
+            $q->withTrashed();
+        }])->firstOrFail();
+
+        if ($lecturer->user->trashed()) {
+            $lecturer->user->restore();
+        }
+        return redirect()->back()->with('success', 'Đã khôi phục hoạt động cho giảng viên.');
+    }
+
+    public function bulkDelete(Request $request)
+    {
+        $ids = $request->ids;
+        if (empty($ids)) return response()->json(['error' => 'Chưa chọn mục nào.'], 400);
+
+        // Chỉ lấy những cái chưa xóa để xóa
+        $lecturers = Lecturer::whereIn('id', $ids)->get();
+        $count = 0;
+        foreach ($lecturers as $lec) {
+            // Logic xóa mềm User
+            if ($lec->user && !$lec->user->trashed()) {
+                if (\App\Models\Classes::where('advisor_id', $lec->id)->exists()) continue;
+                $lec->user->delete();
+                $count++;
+            }
+        }
+        return response()->json(['success' => true, 'message' => "Đã ẩn $count giảng viên."]);
+    }
+
+    // 4. Khôi phục hàng loạt
+    public function bulkRestore(Request $request)
+    {
+        $ids = $request->ids;
+        if (empty($ids)) return response()->json(['error' => 'Chưa chọn mục nào.'], 400);
+
+        // Lấy cả những cái đã xóa để khôi phục
+        $lecturers = Lecturer::whereIn('id', $ids)->with(['user' => function ($q) {
+            $q->withTrashed();
+        }])->get();
+
+        $count = 0;
+        foreach ($lecturers as $lec) {
+            if ($lec->user && $lec->user->trashed()) {
+                $lec->user->restore();
+                $count++;
+            }
+        }
+        return response()->json(['success' => true, 'message' => "Đã khôi phục $count giảng viên."]);
+    }
+
     private function vn_to_str($str)
     {
+        $str = $str ?? '';
         $unicode = array(
             'a' => 'á|à|ả|ã|ạ|ă|ắ|ằ|ẳ|ẵ|ặ|â|ấ|ầ|ẩ|ẫ|ậ',
             'd' => 'đ',
@@ -213,6 +270,6 @@ class LecturerController extends Controller
         foreach ($unicode as $nonUnicode => $uni) {
             $str = preg_replace("/($uni)/i", $nonUnicode, $str);
         }
-        return strtolower($str); // Trả về chữ thường không dấu
+        return strtolower(str_replace(' ', '', $str));
     }
 }

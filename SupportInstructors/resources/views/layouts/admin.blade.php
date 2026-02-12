@@ -71,6 +71,88 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #94a3b8;
         }
+
+        @keyframes highlightFade {
+            0% {
+                background-color: #dcfce7;
+            }
+
+            /* green-100 */
+            100% {
+                background-color: transparent;
+            }
+        }
+
+        .highlight-row {
+            animation: highlightFade 3s ease-out forwards;
+        }
+
+        @keyframes fadeInRight {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .animate-fade-in-right {
+            animation: fadeInRight 0.3s ease-out;
+        }
+
+        .modal-enter {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+
+        .modal-enter-active {
+            opacity: 1;
+            transform: scale(1);
+            transition: all 0.2s ease-out;
+        }
+
+        .modal-leave {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .modal-leave-active {
+            opacity: 0;
+            transform: scale(0.95);
+            transition: all 0.2s ease-in;
+        }
+
+        .deleted-row {
+            opacity: 0.6;
+            background-color: #f9fafb;
+            /* gray-50 */
+            filter: grayscale(100%);
+        }
+
+        .deleted-row:hover {
+            opacity: 0.9;
+            transition: opacity 0.3s;
+        }
+
+        /* Animation cho nút bulk action */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .bulk-anim {
+            animation: slideIn 0.3s ease-out;
+        }
     </style>
 </head>
 

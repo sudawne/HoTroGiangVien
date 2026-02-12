@@ -2,24 +2,6 @@
 @section('title', 'Cập nhật Lớp học')
 
 @section('content')
-    {{-- THÊM CSS HIGHLIGHT --}}
-    <style>
-        @keyframes highlightFade {
-            0% {
-                background-color: #dcfce7;
-            }
-
-            /* green-100 */
-            100% {
-                background-color: transparent;
-            }
-        }
-
-        .highlight-row {
-            animation: highlightFade 3s ease-out forwards;
-        }
-    </style>
-
     <div class="w-full px-4 py-6">
         {{-- HEADER (Giữ nguyên) --}}
         <div class="flex items-center justify-between mb-6">
@@ -826,7 +808,7 @@
                     if (newStudentsList.some(s => s.is_duplicate)) {
                         showAlert("Dữ liệu không hợp lệ",
                             "Vui lòng xóa các sinh viên bị trùng mã (dòng màu đỏ) trong danh sách thêm mới trước khi lưu!"
-                            );
+                        );
                         return;
                     }
 

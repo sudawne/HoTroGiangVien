@@ -26,6 +26,17 @@
 
     {{-- KHUNG CÔNG CỤ BÊN PHẢI --}}
     <div class="flex items-center gap-2 md:gap-4 flex-shrink-0">
+        {{-- Nút Kiểm tra --}}
+        <form action="{{ route('admin.system.check') }}" method="POST" class="inline-block" id="system-check-form">
+            @csrf
+            <button type="button" onclick="runCheck()" title="Kiểm tra / Rà soát hệ thống"
+                class="group relative p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors">
+                
+                {{-- Icon Tĩnh --}}
+                <span id="icon-check" class="material-symbols-outlined !text-[18px] group-hover:text-primary transition-colors">fact_check</span>
+                <span id="icon-loading" class="material-symbols-outlined !text-[18px] text-primary animate-spin hidden">sync</span>
+            </button>
+        </form>
         {{-- Nút Thông Báo --}}
         <button
             class="relative p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors">
@@ -36,3 +47,16 @@
         </button>
     </div>
 </header>
+
+<script>
+    function runCheck() {
+        if(confirm('Bạn có muốn rà soát hệ thống và tạo năm học mới (nếu cần) không?')) {
+            // 1. Ẩn icon check, hiện icon loading
+            document.getElementById('icon-check').classList.add('hidden');
+            document.getElementById('icon-loading').classList.remove('hidden');
+            
+            // 2. Submit form
+            document.getElementById('system-check-form').submit();
+        }
+    }
+</script>

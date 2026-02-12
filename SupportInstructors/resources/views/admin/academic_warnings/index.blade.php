@@ -111,8 +111,15 @@
                             <label class="block text-xs font-medium text-slate-500 mb-1">Học kỳ</label>
                             <select name="semester_id" class="live-filter w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-sm text-sm py-2 pl-3 pr-8">
                                 <option value="">Tất cả học kỳ</option>
-                                @foreach($semesters as $sem)
-                                    <option value="{{ $sem->id }}" {{ request('semester_id') == $sem->id ? 'selected' : '' }}>{{ $sem->name }}</option>
+                                @foreach($semesters->groupBy('academic_year') as $year => $groupSems)
+                                    <optgroup label="Năm học {{ $year }}">
+                                        @foreach($groupSems as $sem)
+                                            <option value="{{ $sem->id }}" {{ request('semester_id') == $sem->id ? 'selected' : '' }}>
+                                                {{ $sem->name }}
+                                                @if($sem->is_current) (Hiện tại) @endif
+                                            </option>
+                                        @endforeach
+                                    </optgroup>
                                 @endforeach
                             </select>
                         </div>

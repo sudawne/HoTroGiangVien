@@ -9,15 +9,19 @@ use App\Models\Student;
 use App\Models\User;
 use App\Models\Semester;
 use App\Models\ImportBatch;
+use App\Models\Classes;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth; 
 use Maatwebsite\Excel\Facades\Excel;
-
+use PhpOffice\PhpSpreadsheet\Shared\Date;
+use Carbon\Carbon;
+use Illuminate\Support\Str; // Xử lý tên tiếng việt
 class AcademicWarningController extends Controller
 {
     public function index(Request $request)
     {
+        
         // 1. Khởi tạo Query
         $query = AcademicWarning::query()->with(['student', 'student.class', 'semester']);
 
@@ -129,7 +133,25 @@ class AcademicWarningController extends Controller
 
                 $mssv = trim((string)$row[1]); 
                 $student = Student::where('student_code', $mssv)->first();
-
+                // Xử lý ngày sinh
+                $dobRaw = isset($row[3]) ? $row[3] : null;
+                $dobFormatted = null;   
+                if ($dobRaw) {
+                    try {
+                        // Trường hợp 1: Excel trả về số Serial (ví dụ: 45321)
+                        if (is_numeric($dobRaw)) {
+                            $dobFormatted = Date::excelToDateTimeObject($dobRaw)->format('Y-m-d');
+                        } 
+                        // Trường hợp 2: Excel trả về chuỗi (20/01/2004 hoặc 2004-01-20)
+                        else {
+                            // Thay thế dấu / bằng - để Carbon dễ hiểu
+                            $cleanDate = str_replace('/', '-', $dobRaw);
+                            $dobFormatted = Carbon::parse($cleanDate)->format('Y-m-d');
+                        }
+                    } catch (\Exception $e) {
+                        $dobFormatted = null; // Nếu lỗi format thì để trống
+                    }
+                }
                 // Xử lý điểm số (chuyển đổi nếu là text "Không ĐKHP")
                 $gpa = (isset($row[6]) && is_numeric($row[6])) ? $row[6] : 0;
                 $gpa_acc = (isset($row[7]) && is_numeric($row[7])) ? $row[7] : 0;
@@ -138,7 +160,7 @@ class AcademicWarningController extends Controller
                 $previewData[] = [
                     'mssv' => $mssv,
                     'fullname' => $row[2] ?? '',
-                    'dob' => $row[3] ?? '',
+                    'dob' => $dobFormatted,
                     'class_code' => $row[4] ?? '',
                     'department' => $row[5] ?? '',
                     'gpa_term' => $gpa,
@@ -159,11 +181,14 @@ class AcademicWarningController extends Controller
                 return back()->with('error', 'Không đọc được dòng dữ liệu nào hợp lệ (Có thể do sai cột Mã SV).');
             }
 
+            $classes = Classes::select('id', 'code', 'name')->orderBy('code')->get();
+
             return view('admin.academic_warnings.import', [
                 'semesters' => Semester::orderBy('start_date', 'desc')->get(), 
                 'previewData' => $previewData,
                 'semester_id' => $request->semester_id,
-                'selected_file_name' => $request->file('file')->getClientOriginalName() 
+                'selected_file_name' => $request->file('file')->getClientOriginalName(),
+                'classes' => $classes,
             ]);
 
         } catch (\Exception $e) {
@@ -226,36 +251,54 @@ class AcademicWarningController extends Controller
 
     public function quickAddStudent(Request $request)
     {
+        // 1. Thêm Validation để đảm bảo dữ liệu đúng
+        $request->validate([
+            'mssv' => 'required|unique:students,student_code',
+            'fullname' => 'required',
+            'email' => 'required|email|unique:users,email',
+            'class_id' => 'nullable|exists:classes,id', 
+        ]);
+
         try {
             DB::beginTransaction();
+            // B1. Tách chuỗi họ tên thành mảng: "Nguyễn Văn An" -> ["Nguyễn", "Văn", "An"]
+            $parts = explode(' ', trim($request->fullname));
             
-            // 1. Tạo User cho sinh viên
+            // B2. Lấy phần tử cuối cùng: "An"
+            $lastName = array_pop($parts);
+            
+            // B3. Chuyển thành slug (bỏ dấu, chữ thường): "An" -> "an"
+            $slugName = Str::slug($lastName, ''); 
+            
+            // B4. Ghép chuỗi: an + 22082001 + @vngkgu.edu.vn
+            $generatedEmail = $slugName . $request->mssv . '@vnkgu.edu.vn';
+            // 2. Tạo User cho sinh viên
             $user = User::create([
                 'name' => $request->fullname,
-                'email' => $request->mssv . '@student.domain.edu.vn', // Email giả định
-                'password' => Hash::make($request->mssv), // Mật khẩu mặc định là MSSV
-                'role_id' => 3, // Giả sử 3 là Role Student
+                'email' => $generatedEmail,
+                'password' => Hash::make($request->mssv), // Pass mặc định là MSSV
+                'role_id' => 3, // Role Student
                 'username' => $request->mssv,
                 'is_active' => 1
             ]);
 
-            // 2. Tạo thông tin Sinh viên
-            // Xử lý ngày sinh format Excel (có thể là d/m/Y hoặc Y-m-d)
+            // 3. Xử lý ngày sinh
             $dob = null;
             if (!empty($request->dob)) {
                 try {
                     $dob = \Carbon\Carbon::parse($request->dob)->format('Y-m-d');
                 } catch (\Exception $e) {
-                    // Nếu lỗi format ngày thì để null hoặc xử lý sau
                     $dob = null; 
                 }
             }
 
+            // 4. Tạo Sinh viên (QUAN TRỌNG: Thêm class_id vào đây)
             $student = Student::create([
                 'user_id' => $user->id,
                 'student_code' => $request->mssv,
                 'fullname' => $request->fullname,
                 'dob' => $dob,
+                'class_id' => $request->class_id, // <--- ĐÃ BỔ SUNG DÒNG NÀY
                 'status' => 'studying'
             ]);
             
@@ -263,7 +306,7 @@ class AcademicWarningController extends Controller
             return response()->json(['success' => true, 'message' => 'Đã thêm sinh viên ' . $request->fullname]);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            return response()->json(['success' => false, 'message' => 'Lỗi: ' . $e->getMessage()], 500);
         }
     }
 

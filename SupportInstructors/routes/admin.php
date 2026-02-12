@@ -7,6 +7,8 @@ use App\Http\Controllers\Admin\StudentController;
 use App\Http\Controllers\Admin\MeetingMinuteController;
 use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\AcademicWarningController;
+use App\Http\Controllers\Admin\LecturerController;
+
 /*
 |--------------------------------------------------------------------------
 | Admin Routes
@@ -23,6 +25,9 @@ Route::resource('classes', ClassController::class);
 Route::resource('students', StudentController::class);
 Route::post('students/bulk-delete', [StudentController::class, 'bulkDestroy'])->name('students.bulk_destroy');
 Route::resource('minutes', MeetingMinuteController::class);
+
+// --- QUẢN LÝ GIẢNG VIÊN (MỚI) ---
+Route::resource('lecturers', LecturerController::class);
 
 Route::prefix('academic-warnings')->name('academic_warnings.')->group(function () {
     Route::get('/', [AcademicWarningController::class, 'index'])->name('index');

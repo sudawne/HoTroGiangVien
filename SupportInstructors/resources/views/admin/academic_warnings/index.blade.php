@@ -135,8 +135,13 @@
                             </select>
                         </div>
                         <div class="flex items-end">
-                             <button type="button" onclick="resetFilters()" class="w-full text-center bg-gray-100 hover:bg-gray-200 text-slate-700 text-sm font-medium py-2 px-4 rounded-sm transition-colors h-[38px]">
-                                Xóa bộ lọc
+                            <button type="button" onclick="resetFilters()" 
+                                    class="h-[28.6px] px-4 py-2 text-sm font-medium rounded-sm transition-all flex items-center gap-2
+                                        bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400
+                                        hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200
+                                        w-full md:w-auto justify-center md:justify-start">
+                                <span class="material-symbols-outlined !text-[18px]">filter_alt_off</span>
+                                <span>Xóa lọc</span>
                             </button>
                         </div>
                     </div>

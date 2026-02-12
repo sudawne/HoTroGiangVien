@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
             LecturerSeeder::class,
             StudentSeeder::class,
             DepartmentAndLecturerSeeder::class,
+            SemesterSeeder::class,
         ]);
     }
 }

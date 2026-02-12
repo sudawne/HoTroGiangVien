@@ -37,7 +37,7 @@
             <div class="flex gap-2">
                 <a href="{{ route('admin.classes.edit', $class->id) }}"
                     class="flex items-center gap-2 px-3 py-2 bg-white border border-slate-300 rounded-sm text-slate-700 hover:bg-slate-50 transition-colors text-sm font-medium shadow-sm">
-                    <span class="material-symbols-outlined !text-[15px]">settings</span> Cài đặt Lớp
+                    <span class="material-symbols-outlined !text-[15px]">handyman</span> Chỉnh sửa lớp
                 </a>
             </div>
         </div>
@@ -76,7 +76,7 @@
 
                     <a href="{{ route('admin.classes.export', $class->id) }}" id="btn-export-excel"
                         class="flex items-center gap-2 px-3 py-2 bg-green-600 text-white text-sm font-medium rounded-sm hover:bg-green-700 transition-colors shadow-sm">
-                        <span class="material-symbols-outlined !text-[18px]">download</span> Excel
+                        <span class="material-symbols-outlined !text-[18px]">docs</span> Excel
                     </a>
 
                     <button type="button" id="btn-send-selected-email"
@@ -714,7 +714,7 @@
                         message: 'Tải xuống danh sách sinh viên lớp này?',
                         btnText: 'Tải xuống',
                         btnColor: 'green',
-                        icon: 'download',
+                        icon: 'docs',
                         callback: () => window.location.href = url
                     });
                 });

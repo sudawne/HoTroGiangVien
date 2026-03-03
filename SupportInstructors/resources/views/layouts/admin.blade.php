@@ -5,21 +5,13 @@
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>@yield('title', 'Hệ Thống Quản Lý')</title>
-
-    {{-- Google Fonts --}}
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
         rel="stylesheet" />
     <link href="https://fonts.googleapis.com" rel="preconnect" />
     <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-
-    {{-- Tailwind CSS & Plugins --}}
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-
-    {{-- Alpine.js --}}
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-
-    {{-- Tailwind Config --}}
     <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
@@ -136,8 +128,6 @@
             opacity: 0.9;
             transition: opacity 0.3s;
         }
-
-        /* Animation cho nút bulk action */
         @keyframes slideIn {
             from {
                 opacity: 0;
@@ -168,22 +158,17 @@
             x-transition:leave-end="opacity-0" @click="sidebarOpen = false"
             class="fixed inset-0 bg-slate-900/80 z-20 lg:hidden" x-cloak>
         </div>
-
-        {{-- Include Sidebar --}}
         @include('partials.admin.sidebar')
 
         <main class="flex-1 flex flex-col h-full overflow-hidden relative w-full transition-all duration-300">
-
-            {{-- Include Header --}}
             @include('partials.admin.header')
-
-            {{-- Main Content Area --}}
             <div class="flex-1 overflow-y-auto p-4 md:p-6 scroll-smooth">
                 @yield('content')
             </div>
-
         </main>
     </div>
+    @include('partials.toast')
+    @include('partials.confirm_modal')
 </body>
 
 </html>

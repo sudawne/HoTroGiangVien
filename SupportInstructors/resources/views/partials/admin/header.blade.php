@@ -50,13 +50,14 @@
 
 <script>
     function runCheck() {
-        if(confirm('Bạn có muốn rà soát hệ thống và tạo năm học mới (nếu cần) không?')) {
-            // 1. Ẩn icon check, hiện icon loading
-            document.getElementById('icon-check').classList.add('hidden');
-            document.getElementById('icon-loading').classList.remove('hidden');
-            
-            // 2. Submit form
-            document.getElementById('system-check-form').submit();
-        }
+        showConfirm(
+            'Rà soát hệ thống', 
+            'Hệ thống sẽ kiểm tra và tự động tạo <strong>Năm học mới</strong>.<br>Quá trình này an toàn với dữ liệu hiện tại.', // Nội dung
+            function() {
+                document.getElementById('icon-check').classList.add('hidden');
+                document.getElementById('icon-loading').classList.remove('hidden');
+                document.getElementById('system-check-form').submit();
+            }
+        );
     }
 </script>

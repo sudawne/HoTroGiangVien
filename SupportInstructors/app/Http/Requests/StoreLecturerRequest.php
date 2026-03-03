@@ -8,11 +8,12 @@ class StoreLecturerRequest extends FormRequest
 {
     public function authorize()
     {
-        return true; // Cho phép thực thi
+        return true;
     }
 
     public function rules()
     {
+        // Quan trọng: unique:users,email và unique:lecturers,lecturer_code
         return [
             'name' => 'required|string|max:255',
             'email' => 'nullable|email|unique:users,email',
@@ -29,15 +30,12 @@ class StoreLecturerRequest extends FormRequest
     {
         return [
             'name.required' => 'Vui lòng nhập họ tên giảng viên.',
-            'email.required' => 'Vui lòng nhập địa chỉ email.',
             'email.email' => 'Email không đúng định dạng.',
-            'email.unique' => 'Email này đã được sử dụng.',
+            'email.unique' => 'Email này đã tồn tại trong hệ thống. Vui lòng nhập email khác.',
             'lecturer_code.required' => 'Vui lòng nhập mã giảng viên.',
-            'lecturer_code.unique' => 'Mã giảng viên này đã tồn tại.',
+            'lecturer_code.unique' => 'Mã giảng viên này đã tồn tại trong hệ thống.',
             'department_id.required' => 'Vui lòng chọn khoa/đơn vị.',
-            'department_id.exists' => 'Khoa/đơn vị không hợp lệ.',
             'avatar.image' => 'File tải lên phải là hình ảnh.',
-            'avatar.mimes' => 'Chỉ chấp nhận định dạng: jpeg, png, jpg, gif.',
             'avatar.max' => 'Dung lượng ảnh không được vượt quá 2MB.',
         ];
     }

@@ -17,11 +17,23 @@
             </div>
         </div>
 
-        {{-- Hiển thị lỗi chung --}}
+        {{-- Hiển thị lỗi chung (Ngoại lệ Database) --}}
         @if (session('error'))
             <div class="mb-4 p-4 bg-red-50 border-l-4 border-red-500 text-red-700">
-                <p class="font-bold">Lỗi!</p>
+                <p class="font-bold">Lỗi hệ thống!</p>
                 <p>{{ session('error') }}</p>
+            </div>
+        @endif
+
+        {{-- Hiển thị thông báo nếu có lỗi Validate (Tùy chọn, để User dễ nhìn) --}}
+        @if ($errors->any())
+            <div class="mb-4 p-4 bg-red-50 border-l-4 border-red-500 text-red-700">
+                <p class="font-bold">Vui lòng kiểm tra lại dữ liệu nhập vào!</p>
+                <ul class="list-disc pl-5 text-sm mt-1">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
             </div>
         @endif
 
@@ -52,7 +64,7 @@
 
                         <p class="text-[11px] text-slate-400 text-center italic">Định dạng JPG, PNG. Tối đa 2MB</p>
                         @error('avatar')
-                            <span class="text-red-500 text-[11px] mt-2">{{ $message }}</span>
+                            <span class="text-red-500 text-xs font-medium mt-2">{{ $message }}</span>
                         @enderror
                     </div>
                 </div>
@@ -76,25 +88,37 @@
                                             class="text-red-500">*</span></label>
                                     <input type="text" name="name" id="lecturer_name" value="{{ old('name') }}"
                                         required placeholder="Nhập tên Giảng viên (Ví dụ: Võ Hoàng Nhân)"
-                                        class="w-full px-3 py-2.5 border border-slate-300 rounded-sm focus:ring-1 focus:ring-primary focus:border-primary text-sm @error('name') border-red-500 @enderror">
+                                        class="w-full px-3 py-2.5 border rounded-sm text-sm focus:ring-1 focus:outline-none transition-colors
+                                        {{ $errors->has('name') ? 'border-red-500 focus:border-red-500 focus:ring-red-500 bg-red-50' : 'border-slate-300 focus:border-primary focus:ring-primary' }}">
                                     @error('name')
-                                        <span class="text-red-500 text-[11px] mt-1">{{ $message }}</span>
+                                        <p class="text-red-500 text-xs font-medium mt-1 flex items-center gap-1">
+                                            <span class="material-symbols-outlined !text-[14px]">error</span>{{ $message }}
+                                        </p>
                                     @enderror
                                 </div>
 
-                                {{-- Email tự động --}}
+                                {{-- Email --}}
                                 <div>
                                     <label class="block text-xs font-bold text-slate-700 mb-1.5 uppercase">Email Hệ
                                         Thống</label>
                                     <div class="relative">
+                                        {{-- KHÔNG dùng readonly nữa, cho phép sửa --}}
                                         <input type="email" name="email" id="lecturer_email" value="{{ old('email') }}"
-                                            readonly
-                                            class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-sm text-sm text-slate-500 cursor-not-allowed font-medium">
+                                            placeholder="Tự động tạo hoặc nhập thủ công"
+                                            class="w-full px-3 py-2.5 border rounded-sm text-sm focus:ring-1 focus:outline-none transition-colors pr-10
+                                            {{ $errors->has('email') ? 'border-red-500 focus:border-red-500 focus:ring-red-500 bg-red-50' : 'border-slate-300 focus:border-primary focus:ring-primary' }}">
                                         <span
-                                            class="absolute right-3 top-2.5 text-slate-400 material-symbols-outlined !text-[16px]">lock</span>
+                                            class="absolute right-3 top-2.5 text-slate-400 material-symbols-outlined !text-[18px]">mail</span>
                                     </div>
-                                    <p class="text-[11px] text-blue-500 mt-1 italic">Email sẽ tự động tạo từ tên (vd:
-                                        vhnhan@vnkgu.edu.vn)</p>
+                                    @error('email')
+                                        <p class="text-red-500 text-xs font-medium mt-1 flex items-center gap-1">
+                                            <span
+                                                class="material-symbols-outlined !text-[14px]">error</span>{{ $message }}
+                                        </p>
+                                    @else
+                                        <p class="text-[11px] text-blue-500 mt-1 italic">Email sẽ tự động tạo từ tên (vd:
+                                            vhnhan@vnkgu.edu.vn)</p>
+                                    @enderror
                                 </div>
 
                                 {{-- Số điện thoại --}}
@@ -103,7 +127,7 @@
                                         thoại</label>
                                     <input type="text" name="phone" value="{{ old('phone') }}"
                                         placeholder="Nhập số điện thoại liên lạc"
-                                        class="w-full px-3 py-2.5 border border-slate-300 rounded-sm focus:ring-1 focus:ring-primary text-sm">
+                                        class="w-full px-3 py-2.5 border rounded-sm text-sm focus:ring-1 focus:outline-none transition-colors border-slate-300 focus:border-primary focus:ring-primary">
                                 </div>
 
                                 <div class="md:col-span-2 border-t border-slate-100 my-2"></div>
@@ -112,11 +136,19 @@
                                 <div>
                                     <label class="block text-xs font-bold text-slate-700 mb-1.5 uppercase">Mã Giảng viên
                                         <span class="text-red-500">*</span></label>
-                                    <input type="text" name="lecturer_code" value="{{ old('lecturer_code') }}" required
-                                        placeholder="VD: GV001"
-                                        class="w-full px-3 py-2.5 border border-slate-300 rounded-sm focus:ring-1 focus:ring-primary font-mono text-sm uppercase @error('lecturer_code') border-red-500 @enderror">
+                                    <div class="relative">
+                                        <input type="text" name="lecturer_code" value="{{ old('lecturer_code') }}"
+                                            required placeholder="VD: GV001"
+                                            class="w-full px-3 py-2.5 border rounded-sm font-mono text-sm uppercase focus:ring-1 focus:outline-none transition-colors pr-10
+                                            {{ $errors->has('lecturer_code') ? 'border-red-500 focus:border-red-500 focus:ring-red-500 bg-red-50' : 'border-slate-300 focus:border-primary focus:ring-primary' }}">
+                                        <span
+                                            class="absolute right-3 top-2.5 text-slate-400 material-symbols-outlined !text-[18px]">badge</span>
+                                    </div>
                                     @error('lecturer_code')
-                                        <span class="text-red-500 text-[11px] mt-1">{{ $message }}</span>
+                                        <p class="text-red-500 text-xs font-medium mt-1 flex items-center gap-1">
+                                            <span
+                                                class="material-symbols-outlined !text-[14px]">error</span>{{ $message }}
+                                        </p>
                                     @enderror
                                 </div>
 
@@ -125,7 +157,8 @@
                                     <label class="block text-xs font-bold text-slate-700 mb-1.5 uppercase">Khoa / Đơn vị
                                         <span class="text-red-500">*</span></label>
                                     <select name="department_id" required
-                                        class="w-full px-3 py-2 border border-slate-300 rounded-sm focus:ring-1 focus:ring-primary text-sm cursor-pointer">
+                                        class="w-full px-3 py-2.5 border rounded-sm text-sm cursor-pointer focus:ring-1 focus:outline-none transition-colors
+                                        {{ $errors->has('department_id') ? 'border-red-500 focus:border-red-500 focus:ring-red-500 bg-red-50' : 'border-slate-300 focus:border-primary focus:ring-primary' }}">
                                         <option value="">-- Chọn Khoa --</option>
                                         @foreach ($departments as $dept)
                                             <option value="{{ $dept->id }}"
@@ -134,7 +167,10 @@
                                         @endforeach
                                     </select>
                                     @error('department_id')
-                                        <span class="text-red-500 text-[11px] mt-1">{{ $message }}</span>
+                                        <p class="text-red-500 text-xs font-medium mt-1 flex items-center gap-1">
+                                            <span
+                                                class="material-symbols-outlined !text-[14px]">error</span>{{ $message }}
+                                        </p>
                                     @enderror
                                 </div>
 
@@ -142,12 +178,17 @@
                                 <div>
                                     <label class="block text-xs font-bold text-slate-700 mb-1.5 uppercase">Học vị</label>
                                     <select name="degree"
-                                        class="w-full px-3 py-2 border border-slate-300 rounded-sm focus:ring-1 focus:ring-primary text-sm cursor-pointer">
-                                        <option value="Cử nhân">Cử nhân</option>
-                                        <option value="Thạc sĩ">Thạc sĩ</option>
-                                        <option value="Tiến sĩ">Tiến sĩ</option>
-                                        <option value="PGS.TS">PGS.TS</option>
-                                        <option value="GS.TS">GS.TS</option>
+                                        class="w-full px-3 py-2.5 border border-slate-300 rounded-sm focus:ring-1 focus:ring-primary text-sm cursor-pointer focus:border-primary">
+                                        <option value="Cử nhân" {{ old('degree') == 'Cử nhân' ? 'selected' : '' }}>Cử nhân
+                                        </option>
+                                        <option value="Thạc sĩ" {{ old('degree') == 'Thạc sĩ' ? 'selected' : '' }}>Thạc sĩ
+                                        </option>
+                                        <option value="Tiến sĩ" {{ old('degree') == 'Tiến sĩ' ? 'selected' : '' }}>Tiến sĩ
+                                        </option>
+                                        <option value="PGS.TS" {{ old('degree') == 'PGS.TS' ? 'selected' : '' }}>PGS.TS
+                                        </option>
+                                        <option value="GS.TS" {{ old('degree') == 'GS.TS' ? 'selected' : '' }}>GS.TS
+                                        </option>
                                     </select>
                                 </div>
 
@@ -155,7 +196,7 @@
                                 <div>
                                     <label class="block text-xs font-bold text-slate-700 mb-1.5 uppercase">Chức vụ</label>
                                     <input type="text" name="position" value="{{ old('position', 'Giảng viên') }}"
-                                        class="w-full px-3 py-2.5 border border-slate-300 rounded-sm focus:ring-1 focus:ring-primary text-sm">
+                                        class="w-full px-3 py-2.5 border border-slate-300 rounded-sm focus:ring-1 focus:border-primary focus:ring-primary text-sm">
                                 </div>
                             </div>
 
@@ -187,14 +228,20 @@
             }
         }
 
-        // 2. Tự động tạo Email từ Tên
+        // 2. Tự động tạo Email từ Tên (Chỉ khi ô Email đang trống)
         const nameInput = document.getElementById('lecturer_name');
         const emailInput = document.getElementById('lecturer_email');
 
         nameInput.addEventListener('input', function() {
+            // Nếu người dùng đã gõ email bằng tay và bị báo lỗi, thì không auto-gen đè lên
+            // Trừ khi họ xóa sạch ô email
+
             const fullName = this.value;
             if (!fullName) {
-                emailInput.value = '';
+                // Không xóa email nếu form đang có lỗi email từ server trả về
+                if (!emailInput.classList.contains('border-red-500')) {
+                    emailInput.value = '';
+                }
                 return;
             }
 
@@ -213,10 +260,12 @@
                 if (part.length > 0) initials += part.charAt(0); // Lấy chữ đầu họ và đệm (ví dụ: v, h)
             });
 
-            // Ghép thành email
-            if (lastName) {
-                const generatedEmail = initials + lastName + "@vnkgu.edu.vn";
-                emailInput.value = generatedEmail;
+            // Chỉ auto-fill nếu ô email đang trống HOẶC không có class báo lỗi đỏ
+            if (!emailInput.classList.contains('border-red-500') || emailInput.value === '') {
+                if (lastName) {
+                    const generatedEmail = initials + lastName + "@vnkgu.edu.vn";
+                    emailInput.value = generatedEmail;
+                }
             }
         });
     </script>

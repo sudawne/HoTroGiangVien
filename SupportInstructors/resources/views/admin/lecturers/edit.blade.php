@@ -92,8 +92,8 @@
                                     <label class="block text-xs font-bold text-slate-700 mb-1.5 uppercase">Email Hệ Thống
                                         <span class="text-red-500">*</span></label>
                                     <div class="relative">
-                                        {{-- Cho phép sửa email, không readonly như create --}}
-                                        <input type="email" name="email"
+                                        {{-- Thêm id="lecturer_email" để JS có thể target --}}
+                                        <input type="email" name="email" id="lecturer_email"
                                             value="{{ old('email', $lecturer->user->email) }}" required
                                             class="w-full px-3 py-2.5 border border-slate-300 rounded-sm focus:ring-1 focus:ring-primary text-sm @error('email') border-red-500 @enderror">
                                         <span
@@ -183,6 +183,7 @@
     </div>
 
     <script>
+        // 1. Preview Ảnh
         function previewImage(input) {
             if (input.files && input.files[0]) {
                 var reader = new FileReader();
@@ -192,6 +193,35 @@
                 reader.readAsDataURL(input.files[0]);
             }
         }
-        // Ở trang Edit không cần script tự động tạo email vì dễ gây lỗi khi sửa tên
+
+        // 2. Tự động tạo Email từ Tên khi sửa
+        const nameInput = document.getElementById('lecturer_name');
+        const emailInput = document.getElementById('lecturer_email');
+
+        nameInput.addEventListener('input', function() {
+            const fullName = this.value;
+            if (!fullName) return;
+
+            // Chuyển sang tiếng Việt không dấu
+            let str = fullName.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            str = str.replace(/đ/g, "d").replace(/Đ/g, "D");
+            str = str.trim().toLowerCase();
+
+            // Tách từ
+            const parts = str.split(/\s+/);
+            if (parts.length < 1) return;
+
+            const lastName = parts.pop(); // Lấy tên (ví dụ: nhan)
+            let initials = "";
+            parts.forEach(part => {
+                if (part.length > 0) initials += part.charAt(0); // Lấy chữ đầu họ và đệm (ví dụ: v, h)
+            });
+
+            // Ghép thành email
+            if (lastName) {
+                const generatedEmail = initials + lastName + "@vnkgu.edu.vn";
+                emailInput.value = generatedEmail;
+            }
+        });
     </script>
 @endsection

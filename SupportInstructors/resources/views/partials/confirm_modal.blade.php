@@ -50,7 +50,7 @@
     window.showConfirm = function(title, message, callback, type = 'primary') {
         // 1. Cập nhật nội dung
         document.getElementById('gcm-title').textContent = title;
-        document.getElementById('gcm-message').innerHTML = message; // Dùng innerHTML để hỗ trợ thẻ <br>, <strong>
+        document.getElementById('gcm-message').innerHTML = message; 
         confirmCallback = callback;
 
         // 2. Cập nhật Giao diện (Màu sắc nút bấm & Icon)

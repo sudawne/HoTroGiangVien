@@ -14,13 +14,23 @@ class MeetingMinuteController extends Controller
         return view('admin.minutes.index');
     }
 
-    public function create()
+    public function create(Request $request)
     {
-        // Cần truyền danh sách Lớp xuống View để hiển thị trong Dropdown
-        $classes = Classes::all();
+        // 1. Lấy tất cả các lớp (để hiển thị vào dropdown)
+        $classes = \App\Models\Classes::all(); // Hoặc lọc theo giảng viên: ->where('advisor_id', auth()->id())
 
-        // Truyền thêm học kỳ nếu có bảng Semesters (tạm thời hardcode ở view hoặc thêm model sau)
-        return view('admin.minutes.create', compact('classes'));
+        // 2. Xác định lớp đang chọn (Ưu tiên lấy từ URL ?class_id=..., nếu không có thì lấy lớp đầu tiên)
+        $selectedClassId = $request->input('class_id', $classes->first()->id ?? null);
+        
+        // 3. Lấy thông tin lớp hiện tại và danh sách sinh viên của lớp đó
+        $currentClass = \App\Models\Classes::with(['advisor.user', 'students'])->find($selectedClassId);
+
+        // Xử lý trường hợp chưa có lớp nào
+        $students = $currentClass ? $currentClass->students : collect([]);
+        
+        $semesters = \App\Models\Semester::orderBy('start_date', 'desc')->get();
+
+        return view('admin.minutes.create', compact('classes', 'currentClass', 'students', 'semesters'));
     }
 
     public function store(Request $request)

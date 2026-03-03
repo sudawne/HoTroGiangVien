@@ -9,21 +9,34 @@ use Carbon\Carbon;
 class GenerateNextYearSemesters extends Command
 {
     protected $signature = 'app:generate-semesters';
-
-    // Mô tả lệnh
-    protected $description = 'Tự động kiểm tra và tạo dữ liệu cho năm học tiếp theo nếu chưa có';
+    protected $description = 'Tự động tạo học kỳ cho năm tiếp theo dựa trên dữ liệu cũ nhất';
 
     public function handle()
     {
-        // 1. Xác định năm cần tạo (Là năm sau của thời điểm hiện tại)
-        $nextYear = Carbon::now()->addYear()->year; // Ví dụ: Giờ là 2026 -> Cần tạo 2027
-        $futureYear = $nextYear + 1; // 2028
-        
-        $academicYearString = "{$nextYear}-{$futureYear}";
-        $hk1Code = "{$nextYear}_{$futureYear}_HK1";
+        // 1. Tìm học kỳ mới nhất đang có trong Database
+        $latestSemester = DB::table('semesters')
+                            ->orderBy('start_date', 'desc') // Lấy cái có ngày bắt đầu lớn nhất
+                            ->first();
 
-        // 2. Kiểm tra xem năm này đã có trong CSDL chưa
-        $exists = DB::table('semesters')->where('code', $hk1Code)->exists();
+        // 2. Xác định năm bắt đầu tiếp theo
+        if ($latestSemester) {
+            // Nếu DB đã có dữ liệu (VD: đang là 2025-2026)
+            // Tách chuỗi academic_year "2025-2026" để lấy số 2025
+            $parts = explode('-', $latestSemester->academic_year);
+            $lastStartYear = (int) $parts[0]; 
+            
+            // Năm tiếp theo sẽ là năm cũ + 1 (2025 + 1 = 2026)
+            $nextStartYear = $lastStartYear + 1;
+        } else {
+            // Nếu DB chưa có gì, lấy năm hiện tại
+            $nextStartYear = Carbon::now()->year;
+        }
+
+        $nextEndYear = $nextStartYear + 1; // 2027
+        $academicYearString = "{$nextStartYear}-{$nextEndYear}"; // "2026-2027"
+
+        // 3. Kiểm tra xem năm này đã tồn tại chưa để tránh trùng lặp
+        $exists = DB::table('semesters')->where('academic_year', $academicYearString)->exists();
 
         if ($exists) {
             $this->info("Năm học {$academicYearString} đã tồn tại. Không cần tạo thêm.");
@@ -32,41 +45,40 @@ class GenerateNextYearSemesters extends Command
 
         $this->info("Đang tạo dữ liệu cho năm học: {$academicYearString}...");
 
-        // 3. Cấu hình ngày tháng (Logic giống Seeder chuẩn)
         $data = [];
         $now = Carbon::now();
 
-        // --- HỌC KỲ 1 ---
+        // --- HỌC KỲ 1 (Tháng 8 năm Start -> Tháng 1 năm End) ---
         $data[] = [
-            'code'          => "{$nextYear}_{$futureYear}_HK1",
+            'code'          => "{$nextStartYear}_{$nextEndYear}_HK1",
             'name'          => 'Học kỳ 1',
             'academic_year' => $academicYearString,
-            'start_date'    => "{$nextYear}-08-15",
-            'end_date'      => "{$futureYear}-01-15",
+            'start_date'    => "{$nextStartYear}-08-15",
+            'end_date'      => "{$nextEndYear}-01-15",
             'is_current'    => 0,
             'created_at'    => $now,
             'updated_at'    => $now,
         ];
 
-        // --- HỌC KỲ 2 ---
+        // --- HỌC KỲ 2 (Tháng 1 năm End -> Tháng 6 năm End) ---
         $data[] = [
-            'code'          => "{$nextYear}_{$futureYear}_HK2",
+            'code'          => "{$nextStartYear}_{$nextEndYear}_HK2",
             'name'          => 'Học kỳ 2',
             'academic_year' => $academicYearString,
-            'start_date'    => "{$futureYear}-01-20",
-            'end_date'      => "{$futureYear}-06-15",
+            'start_date'    => "{$nextEndYear}-01-20",
+            'end_date'      => "{$nextEndYear}-06-15",
             'is_current'    => 0,
             'created_at'    => $now,
             'updated_at'    => $now,
         ];
 
-        // --- HỌC KỲ 3 (HÈ) ---
+        // --- HỌC KỲ 3 / HÈ (Tháng 6 năm End -> Tháng 8 năm End) ---
         $data[] = [
-            'code'          => "{$nextYear}_{$futureYear}_HK3",
+            'code'          => "{$nextStartYear}_{$nextEndYear}_HK3",
             'name'          => 'Học kỳ 3 (Hè)',
             'academic_year' => $academicYearString,
-            'start_date'    => "{$futureYear}-06-20",
-            'end_date'      => "{$futureYear}-08-05",
+            'start_date'    => "{$nextEndYear}-06-20",
+            'end_date'      => "{$nextEndYear}-08-05",
             'is_current'    => 0,
             'created_at'    => $now,
             'updated_at'    => $now,

@@ -16,23 +16,28 @@ class StudentController extends Controller
 {
     public function index(Request $request)
     {
-        // THÊM: withTrashed() để lấy cả sinh viên đã ẩn
-        // THÊM: user => withTrashed() để lấy thông tin user dù user đó đã bị ẩn
         $query = Student::with(['class', 'user' => function ($q) {
             $q->withTrashed();
         }])->withTrashed();
 
-        // Lọc theo lớp
+        // 1. Lọc theo lớp
         if ($request->has('class_id') && $request->class_id != '') {
             $query->where('class_id', $request->class_id);
         }
 
-        // Tìm kiếm
+        // 2. Tìm kiếm thông minh
         if ($request->has('search') && $request->search != '') {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('fullname', 'like', "%{$search}%")
-                    ->orWhere('student_code', 'like', "%{$search}%");
+            $search = trim($request->search);
+
+            // XỬ LÝ TIẾNG VIỆT: Biến khoảng trắng thành % (VD: 'khánh nguyên' -> 'khánh%nguyên')
+            // Hàm preg_replace này gộp nhiều khoảng trắng thành 1 dấu % duy nhất
+            $searchPattern = preg_replace('/\s+/', '%', $search);
+
+            $query->where(function ($q) use ($search, $searchPattern) {
+                // Tìm theo tên (Dùng searchPattern chống lỗi khoảng trắng)
+                $q->where('fullname', 'LIKE', "%{$searchPattern}%")
+                    // Tìm theo MSSV (Giữ nguyên search vì mã SV luôn dính liền)
+                    ->orWhere('student_code', 'LIKE', "%{$search}%");
             });
         }
 

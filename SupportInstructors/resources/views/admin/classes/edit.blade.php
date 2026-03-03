@@ -3,7 +3,6 @@
 
 @section('content')
     <div class="w-full px-4 py-6">
-        {{-- HEADER (Giữ nguyên) --}}
         <div class="flex items-center justify-between mb-6">
             <div class="flex items-center gap-3">
                 <a href="{{ route('admin.classes.index') }}"
@@ -17,7 +16,6 @@
             </div>
         </div>
 
-        {{-- FORM UPDATE CLASS (Giữ nguyên nội dung Form) --}}
         <div class="bg-white dark:bg-[#1e1e2d] border border-slate-200 dark:border-slate-700 rounded-sm shadow-sm mb-6">
             <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/30">
                 <h3 class="font-bold text-slate-800 dark:text-white text-base flex items-center gap-2">
@@ -33,7 +31,6 @@
                 <input type="hidden" name="send_email" id="send_email_import_input" value="0">
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {{-- 1. Mã lớp --}}
                     <div>
                         <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">
                             Mã lớp <span class="text-red-500">*</span>
@@ -43,7 +40,6 @@
                         <p class="text-red-500 text-xs mt-1 error-msg" data-field="code"></p>
                     </div>
 
-                    {{-- 2. Niên khóa --}}
                     <div>
                         <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">
                             Niên khóa <span class="text-red-500">*</span>
@@ -54,7 +50,6 @@
                         <p class="text-red-500 text-xs mt-1 error-msg" data-field="academic_year"></p>
                     </div>
 
-                    {{-- 3. Tên lớp --}}
                     <div class="md:col-span-2">
                         <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">
                             Tên lớp đầy đủ <span class="text-red-500">*</span>
@@ -66,7 +61,6 @@
 
                     <div class="md:col-span-2 border-t border-slate-100 dark:border-slate-700 my-2"></div>
 
-                    {{-- 4. Đơn vị quản lý --}}
                     <div>
                         <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Đơn vị quản
                             lý</label>
@@ -76,7 +70,6 @@
                         </div>
                     </div>
 
-                    {{-- 5. Cố vấn học tập --}}
                     <div>
                         <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">
                             Cố vấn học tập <span class="text-red-500">*</span>
@@ -94,7 +87,47 @@
                         <p class="text-red-500 text-xs mt-1 error-msg" data-field="advisor_id"></p>
                     </div>
 
-                    {{-- 6. Import File & Manual Add --}}
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                            Lớp trưởng
+                        </label>
+                        <div class="relative">
+                            <select name="monitor_id"
+                                class="w-full pl-3 pr-8 py-2.5 border border-slate-300 rounded-sm focus:ring-1 transition-colors text-sm cursor-pointer appearance-none bg-white">
+                                <option value="">-- Chưa chọn --</option>
+                                @foreach ($studentCandidates as $stu)
+                                    <option value="{{ $stu->id }}"
+                                        {{ old('monitor_id', $class->monitor_id) == $stu->id ? 'selected' : '' }}>
+                                        {{ $stu->student_code }} - {{ $stu->fullname }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <span
+                                class="absolute right-3 top-2.5 text-slate-400 material-symbols-outlined !text-[18px] pointer-events-none">expand_more</span>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-1 italic">Chọn từ danh sách sinh viên hiện có</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                            Thư ký / Lớp phó
+                        </label>
+                        <div class="relative">
+                            <select name="secretary_id"
+                                class="w-full pl-3 pr-8 py-2.5 border border-slate-300 rounded-sm focus:ring-1 transition-colors text-sm cursor-pointer appearance-none bg-white">
+                                <option value="">-- Chưa chọn --</option>
+                                @foreach ($studentCandidates as $stu)
+                                    <option value="{{ $stu->id }}"
+                                        {{ old('secretary_id', $class->secretary_id) == $stu->id ? 'selected' : '' }}>
+                                        {{ $stu->student_code }} - {{ $stu->fullname }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <span
+                                class="absolute right-3 top-2.5 text-slate-400 material-symbols-outlined !text-[18px] pointer-events-none">expand_more</span>
+                        </div>
+                    </div>
+
                     <div class="md:col-span-2 mt-2">
                         <div class="p-4 bg-blue-50 border border-blue-100 rounded-sm">
                             <label class="block text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
@@ -102,7 +135,6 @@
                                 Thêm Sinh viên Mới vào Lớp (Import Excel hoặc Nhập tay)
                             </label>
 
-                            {{-- Form thêm tay nhỏ --}}
                             <div class="bg-white p-3 border border-slate-200 rounded-sm mb-4 shadow-sm">
                                 <h4 class="text-xs font-bold text-slate-500 uppercase mb-2">Nhập nhanh sinh viên</h4>
                                 <div class="flex flex-wrap gap-3 items-end">
@@ -136,7 +168,6 @@
                                 </div>
                             </div>
 
-                            {{-- Input File --}}
                             <div class="flex items-center gap-2 mb-2">
                                 <span class="text-xs font-bold text-slate-500 uppercase">Hoặc tải file lên (xlsx,
                                     csv):</span>
@@ -147,7 +178,6 @@
                             <p class="text-red-500 text-xs mt-1 error-msg" data-field="student_file"></p>
                             <p id="upload-error" class="text-red-500 text-xs mt-2 hidden font-bold"></p>
 
-                            {{-- Preview Area cho sinh viên MỚI --}}
                             <div id="new-students-preview" class="mt-4"></div>
                         </div>
                     </div>
@@ -165,7 +195,6 @@
             </form>
         </div>
 
-        {{-- LIST EXISTING STUDENTS TABLE (Giữ nguyên) --}}
         <div class="bg-white dark:bg-[#1e1e2d] border border-slate-200 dark:border-slate-700 rounded-sm shadow-sm">
             <div
                 class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/30 flex flex-col md:flex-row justify-between items-center gap-4">
@@ -214,9 +243,9 @@
                 </div>
 
                 <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr
-                            class="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-xs uppercase text-slate-500 font-semibold">
+                    <thead
+                        class="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-xs uppercase text-slate-500 font-semibold">
+                        <tr>
                             <th class="px-6 py-3 w-10 text-center">
                                 <input type="checkbox" id="select-all"
                                     class="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4 cursor-pointer">
@@ -240,11 +269,9 @@
         </div>
     </div>
 
-    {{-- MODALS --}}
     @include('admin.classes.partials.loading_modal')
     @include('admin.classes.partials.universal_confirm_modal')
 
-    {{-- STUDENT EDIT MODAL (Giữ nguyên) --}}
     <div id="editStudentModal" class="fixed inset-0 z-[130] hidden" aria-labelledby="modal-title" role="dialog"
         aria-modal="true">
         <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"></div>
@@ -316,19 +343,14 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // ----------------------------------------------------------------
-            // 1. DOM Elements
-            // ----------------------------------------------------------------
             const formClass = document.getElementById('editClassForm');
             const btnPreSubmit = document.getElementById('btn-pre-submit');
-            // Elements cho tính năng Thêm mới/Import
             const fileInput = document.getElementById('student_file_input');
             const btnAddManual = document.getElementById('btn-add-manual');
             const newStudentsPreviewArea = document.getElementById('new-students-preview');
             const uploadErrorArea = document.getElementById('upload-error');
             const sendEmailInput = document.getElementById('send_email_import_input');
 
-            // Elements cho bảng sinh viên hiện tại
             const selectAll = document.getElementById('select-all');
             const btnSendSelectedEmail = document.getElementById('btn-send-selected-email');
             const btnExportExcel = document.getElementById('btn-export-excel');
@@ -340,7 +362,6 @@
             const paginationLinks = document.getElementById('pagination-links');
             const studentCountSpan = document.getElementById('student-count');
 
-            // Modals
             const loadingModal = document.getElementById('loadingModal');
             const progressContainer = document.getElementById('progress-container');
             const progressBar = document.getElementById('progress-bar');
@@ -360,12 +381,8 @@
             let pendingCallback = null;
             let cancelCallback = null;
 
-            // List chứa sinh viên MỚI sẽ thêm
             let newStudentsList = [];
 
-            // ----------------------------------------------------------------
-            // 2. HELPER FUNCTIONS
-            // ----------------------------------------------------------------
             function clearValidationErrors(formElement) {
                 if (!formElement) return;
                 formElement.querySelectorAll('.error-msg').forEach(el => el.innerText = '');
@@ -477,11 +494,6 @@
                 forceShowUniversalModal();
             }
 
-            function showNotification(message) {
-                showAlert("Thành công!", message);
-                setTimeout(() => forceHideUniversalModal(), 1500);
-            }
-
             if (uniBtnConfirm) {
                 uniBtnConfirm.addEventListener('click', function() {
                     forceHideUniversalModal();
@@ -501,18 +513,6 @@
                 });
             }
 
-            function chunkArray(myArray, chunk_size) {
-                var results = [];
-                var arr = [...myArray];
-                while (arr.length) {
-                    results.push(arr.splice(0, chunk_size));
-                }
-                return results;
-            }
-
-            // ----------------------------------------------------------------
-            // 3. LOGIC MỚI: QUẢN LÝ DANH SÁCH SINH VIÊN MỚI (NEW STUDENTS)
-            // ----------------------------------------------------------------
             function renderNewStudentsTable() {
                 if (newStudentsList.length === 0) {
                     newStudentsPreviewArea.innerHTML = '';
@@ -569,7 +569,6 @@
                 renderNewStudentsTable();
             };
 
-            // Sự kiện nút "Thêm" thủ công
             if (btnAddManual) {
                 btnAddManual.addEventListener('click', () => {
                     const mssvInput = document.getElementById('manual_mssv');
@@ -581,17 +580,15 @@
                     const name = nameInput.value.trim();
 
                     if (!mssv || !name) {
-                        showAlert("Thiếu thông tin", "Vui lòng nhập đầy đủ Mã Sinh Viên và Họ Tên.");
+                        showToast("error", "Vui lòng nhập đầy đủ Mã Sinh Viên và Họ Tên.");
                         return;
                     }
 
-                    // Check trùng trong danh sách MỚI
                     if (newStudentsList.some(s => s.mssv === mssv)) {
-                        showAlert("Trùng dữ liệu", "Mã SV này đã tồn tại trong danh sách chuẩn bị thêm!");
+                        showToast("error", "Mã SV này đã tồn tại trong danh sách chuẩn bị thêm!");
                         return;
                     }
 
-                    // Thêm vào danh sách
                     newStudentsList.push({
                         mssv: mssv,
                         name: name,
@@ -600,7 +597,6 @@
                         is_duplicate: false
                     });
 
-                    // Reset form
                     mssvInput.value = '';
                     nameInput.value = '';
                     dobInput.value = '';
@@ -608,7 +604,6 @@
                 });
             }
 
-            // Sự kiện File Upload
             if (fileInput) {
                 fileInput.addEventListener('change', function(e) {
                     let file = e.target.files[0];
@@ -618,7 +613,6 @@
                     formData.append('file', file);
                     uploadErrorArea.classList.add('hidden');
 
-                    // Hiển thị loading tạm thời
                     newStudentsPreviewArea.innerHTML =
                         `<div class="mt-4 text-center text-slate-500 text-sm flex items-center justify-center gap-2 py-4"><span class="animate-spin material-symbols-outlined text-blue-600 !text-[18px]">progress_activity</span> Đang đọc file...</div>`;
 
@@ -635,7 +629,6 @@
                             renderNewStudentsTable();
                         } else {
                             if (data.data && Array.isArray(data.data)) {
-                                // Merge data từ file vào list hiện tại
                                 data.data.forEach(item => {
                                     if (!newStudentsList.some(s => s.mssv === item.mssv)) {
                                         newStudentsList.push(item);
@@ -656,9 +649,6 @@
                 });
             }
 
-            // ----------------------------------------------------------------
-            // 4. HÀM RELOAD TABLE (Được tách ra để tái sử dụng)
-            // ----------------------------------------------------------------
             async function reloadStudentTable(url = null) {
                 const currentUrl = url || window.location.href;
                 searchSpinner.classList.remove('hidden');
@@ -675,8 +665,6 @@
                     tableBody.innerHTML = data.html;
                     paginationLinks.innerHTML = data.pagination;
                     if (studentCountSpan) studentCountSpan.innerText = `(${data.total})`;
-
-                    // Gán lại sự kiện cho các nút trong bảng vừa render
                     initStudentTableEvents();
                 } catch (error) {
                     console.error("Lỗi tải lại bảng:", error);
@@ -686,9 +674,6 @@
                 }
             }
 
-            // ----------------------------------------------------------------
-            // 5. SUBMIT FORM UPDATE CLASS (Main Logic)
-            // ----------------------------------------------------------------
             async function submitClassForm() {
                 loadingModal.classList.remove('hidden');
                 progressContainer.classList.add('hidden');
@@ -731,39 +716,30 @@
 
                     if (!data.success) throw new Error(data.message || 'Có lỗi xảy ra');
 
-                    // Gửi email nếu cần
                     if (sendEmailInput.value == "1" && data.new_student_ids && data.new_student_ids.length >
                         0) {
-                        await sendEmailsInBatches(data.new_student_ids, null); // Truyền null vì không redirect
+                        await sendEmailsInBatches(data.new_student_ids, null);
                     } else {
-                        // Ẩn loading
                         loadingModal.classList.add('hidden');
                     }
 
-                    // --- XỬ LÝ SAU KHI THÀNH CÔNG (Không redirect) ---
-                    // 1. Reset nút submit
                     btnPreSubmit.disabled = false;
                     btnPreSubmit.innerHTML =
                         '<span class="material-symbols-outlined !text-[16px]">save</span> Cập nhật';
 
-                    // 2. Xóa danh sách thêm mới
                     newStudentsList = [];
                     renderNewStudentsTable();
                     fileInput.value = '';
 
-                    // 3. Reload bảng và Highlight
                     await reloadStudentTable();
 
-                    // 4. Highlight các dòng mới thêm
                     if (data.new_student_ids && data.new_student_ids.length > 0) {
                         data.new_student_ids.forEach(id => {
-                            // Tìm checkbox có value = id, rồi lấy tr cha
                             const checkbox = document.querySelector(`.student-checkbox[value="${id}"]`);
                             if (checkbox) {
                                 const row = checkbox.closest('tr');
                                 if (row) {
                                     row.classList.add('highlight-row');
-                                    // Tự động scroll tới dòng đó nếu cần (optional)
                                     row.scrollIntoView({
                                         behavior: 'smooth',
                                         block: 'center'
@@ -779,6 +755,47 @@
                     btnPreSubmit.innerHTML =
                         '<span class="material-symbols-outlined !text-[16px]">save</span> Cập nhật';
                     alert('Lỗi: ' + error.message);
+                }
+            }
+
+            async function sendEmailsInBatches(studentIds, redirectUrl) {
+                progressContainer.classList.remove('hidden');
+                loadingTitle.innerText = "Đang gửi Email...";
+                loadingDesc.innerText = "Vui lòng không tắt trình duyệt.";
+                progressBar.style.width = "0%";
+                const total = studentIds.length;
+                let processed = 0;
+                const batches = chunkArray(studentIds, 3);
+
+                for (const batch of batches) {
+                    try {
+                        await fetch('{{ route('admin.classes.send_emails') }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            },
+                            body: JSON.stringify({
+                                student_ids: batch
+                            })
+                        });
+                        processed += batch.length;
+                        const percent = Math.round((processed / total) * 100);
+                        progressBar.style.width = `${percent}%`;
+                        progressText.innerText = `Đã gửi ${processed}/${total} (${percent}%)`;
+                    } catch (err) {
+                        console.error(err);
+                    }
+                }
+
+                if (redirectUrl) {
+                    setTimeout(() => window.location.href = redirectUrl, 1000);
+                } else {
+                    loadingModal.classList.add('hidden');
+                    progressContainer.classList.add('hidden');
+                    document.querySelectorAll('.student-checkbox').forEach(cb => cb.checked = false);
+                    if (selectAll) selectAll.checked = false;
+                    toggleActionBtns();
                 }
             }
 
@@ -806,7 +823,7 @@
                     });
 
                     if (newStudentsList.some(s => s.is_duplicate)) {
-                        showAlert("Dữ liệu không hợp lệ",
+                        showToast("error",
                             "Vui lòng xóa các sinh viên bị trùng mã (dòng màu đỏ) trong danh sách thêm mới trước khi lưu!"
                         );
                         return;
@@ -843,9 +860,6 @@
                 });
             }
 
-            // ----------------------------------------------------------------
-            // 6. EXISTING TABLE LOGIC (Pagination, Search, Delete Existing)
-            // ----------------------------------------------------------------
             function toggleActionBtns() {
                 const checkboxes = document.querySelectorAll('.student-checkbox');
                 const selectedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
@@ -859,7 +873,8 @@
                 if (btnDeleteSelected) {
                     if (any) {
                         btnDeleteSelected.classList.remove('hidden');
-                        const textSpan = btnDeleteSelected.querySelector('span:not(.material-symbols-outlined)');
+                        const textSpan = btnDeleteSelected.querySelector(
+                            'span:not(.material-symbols-outlined)');
                         if (textSpan) textSpan.innerText = `Xóa (${selectedCount})`;
                     } else {
                         btnDeleteSelected.classList.add('hidden');
@@ -882,7 +897,6 @@
                 });
                 toggleActionBtns();
 
-                // Nút xóa từng dòng
                 document.querySelectorAll('.btn-delete-student').forEach(btn => {
                     btn.addEventListener('click', function() {
                         const form = this.closest('form');
@@ -909,17 +923,15 @@
                                     });
                                     const data = await response.json();
                                     if (data.success) {
-                                        // Xóa dòng không cần reload
                                         const row = btn.closest('tr');
                                         if (row) row.remove();
                                         if (studentCountSpan) {
                                             let count = parseInt(studentCountSpan
-                                                    .innerText.replace(/[()]/g, '')) ||
-                                                0;
-                                            if (count > 0) studentCountSpan.innerText =
-                                                `(${count - 1})`;
+                                                .innerText.replace(/[()]/g, '')
+                                            ) || 0;
+                                            if (count > 0) studentCountSpan
+                                                .innerText = `(${count - 1})`;
                                         }
-                                        // Optional: show toast notification nhỏ
                                     } else {
                                         alert("Lỗi: " + data.message);
                                     }
@@ -931,7 +943,6 @@
                     });
                 });
 
-                // Các sự kiện Edit, Send Email Single ... (Giữ nguyên như cũ)
                 document.querySelectorAll('.btn-edit-student').forEach(btn => {
                     btn.addEventListener('click', function() {
                         const id = this.getAttribute('data-id');
@@ -942,7 +953,8 @@
                             'data-fullname');
                         document.getElementById('edit_email').value = this.getAttribute(
                             'data-email');
-                        document.getElementById('edit_dob').value = this.getAttribute('data-dob');
+                        document.getElementById('edit_dob').value = this.getAttribute(
+                            'data-dob');
                         document.getElementById('edit_status').value = this.getAttribute(
                             'data-status');
                         clearValidationErrors(formEdit);
@@ -966,7 +978,6 @@
             }
             initStudentTableEvents();
 
-            // Live Search (Sử dụng reloadStudentTable)
             if (searchInput) {
                 let debounceTimer;
                 searchInput.addEventListener('input', function() {
@@ -978,13 +989,11 @@
                         else url.searchParams.delete('search');
                         url.searchParams.delete('page');
                         window.history.pushState({}, '', url);
-
                         reloadStudentTable(url);
                     }, 400);
                 });
             }
 
-            // Edit Student Modal (Giữ nguyên)
             const formEditStudent = document.getElementById('formEditStudent');
             const modalEditStudent = document.getElementById('editStudentModal');
             if (formEditStudent) {
@@ -1018,14 +1027,11 @@
                             showServerValidationErrors(data.errors, formEditStudent);
                             return;
                         }
-                        if (!data.success && response.status !== 200) throw new Error(data.message ||
-                            "Lỗi cập nhật");
+                        if (!data.success && response.status !== 200) throw new Error(data
+                            .message || "Lỗi cập nhật");
                         loadingModal.classList.add('hidden');
                         modalEditStudent.classList.add('hidden');
-
-                        // Thay vì reload trang, ta reload table
                         reloadStudentTable();
-
                     } catch (error) {
                         loadingModal.classList.add('hidden');
                         alert("Lỗi: " + error.message);
@@ -1036,11 +1042,10 @@
                 });
             }
 
-            // Delete Selected
             if (btnDeleteSelected) {
                 btnDeleteSelected.addEventListener('click', function() {
-                    const ids = Array.from(document.querySelectorAll('.student-checkbox')).filter(cb => cb
-                        .checked).map(cb => cb.value);
+                    const ids = Array.from(document.querySelectorAll('.student-checkbox')).filter(cb =>
+                        cb.checked).map(cb => cb.value);
                     if (ids.length === 0) return;
                     showConfirm({
                         title: 'Xóa ' + ids.length + ' Sinh Viên?',
@@ -1069,8 +1074,10 @@
                                 if (data.success) {
                                     ids.forEach(id => {
                                         const checkbox = document.querySelector(
-                                            `.student-checkbox[value="${id}"]`);
-                                        if (checkbox) checkbox.closest('tr').remove();
+                                            `.student-checkbox[value="${id}"]`
+                                        );
+                                        if (checkbox) checkbox.closest('tr')
+                                            .remove();
                                     });
                                     if (selectAll) selectAll.checked = false;
                                     toggleActionBtns();
@@ -1086,14 +1093,13 @@
                 });
             }
 
-            // Export & Send Email (Giữ nguyên)
             if (btnExportExcel) {
                 btnExportExcel.addEventListener('click', function(e) {
                     e.preventDefault();
                     const url = this.getAttribute('href');
                     showConfirm({
                         title: 'Xuất Excel',
-                        message: 'Tải xuống danh sách sinh viên?',
+                        message: 'Tải xuống danh sách sinh viên lớp này?',
                         btnText: 'Tải xuống',
                         btnColor: 'green',
                         icon: 'download',
@@ -1104,8 +1110,8 @@
 
             if (btnSendSelectedEmail) {
                 btnSendSelectedEmail.addEventListener('click', function() {
-                    const ids = Array.from(document.querySelectorAll('.student-checkbox')).filter(cb => cb
-                        .checked).map(cb => cb.value);
+                    const ids = Array.from(document.querySelectorAll('.student-checkbox')).filter(cb =>
+                        cb.checked).map(cb => cb.value);
                     if (ids.length === 0) return;
                     showConfirm({
                         title: 'Gửi Email Hàng Loạt',
@@ -1118,7 +1124,6 @@
                 });
             }
 
-            // Send Mail Helper
             async function sendEmailsInBatches(studentIds, redirectUrl) {
                 progressContainer.classList.remove('hidden');
                 loadingTitle.innerText = "Đang gửi Email...";
@@ -1154,8 +1159,6 @@
                 } else {
                     loadingModal.classList.add('hidden');
                     progressContainer.classList.add('hidden');
-                    // Không cần showNotification nếu vừa submit form xong, logic đó đã xử lý ở trên
-                    // Tuy nhiên nếu gọi độc lập thì cần reset check
                     document.querySelectorAll('.student-checkbox').forEach(cb => cb.checked = false);
                     if (selectAll) selectAll.checked = false;
                     toggleActionBtns();

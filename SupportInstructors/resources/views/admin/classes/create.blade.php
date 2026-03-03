@@ -594,7 +594,7 @@
                     if (studentsList.some(s => s.is_duplicate)) {
                         showAlert("Phát hiện lỗi",
                             "Vui lòng xóa các sinh viên bị trùng mã (dòng màu đỏ) trong danh sách trước khi lưu!"
-                            );
+                        );
                         return;
                     }
 

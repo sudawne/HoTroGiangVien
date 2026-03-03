@@ -2,7 +2,7 @@
 @section('title', 'Chi tiết Lớp ' . $class->code)
 
 @section('content')
-    <div class="w-full px-4 py-6">
+    <div class="w-full px-4 py-6" x-data="{ showImportModal: false, showCreateModal: false }" @close-create-modal.window="showCreateModal = false">
 
         {{-- 1. HEADER --}}
         <div class="flex items-center justify-between mb-6">
@@ -63,13 +63,19 @@
                             class="material-symbols-outlined absolute right-2.5 top-2.5 text-blue-500 !text-[18px] animate-spin hidden">progress_activity</span>
                     </div>
 
-                    {{-- Nút Xóa Nhiều (Mặc định ẩn) --}}
-                    <button type="button" id="btn-delete-selected"
-                        class="hidden flex items-center gap-2 px-3 py-2 bg-red-600 text-white text-sm font-medium rounded-sm hover:bg-red-700 transition-colors shadow-sm">
-                        <span class="material-symbols-outlined !text-[18px]">delete</span> Xóa đã chọn
+                    {{-- Nút Khôi Phục Nhiều (Mới thêm) --}}
+                    <button type="button" id="btn-restore-selected"
+                        class="hidden flex items-center gap-2 px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-sm hover:bg-blue-700 transition-colors shadow-sm">
+                        <span class="material-symbols-outlined !text-[18px]">history</span> Khôi phục
                     </button>
 
-                    <button id="btn-open-create-modal"
+                    {{-- Nút Xóa (Ẩn) Nhiều --}}
+                    <button type="button" id="btn-delete-selected"
+                        class="hidden flex items-center gap-2 px-3 py-2 bg-red-600 text-white text-sm font-medium rounded-sm hover:bg-red-700 transition-colors shadow-sm">
+                        <span class="material-symbols-outlined !text-[18px]">visibility_off</span> Ẩn đã chọn
+                    </button>
+
+                    <button @click="showCreateModal = true"
                         class="flex items-center gap-2 px-3 py-2 bg-primary text-white text-sm font-medium rounded-sm hover:bg-primary/90 transition-colors shadow-sm">
                         <span class="material-symbols-outlined !text-[18px]">add</span> Thêm SV
                     </button>
@@ -122,79 +128,90 @@
                 {{ $students->links() }}
             </div>
         </div>
+
+        {{-- ================= MODAL TẠO MỚI SINH VIÊN (GIỮ NGUYÊN) ================= --}}
+        <div x-show="showCreateModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" x-cloak>
+            <div class="bg-white dark:bg-[#1e1e2d] w-full max-w-2xl rounded-lg shadow-xl overflow-hidden"
+                @click.away="showCreateModal = false">
+                <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+                    <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">person_add</span> Thêm Sinh viên mới
+                    </h3>
+                    <button @click="showCreateModal = false" class="text-slate-400 hover:text-red-500"><span
+                            class="material-symbols-outlined">close</span></button>
+                </div>
+
+                <form id="formCreateStudent" action="{{ route('admin.students.store') }}" method="POST" class="p-6">
+                    @csrf
+                    <input type="hidden" name="class_id" value="{{ $class->id }}">
+                    <div id="create-student-error"
+                        class="hidden mb-4 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm"></div>
+
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Mã Sinh
+                                    Viên <span class="text-red-500">*</span></label>
+                                <input type="text" name="student_code" id="create_student_code" required
+                                    placeholder="VD: 20110001"
+                                    class="w-full px-3 py-2 border border-slate-300 rounded-sm text-sm font-mono uppercase focus:ring-1 focus:ring-primary">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Ngày
+                                    sinh</label>
+                                <input type="date" name="dob"
+                                    class="w-full px-3 py-2 border border-slate-300 rounded-sm text-sm focus:ring-1 focus:ring-primary">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Họ và
+                                Tên <span class="text-red-500">*</span></label>
+                            <input type="text" name="fullname" id="create_fullname" required
+                                placeholder="VD: Nguyễn Văn A"
+                                class="w-full px-3 py-2 border border-slate-300 rounded-sm text-sm focus:ring-1 focus:ring-primary">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-1.5">Email Hệ thống</label>
+                            <div class="relative">
+                                <input type="email" name="email" id="create_email" placeholder="Để trống để tự tạo"
+                                    class="w-full px-3 py-2 border border-slate-300 rounded-sm text-sm focus:ring-1 focus:ring-primary pr-10">
+                                <span
+                                    class="absolute right-3 top-2 text-slate-400 material-symbols-outlined !text-[18px]">mail</span>
+                            </div>
+                            <p class="text-[11px] text-blue-500 mt-1 italic">Hệ thống sẽ tự động tạo email dựa vào tên và
+                                mã SV.</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Trạng
+                                thái <span class="text-red-500">*</span></label>
+                            <select name="status" required
+                                class="w-full px-3 py-2 border border-slate-300 rounded-sm text-sm focus:ring-1 focus:ring-primary">
+                                <option value="studying" selected>Đang học</option>
+                                <option value="reserved">Bảo lưu</option>
+                                <option value="dropped">Thôi học</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 pt-4 flex justify-end gap-3 border-t border-slate-100 dark:border-slate-700">
+                        <button type="button" @click="showCreateModal = false"
+                            class="px-4 py-2 border border-slate-300 rounded-sm text-slate-600 hover:bg-slate-50 transition-colors text-sm font-medium">Hủy
+                            bỏ</button>
+                        <button type="submit" id="btn-submit-create"
+                            class="px-5 py-2 bg-primary text-white rounded-sm hover:bg-primary/90 flex items-center gap-2 text-sm font-medium shadow-sm transition-all active:scale-95">
+                            <span class="material-symbols-outlined !text-[16px]">save</span> Thêm Sinh Viên
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
     </div>
 
-    {{-- MODAL UNIVERSAL & LOADING --}}
+    {{-- MODAL UNIVERSAL & LOADING & EDIT --}}
     @include('admin.classes.partials.universal_confirm_modal')
     @include('admin.classes.partials.loading_modal')
 
-    {{-- MODAL TẠO MỚI SINH VIÊN --}}
-    <div id="createStudentModal" class="fixed inset-0 z-[130] hidden" aria-labelledby="modal-title" role="dialog"
-        aria-modal="true">
-        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"></div>
-        <div class="fixed inset-0 z-10 overflow-y-auto">
-            <div class="flex min-h-full items-center justify-center p-4">
-                <div
-                    class="relative transform overflow-hidden rounded-lg bg-white dark:bg-[#1e1e2d] text-left shadow-xl transition-all sm:w-full sm:max-w-lg border border-slate-200 dark:border-slate-700">
-                    <form id="formCreateStudent" action="{{ route('admin.students.store') }}" method="POST">
-                        @csrf
-                        <input type="hidden" name="class_id" value="{{ $class->id }}">
-                        <div class="bg-white dark:bg-[#1e1e2d] px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
-                            <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                                <span class="material-symbols-outlined text-primary">person_add</span> Thêm Sinh viên vào
-                                lớp
-                            </h3>
-                            <div class="space-y-4">
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Mã
-                                            SV <span class="text-red-500">*</span></label>
-                                        <input type="text" name="student_code" required
-                                            class="w-full px-3 py-2 border border-slate-300 rounded-sm text-sm focus:ring-1 focus:ring-primary font-mono uppercase">
-                                    </div>
-                                    <div>
-                                        <label
-                                            class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Ngày
-                                            sinh</label>
-                                        <input type="date" name="dob"
-                                            class="w-full px-3 py-2 border border-slate-300 rounded-sm text-sm focus:ring-1 focus:ring-primary">
-                                    </div>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Họ và
-                                        Tên <span class="text-red-500">*</span></label>
-                                    <input type="text" name="fullname" required
-                                        class="w-full px-3 py-2 border border-slate-300 rounded-sm text-sm focus:ring-1 focus:ring-primary">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Trạng
-                                        thái</label>
-                                    <select name="status"
-                                        class="w-full px-3 py-2 border border-slate-300 rounded-sm text-sm focus:ring-1 focus:ring-primary">
-                                        <option value="studying">Đang học</option>
-                                        <option value="reserved">Bảo lưu</option>
-                                        <option value="dropped">Thôi học</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        <div
-                            class="bg-slate-50 dark:bg-slate-800 px-4 py-3 flex justify-end gap-3 sm:px-6 border-t border-slate-100 dark:border-slate-700">
-                            <button type="button"
-                                onclick="document.getElementById('createStudentModal').classList.add('hidden')"
-                                class="px-4 py-2 bg-white border border-slate-300 rounded-sm text-sm font-medium hover:bg-slate-50 text-slate-700">Hủy</button>
-                            <button type="submit" id="btn-create-student-submit"
-                                class="px-4 py-2 bg-primary text-white rounded-sm text-sm font-medium hover:bg-primary/90 flex items-center gap-2">
-                                <span class="material-symbols-outlined !text-[16px]">save</span> Lưu lại
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- MODAL SỬA SINH VIÊN --}}
     <div id="editStudentModal" class="fixed inset-0 z-[130] hidden" aria-labelledby="modal-title" role="dialog"
         aria-modal="true">
         <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"></div>
@@ -205,10 +222,16 @@
                     <form id="formEditStudent" method="POST" action="">
                         @csrf
                         @method('PUT')
+                        <input type="hidden" id="edit_student_code_hidden">
+
                         <div class="bg-white dark:bg-[#1e1e2d] px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
                             <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
                                 <span class="material-symbols-outlined text-primary">person_edit</span> Cập nhật Sinh viên
                             </h3>
+
+                            <div id="edit-student-error"
+                                class="hidden mb-4 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm"></div>
+
                             <div class="space-y-4">
                                 <div>
                                     <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Họ và
@@ -221,8 +244,8 @@
                                         Hệ thống</label>
                                     <input type="email" name="email" id="edit_email"
                                         class="w-full px-3 py-2 border border-slate-300 rounded-sm text-sm focus:ring-1 focus:ring-primary">
-                                    <p class="text-xs text-slate-400 mt-1">Lưu ý: Thay đổi email sẽ cập nhật tài khoản đăng
-                                        nhập.</p>
+                                    <p class="text-[11px] text-blue-500 mt-1 italic">Hệ thống sẽ tự động cập nhật email dựa
+                                        vào tên và mã SV nếu bạn thay đổi tên.</p>
                                 </div>
                                 <div>
                                     <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Ngày
@@ -248,7 +271,7 @@
                             <button type="button"
                                 onclick="document.getElementById('editStudentModal').classList.add('hidden')"
                                 class="px-4 py-2 bg-white border border-slate-300 rounded-sm text-sm font-medium hover:bg-slate-50 text-slate-700">Hủy</button>
-                            <button type="submit"
+                            <button type="submit" id="btn-submit-edit"
                                 class="px-4 py-2 bg-primary text-white rounded-sm text-sm font-medium hover:bg-primary/90 flex items-center gap-2">
                                 <span class="material-symbols-outlined !text-[16px]">save</span> Lưu thay đổi
                             </button>
@@ -261,10 +284,11 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // --- 1. BIẾN ---
+            // --- 1. BIẾN TOÀN CỤC CHUNG ---
             const selectAll = document.getElementById('select-all');
             const btnSendSelectedEmail = document.getElementById('btn-send-selected-email');
             const btnDeleteSelected = document.getElementById('btn-delete-selected');
+            const btnRestoreSelected = document.getElementById('btn-restore-selected'); // Mới thêm
             const btnExportExcel = document.getElementById('btn-export-excel');
             const searchInput = document.getElementById('live-search-input');
             const searchSpinner = document.getElementById('search-spinner');
@@ -272,28 +296,175 @@
             const tableBody = document.getElementById('students-table-body');
             const paginationLinks = document.getElementById('pagination-links');
             const filteredCountSpan = document.getElementById('filtered-count');
-            const studentCountSpan = document.getElementById('student-count');
 
-            // Modal Loading
             const loadingModal = document.getElementById('loadingModal');
             const progressContainer = document.getElementById('progress-container');
             const progressBar = document.getElementById('progress-bar');
             const progressText = document.getElementById('progress-text');
             const loadingTitle = document.getElementById('loading-modal-title');
-            const loadingDesc = document.getElementById('loading-modal-desc');
 
-            // Universal Modal
             const universalModal = document.getElementById('universalModal');
             const uniTitle = document.getElementById('uni-modal-title');
             const uniDesc = document.getElementById('uni-modal-desc');
             const uniBtnConfirm = document.getElementById('btn-uni-confirm');
             const uniBtnCancel = document.getElementById('btn-uni-cancel');
-            const uniBtnText = document.getElementById('uni-modal-btn-text');
             const uniIcon = document.getElementById('uni-modal-icon');
             const uniIconBg = document.getElementById('uni-modal-icon-bg');
             let pendingCallback = null;
 
-            // --- 2. MODAL & HELPER ---
+            // --- 2. HÀM TẠO EMAIL TỰ ĐỘNG ---
+            function generateEmail(fullnameStr, codeStr) {
+                if (!fullnameStr || !codeStr) return '';
+                let str = fullnameStr.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                str = str.replace(/đ/g, "d").replace(/Đ/g, "D");
+                str = str.trim().toLowerCase();
+                const parts = str.split(/\s+/);
+                const lastName = parts.pop();
+                if (lastName && codeStr) {
+                    return `${lastName}${codeStr.toLowerCase()}@vnkgu.edu.vn`;
+                }
+                return '';
+            }
+
+            // Tự động tạo Email cho Form THÊM MỚI
+            const createFullname = document.getElementById('create_fullname');
+            const createCode = document.getElementById('create_student_code');
+            const createEmail = document.getElementById('create_email');
+
+            function handleCreateEmailGen() {
+                if (createFullname && createCode && createEmail) {
+                    const email = generateEmail(createFullname.value, createCode.value);
+                    if (email) createEmail.value = email;
+                }
+            }
+            if (createFullname && createCode) {
+                createFullname.addEventListener('blur', handleCreateEmailGen);
+                createCode.addEventListener('blur', handleCreateEmailGen);
+            }
+
+            // Tự động tạo Email cho Form CẬP NHẬT
+            const editFullname = document.getElementById('edit_fullname');
+            const editCodeHidden = document.getElementById('edit_student_code_hidden');
+            const editEmail = document.getElementById('edit_email');
+            if (editFullname && editCodeHidden && editEmail) {
+                editFullname.addEventListener('input', function() {
+                    const email = generateEmail(editFullname.value, editCodeHidden.value);
+                    if (email) editEmail.value = email;
+                });
+            }
+
+            // --- 3. AJAX CREATE ---
+            const formCreateStudent = document.getElementById('formCreateStudent');
+            const btnCreateStudent = document.getElementById('btn-submit-create');
+            const errorDivCreate = document.getElementById('create-student-error');
+
+            if (formCreateStudent) {
+                formCreateStudent.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    errorDivCreate.classList.add('hidden');
+                    const originalBtnHtml = btnCreateStudent.innerHTML;
+                    btnCreateStudent.disabled = true;
+                    btnCreateStudent.innerHTML =
+                        '<span class="material-symbols-outlined !text-[18px] animate-spin">progress_activity</span> Đang xử lý...';
+
+                    try {
+                        const formData = new FormData(this);
+                        const response = await fetch(this.action, {
+                            method: 'POST',
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            },
+                            body: formData
+                        });
+                        const data = await response.json();
+
+                        if (response.status === 422) {
+                            let errorHtml =
+                                '<strong>Lỗi nhập liệu:</strong><ul class="list-disc pl-5 mt-1">';
+                            for (const [key, value] of Object.entries(data.errors)) {
+                                errorHtml += `<li>${value[0]}</li>`;
+                            }
+                            errorHtml += '</ul>';
+                            errorDivCreate.innerHTML = errorHtml;
+                            errorDivCreate.classList.remove('hidden');
+                            showToast('warning', 'Vui lòng kiểm tra lại thông tin nhập vào!');
+                        } else if (!data.success) {
+                            throw new Error(data.message || 'Lỗi server');
+                        } else {
+                            window.dispatchEvent(new CustomEvent('close-create-modal'));
+                            this.reset();
+                            showToast('success', 'Thêm sinh viên thành công!');
+                            setTimeout(() => window.location.reload(), 1000);
+                        }
+                    } catch (error) {
+                        errorDivCreate.innerHTML = `<strong>Lỗi:</strong> ${error.message}`;
+                        errorDivCreate.classList.remove('hidden');
+                        showToast('error', error.message);
+                    } finally {
+                        btnCreateStudent.disabled = false;
+                        btnCreateStudent.innerHTML = originalBtnHtml;
+                    }
+                });
+            }
+
+            // --- 4. AJAX UPDATE ---
+            const formEditStudent = document.getElementById('formEditStudent');
+            const btnEditStudent = document.getElementById('btn-submit-edit');
+            const errorDivEdit = document.getElementById('edit-student-error');
+
+            if (formEditStudent) {
+                formEditStudent.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    errorDivEdit.classList.add('hidden');
+                    const originalBtnHtml = btnEditStudent.innerHTML;
+                    btnEditStudent.disabled = true;
+                    btnEditStudent.innerHTML =
+                        '<span class="material-symbols-outlined !text-[18px] animate-spin">progress_activity</span> Đang xử lý...';
+
+                    try {
+                        const formData = new FormData(this);
+                        const response = await fetch(this.action, {
+                            method: 'POST',
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            },
+                            body: formData
+                        });
+                        const data = await response.json();
+
+                        if (response.status === 422) {
+                            let errorHtml =
+                                '<strong>Lỗi nhập liệu:</strong><ul class="list-disc pl-5 mt-1">';
+                            for (const [key, value] of Object.entries(data.errors)) {
+                                errorHtml += `<li>${value[0]}</li>`;
+                            }
+                            errorHtml += '</ul>';
+                            errorDivEdit.innerHTML = errorHtml;
+                            errorDivEdit.classList.remove('hidden');
+                            showToast('warning', 'Vui lòng kiểm tra lại thông tin nhập vào!');
+                        } else if (!data.success) {
+                            throw new Error(data.message || 'Lỗi server');
+                        } else {
+                            document.getElementById('editStudentModal').classList.add('hidden');
+                            showToast('success', 'Cập nhật thông tin thành công!');
+                            setTimeout(() => window.location.reload(), 1000);
+                        }
+                    } catch (error) {
+                        errorDivEdit.innerHTML = `<strong>Lỗi:</strong> ${error.message}`;
+                        errorDivEdit.classList.remove('hidden');
+                        showToast('error', error.message);
+                    } finally {
+                        btnEditStudent.disabled = false;
+                        btnEditStudent.innerHTML = originalBtnHtml;
+                    }
+                });
+            }
+
+            // --- 5. MODAL XÁC NHẬN ---
             function showConfirm({
                 title,
                 message,
@@ -323,10 +494,9 @@
                         btn: 'bg-green-600 hover:bg-green-700',
                         icon: 'text-green-600',
                         bg: 'bg-green-100'
-                    },
+                    }
                 };
                 const style = colors[btnColor] || colors.blue;
-
                 uniBtnConfirm.className =
                     `px-4 py-2 text-white font-medium rounded-sm shadow-sm text-sm flex items-center gap-2 ${style.btn}`;
                 uniIcon.className = `material-symbols-outlined text-[24px] ${style.icon}`;
@@ -336,24 +506,6 @@
                 uniBtnConfirm.classList.remove('hidden');
                 uniBtnCancel.classList.remove('hidden');
                 universalModal.classList.remove('hidden');
-            }
-
-            function showNotification(message) {
-                uniTitle.innerText = "Thành công!";
-                uniDesc.innerText = message;
-                uniIcon.innerText = "check_circle";
-                uniIconBg.className =
-                    "flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center bg-green-100 text-green-600";
-
-                uniBtnConfirm.classList.add('hidden');
-                uniBtnCancel.classList.add('hidden');
-                universalModal.classList.remove('hidden');
-
-                setTimeout(() => {
-                    universalModal.classList.add('hidden');
-                    uniBtnConfirm.classList.remove('hidden');
-                    uniBtnCancel.classList.remove('hidden');
-                }, 2000);
             }
 
             if (uniBtnConfirm) {
@@ -369,77 +521,78 @@
                 });
             }
 
-            function chunkArray(myArray, chunk_size) {
-                var results = [];
-                while (myArray.length) {
-                    results.push(myArray.splice(0, chunk_size));
-                }
-                return results;
-            }
-
-            // --- 3. QUẢN LÝ TRẠNG THÁI CHECKBOX & NÚT ---
-            // Tách hàm này ra ngoài để gọi được từ mọi nơi
+            // --- 6. QUẢN LÝ CHECKBOX & ACTION BTNS ---
             function toggleActionBtns() {
                 const checkboxes = document.querySelectorAll('.student-checkbox');
-                const selectedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
-                const any = selectedCount > 0;
+                const checkedBoxes = Array.from(checkboxes).filter(cb => cb.checked);
+                const selectedCount = checkedBoxes.length;
 
-                // Logic nút Gửi Mail
+                let hasActive = false;
+                let hasTrashed = false;
+
+                checkedBoxes.forEach(cb => {
+                    if (cb.dataset.trashed === 'true') hasTrashed = true;
+                    else hasActive = true;
+                });
+
+                // Reset buttons
+                if (btnDeleteSelected) btnDeleteSelected.classList.add('hidden');
+                if (btnRestoreSelected) btnRestoreSelected.classList.add('hidden');
                 if (btnSendSelectedEmail) {
-                    btnSendSelectedEmail.disabled = !any;
-                    btnSendSelectedEmail.classList.toggle('opacity-50', !any);
-                    btnSendSelectedEmail.classList.toggle('cursor-not-allowed', !any);
+                    btnSendSelectedEmail.disabled = true;
+                    btnSendSelectedEmail.classList.add('opacity-50', 'cursor-not-allowed');
                 }
 
-                // Logic nút Xóa Nhiều
-                if (btnDeleteSelected) {
-                    if (any) {
-                        btnDeleteSelected.classList.remove('hidden');
-                        btnDeleteSelected.innerHTML =
-                            `<span class="material-symbols-outlined !text-[18px]">delete</span> Xóa (${selectedCount})`;
+                if (selectedCount > 0) {
+                    if (hasActive && hasTrashed) {
+                        // Không hiện gì nếu chọn lẫn lộn
+                    } else if (hasTrashed) {
+                        if (btnRestoreSelected) {
+                            btnRestoreSelected.classList.remove('hidden');
+                            btnRestoreSelected.innerHTML =
+                                `<span class="material-symbols-outlined !text-[18px]">history</span> Khôi phục (${selectedCount})`;
+                        }
                     } else {
-                        btnDeleteSelected.classList.add('hidden');
+                        if (btnDeleteSelected) {
+                            btnDeleteSelected.classList.remove('hidden');
+                            btnDeleteSelected.innerHTML =
+                                `<span class="material-symbols-outlined !text-[18px]">visibility_off</span> Ẩn (${selectedCount})`;
+                        }
+                        if (btnSendSelectedEmail) {
+                            btnSendSelectedEmail.disabled = false;
+                            btnSendSelectedEmail.classList.remove('opacity-50', 'cursor-not-allowed');
+                        }
                     }
                 }
             }
 
-            // --- 4. INIT TABLE EVENTS ---
             function initTableEvents() {
                 const checkboxes = document.querySelectorAll('.student-checkbox');
-
-                // Gán sự kiện cho checkbox select all
                 if (selectAll) {
-                    // Remove old event listener to avoid duplicates if re-init
                     selectAll.onclick = null;
-                    selectAll.checked = false; // Reset khi load lại bảng
-
+                    selectAll.checked = false;
                     selectAll.onclick = function() {
                         checkboxes.forEach(cb => cb.checked = selectAll.checked);
                         toggleActionBtns();
                     };
                 }
-
-                // Gán sự kiện cho từng checkbox
                 checkboxes.forEach(cb => {
                     cb.addEventListener('change', toggleActionBtns);
                 });
-
-                // Reset trạng thái ban đầu
                 toggleActionBtns();
 
-                // Gán sự kiện Delete (1 dòng)
+                // NÚT ẨN 1 NGƯỜI
                 document.querySelectorAll('.btn-delete-student').forEach(btn => {
                     btn.addEventListener('click', function() {
                         const form = this.closest('form');
                         const code = this.getAttribute('data-code');
                         const url = form.action;
-
                         showConfirm({
-                            title: 'Xóa Sinh Viên?',
-                            message: `Bạn có chắc muốn xóa sinh viên ${code}? Hành động này sẽ chuyển sinh viên vào thùng rác.`,
-                            btnText: 'Xóa ngay',
+                            title: 'Ẩn Sinh Viên?',
+                            message: `Bạn có chắc muốn ẩn sinh viên ${code}? Sinh viên này sẽ bị vô hiệu hóa nhưng không mất dữ liệu.`,
+                            btnText: 'Ẩn ngay',
                             btnColor: 'red',
-                            icon: 'warning',
+                            icon: 'visibility_off',
                             callback: async () => {
                                 try {
                                     const response = await fetch(url, {
@@ -455,37 +608,85 @@
                                     });
                                     const data = await response.json();
                                     if (data.success) {
-                                        showNotification(data.message);
-
-                                        // Xóa dòng khỏi bảng
-                                        const row = btn.closest('tr');
-                                        if (row) row.remove();
-
-                                        // Cập nhật số lượng
-                                        if (filteredCountSpan) {
-                                            let count = parseInt(filteredCountSpan
-                                                    .innerText.replace(/[()]/g, '')) ||
-                                                0;
-                                            if (count > 0) filteredCountSpan.innerText =
-                                                `(${count - 1})`;
-                                        }
-
-                                        // [QUAN TRỌNG] Cập nhật lại trạng thái nút xóa chung
-                                        toggleActionBtns();
-
+                                        showToast('success', data.message);
+                                        setTimeout(() => window.location.reload(), 500);
                                     } else {
-                                        alert("Lỗi: " + data.message);
+                                        showToast('error', data.message);
                                     }
                                 } catch (e) {
-                                    console.error(e);
-                                    alert("Có lỗi xảy ra khi xóa.");
+                                    showToast('error', 'Có lỗi xảy ra.');
                                 }
                             }
                         });
                     });
                 });
 
-                // Single Email
+                // NÚT KHÔI PHỤC 1 NGƯỜI
+                document.querySelectorAll('.btn-restore-student').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const url = this.getAttribute('data-url');
+                        showConfirm({
+                            title: 'Khôi phục Sinh Viên?',
+                            message: 'Bạn muốn kích hoạt lại sinh viên này?',
+                            btnText: 'Khôi phục',
+                            btnColor: 'blue',
+                            icon: 'history',
+                            callback: async () => {
+                                try {
+                                    const response = await fetch(url, {
+                                        method: 'POST',
+                                        headers: {
+                                            'X-Requested-With': 'XMLHttpRequest',
+                                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                            'Content-Type': 'application/json'
+                                        }
+                                    });
+                                    const data = await response.json();
+                                    if (data.success) {
+                                        showToast('success', data.message);
+                                        setTimeout(() => window.location.reload(), 500);
+                                    } else {
+                                        showToast('error', data.message);
+                                    }
+                                } catch (e) {
+                                    showToast('error', 'Có lỗi xảy ra khi khôi phục.');
+                                }
+                            }
+                        });
+                    });
+                });
+
+                // NÚT SỬA 1 NGƯỜI
+                document.querySelectorAll('.btn-edit-student').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const id = this.getAttribute('data-id');
+                        const code = this.getAttribute('data-code');
+                        const formEdit = document.getElementById('formEditStudent');
+                        const editModal = document.getElementById('editStudentModal');
+                        const errorDiv = document.getElementById('edit-student-error');
+
+                        if (errorDiv) errorDiv.classList.add('hidden');
+                        formEdit.action = `/admin/students/${id}`;
+
+                        let rawDob = this.getAttribute('data-dob') || '';
+                        if (rawDob && rawDob.includes(' ')) {
+                            rawDob = rawDob.split(' ')[0];
+                        }
+
+                        document.getElementById('edit_student_code_hidden').value = code;
+                        document.getElementById('edit_fullname').value = this.getAttribute(
+                            'data-fullname');
+                        document.getElementById('edit_email').value = this.getAttribute(
+                            'data-email');
+                        document.getElementById('edit_dob').value = rawDob;
+                        document.getElementById('edit_status').value = this.getAttribute(
+                            'data-status');
+
+                        editModal.classList.remove('hidden');
+                    });
+                });
+
+                // NÚT GỬI MAIL 1 NGƯỜI
                 document.querySelectorAll('.btn-send-single-email').forEach(btn => {
                     btn.addEventListener('click', function() {
                         const id = this.getAttribute('data-id');
@@ -499,47 +700,27 @@
                         });
                     });
                 });
-
-                // Edit (Giữ nguyên)
-                document.querySelectorAll('.btn-edit-student').forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        const id = this.getAttribute('data-id');
-                        const formEdit = document.getElementById('formEditStudent');
-                        const editModal = document.getElementById('editStudentModal');
-                        formEdit.action = `/admin/students/${id}`;
-                        document.getElementById('edit_fullname').value = this.getAttribute(
-                            'data-fullname');
-                        document.getElementById('edit_email').value = this.getAttribute(
-                            'data-email');
-                        document.getElementById('edit_dob').value = this.getAttribute('data-dob');
-                        document.getElementById('edit_status').value = this.getAttribute(
-                            'data-status');
-                        editModal.classList.remove('hidden');
-                    });
-                });
             }
             initTableEvents();
 
-            // --- 5. XỬ LÝ NÚT XÓA NHIỀU ---
+            // --- 7. BULK ACTIONS ---
+
+            // XÓA (ẨN) NHIỀU
             if (btnDeleteSelected) {
                 btnDeleteSelected.addEventListener('click', function() {
-                    const ids = Array.from(document.querySelectorAll('.student-checkbox'))
-                        .filter(cb => cb.checked).map(cb => cb.value);
-
+                    const ids = Array.from(document.querySelectorAll('.student-checkbox:checked')).map(cb =>
+                        cb.value);
                     if (ids.length === 0) return;
-
                     showConfirm({
-                        title: 'Xóa ' + ids.length + ' Sinh Viên?',
-                        message: 'Các sinh viên đã chọn sẽ bị chuyển vào thùng rác. Bạn có chắc chắn?',
-                        btnText: 'Xóa tất cả',
+                        title: 'Ẩn ' + ids.length + ' Sinh Viên?',
+                        message: 'Các sinh viên đã chọn sẽ bị ẩn (vô hiệu hóa). Bạn có chắc chắn?',
+                        btnText: 'Ẩn tất cả',
                         btnColor: 'red',
-                        icon: 'delete_forever',
+                        icon: 'visibility_off',
                         callback: async () => {
                             loadingModal.classList.remove('hidden');
                             if (progressContainer) progressContainer.classList.add('hidden');
-                            if (loadingTitle) loadingTitle.innerText = "Đang xóa dữ liệu...";
-                            if (loadingDesc) loadingDesc.innerText = "Vui lòng chờ...";
-
+                            if (loadingTitle) loadingTitle.innerText = "Đang xử lý...";
                             try {
                                 const response = await fetch(
                                     '{{ route('admin.students.bulk_destroy') }}', {
@@ -554,122 +735,70 @@
                                     });
                                 const data = await response.json();
                                 loadingModal.classList.add('hidden');
-
                                 if (data.success) {
-                                    showNotification(data.message);
-                                    // Xóa các dòng đã chọn khỏi bảng
-                                    ids.forEach(id => {
-                                        const checkbox = document.querySelector(
-                                            `.student-checkbox[value="${id}"]`);
-                                        if (checkbox) {
-                                            const row = checkbox.closest('tr');
-                                            if (row) row.remove();
-                                        }
-                                    });
-                                    // Cập nhật số lượng hiển thị
-                                    if (filteredCountSpan) {
-                                        let current = parseInt(filteredCountSpan.innerText
-                                            .replace(/[()]/g, '')) || 0;
-                                        let newCount = Math.max(0, current - ids.length);
-                                        filteredCountSpan.innerText = `(${newCount})`;
-                                    }
-
-                                    // Reset toolbar & Checkbox select all
-                                    if (selectAll) selectAll.checked = false;
-
-                                    // [QUAN TRỌNG] Gọi lại hàm cập nhật nút để ẩn nút xóa
-                                    toggleActionBtns();
-
+                                    showToast('success', data.message);
+                                    setTimeout(() => window.location.reload(), 1000);
                                 } else {
-                                    alert("Lỗi: " + data.message);
+                                    showToast('error', data.message);
                                 }
                             } catch (e) {
-                                console.error(e);
                                 loadingModal.classList.add('hidden');
-                                alert("Có lỗi xảy ra khi xóa nhiều.");
+                                showToast('error', 'Có lỗi xảy ra.');
                             }
                         }
                     });
                 });
             }
 
-            // --- 6. CREATE STUDENT AJAX ---
-            const formCreateStudent = document.getElementById('formCreateStudent');
-            const btnCreateStudent = document.getElementById('btn-create-student-submit');
-            const modalCreateStudent = document.getElementById('createStudentModal');
-            const btnOpenCreateModal = document.getElementById('btn-open-create-modal');
+            // KHÔI PHỤC NHIỀU
+            if (btnRestoreSelected) {
+                btnRestoreSelected.addEventListener('click', function() {
+                    const ids = Array.from(document.querySelectorAll('.student-checkbox:checked')).map(cb =>
+                        cb.value);
+                    if (ids.length === 0) return;
 
-            if (btnOpenCreateModal) {
-                btnOpenCreateModal.addEventListener('click', function() {
-                    modalCreateStudent.classList.remove('hidden');
+                    showConfirm({
+                        title: 'Khôi phục ' + ids.length + ' Sinh Viên?',
+                        message: 'Các sinh viên đã chọn sẽ được kích hoạt lại.',
+                        btnText: 'Khôi phục tất cả',
+                        btnColor: 'blue',
+                        icon: 'history',
+                        callback: async () => {
+                            loadingModal.classList.remove('hidden');
+                            if (loadingTitle) loadingTitle.innerText = "Đang khôi phục...";
+                            if (progressContainer) progressContainer.classList.add('hidden');
+
+                            try {
+                                const response = await fetch(
+                                    '{{ route('admin.students.bulk_restore') }}', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                        },
+                                        body: JSON.stringify({
+                                            ids: ids
+                                        })
+                                    });
+                                const data = await response.json();
+                                loadingModal.classList.add('hidden');
+
+                                if (data.success) {
+                                    showToast('success', data.message);
+                                    setTimeout(() => window.location.reload(), 1000);
+                                } else {
+                                    showToast('error', data.message);
+                                }
+                            } catch (e) {
+                                loadingModal.classList.add('hidden');
+                                showToast('error', 'Lỗi hệ thống khi khôi phục.');
+                            }
+                        }
+                    });
                 });
             }
 
-            if (formCreateStudent) {
-                formCreateStudent.addEventListener('submit', async function(e) {
-                    e.preventDefault();
-                    if (!this.checkValidity()) {
-                        this.reportValidity();
-                        return;
-                    }
-
-                    loadingModal.classList.remove('hidden');
-                    if (progressContainer) progressContainer.classList.add('hidden');
-                    loadingTitle.innerText = "Đang lưu dữ liệu...";
-                    loadingDesc.innerText = "Vui lòng chờ giây lát.";
-                    btnCreateStudent.disabled = true;
-
-                    try {
-                        const formData = new FormData(this);
-                        const response = await fetch(this.action, {
-                            method: 'POST',
-                            headers: {
-                                'X-Requested-With': 'XMLHttpRequest',
-                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                            },
-                            body: formData
-                        });
-                        const contentType = response.headers.get("content-type");
-                        if (!contentType || !contentType.includes("application/json")) {
-                            throw new Error("Lỗi Server");
-                        }
-                        const data = await response.json();
-                        if (!data.success) throw new Error(data.message);
-
-                        loadingModal.classList.add('hidden');
-                        modalCreateStudent.classList.add('hidden');
-                        btnCreateStudent.disabled = false;
-                        this.reset();
-
-                        const template = document.createElement('template');
-                        template.innerHTML = data.html.trim();
-                        const newRow = template.content.firstChild;
-                        newRow.classList.add('bg-yellow-100', 'dark:bg-yellow-900/30',
-                            'transition-colors', 'duration-1000');
-                        tableBody.insertBefore(newRow, tableBody.firstChild);
-
-                        if (filteredCountSpan) {
-                            let count = parseInt(filteredCountSpan.innerText.replace(/[()]/g, '')) || 0;
-                            filteredCountSpan.innerText = `(${count + 1})`;
-                        }
-
-                        // Re-bind events cho dòng mới
-                        initTableEvents();
-
-                        setTimeout(() => {
-                            newRow.classList.remove('bg-yellow-100', 'dark:bg-yellow-900/30');
-                        }, 3000);
-                        showNotification("Thêm sinh viên thành công!");
-
-                    } catch (error) {
-                        loadingModal.classList.add('hidden');
-                        btnCreateStudent.disabled = false;
-                        alert("Lỗi: " + error.message);
-                    }
-                });
-            }
-
-            // --- 7. LIVE SEARCH & EXPORT ---
+            // --- 8. SEARCH, EXPORT, EMAIL BATCH ---
             let debounceTimer;
             if (searchInput) {
                 searchInput.addEventListener('input', function() {
@@ -683,7 +812,6 @@
                         else url.searchParams.delete('search');
                         url.searchParams.delete('page');
                         window.history.pushState({}, '', url);
-
                         fetch(url, {
                                 headers: {
                                     'X-Requested-With': 'XMLHttpRequest'
@@ -722,8 +850,8 @@
 
             if (btnSendSelectedEmail) {
                 btnSendSelectedEmail.addEventListener('click', function() {
-                    const ids = Array.from(document.querySelectorAll('.student-checkbox'))
-                        .filter(cb => cb.checked).map(cb => cb.value);
+                    const ids = Array.from(document.querySelectorAll('.student-checkbox:checked')).map(cb =>
+                        cb.value);
                     if (ids.length === 0) return;
                     showConfirm({
                         title: 'Gửi Email Hàng Loạt',
@@ -736,15 +864,25 @@
                 });
             }
 
+            // Hàm gửi email theo lô
+            function chunkArray(myArray, chunk_size) {
+                var results = [];
+                while (myArray.length) {
+                    results.push(myArray.splice(0, chunk_size));
+                }
+                return results;
+            }
+
             async function sendEmailsAjax(allIds) {
                 loadingModal.classList.remove('hidden');
-                progressContainer.classList.remove('hidden');
+                if (progressContainer) progressContainer.classList.remove('hidden');
                 const total = allIds.length;
                 let processed = 0;
                 const batches = chunkArray([...allIds], 3);
-                loadingTitle.innerText = "Đang gửi Email...";
-                progressBar.style.width = "0%";
-                progressText.innerText = `Đã gửi 0/${total}`;
+                if (loadingTitle) loadingTitle.innerText = "Đang gửi Email...";
+                if (progressBar) progressBar.style.width = "0%";
+                if (progressText) progressText.innerText = `Đã gửi 0/${total}`;
+
                 for (const batch of batches) {
                     try {
                         await fetch('{{ route('admin.classes.send_emails') }}', {
@@ -759,8 +897,8 @@
                         });
                         processed += batch.length;
                         const percent = Math.round((processed / total) * 100);
-                        progressBar.style.width = `${percent}%`;
-                        progressText.innerText = `Đã gửi ${processed}/${total} (${percent}%)`;
+                        if (progressBar) progressBar.style.width = `${percent}%`;
+                        if (progressText) progressText.innerText = `Đã gửi ${processed}/${total} (${percent}%)`;
                     } catch (error) {
                         console.error(error);
                         processed += batch.length;
@@ -768,11 +906,11 @@
                 }
                 setTimeout(() => {
                     loadingModal.classList.add('hidden');
-                    progressContainer.classList.add('hidden');
-                    showNotification(`Đã hoàn tất gửi ${processed} email!`);
+                    if (progressContainer) progressContainer.classList.add('hidden');
+                    showToast('success', `Đã hoàn tất gửi ${processed} email!`);
                     document.querySelectorAll('.student-checkbox').forEach(cb => cb.checked = false);
                     if (selectAll) selectAll.checked = false;
-                    toggleActionBtns(); // Update toolbar state
+                    toggleActionBtns();
                 }, 500);
             }
         });

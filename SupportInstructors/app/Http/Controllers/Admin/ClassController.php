@@ -26,7 +26,8 @@ class ClassController extends Controller
     public function index()
     {
         $classes = Classes::where('department_id', 1)
-            ->with(['advisor.user', 'monitor'])
+            // Thêm 'secretary' vào mảng with
+            ->with(['advisor.user', 'monitor', 'secretary'])
             ->withCount('students')
             ->orderBy('id', 'desc')
             ->paginate(9);
@@ -134,6 +135,8 @@ class ClassController extends Controller
             'name' => 'required',
             'advisor_id' => 'required|exists:lecturers,id',
             'academic_year' => 'required',
+            'monitor_id' => 'nullable|exists:students,id',
+            'secretary_id' => 'nullable|exists:students,id',
         ], [
             'code.required' => 'Vui lòng nhập Mã lớp.',
             'code.unique' => 'Mã lớp này đã tồn tại.',
@@ -150,6 +153,11 @@ class ClassController extends Controller
             $class->name = $request->name;
             $class->advisor_id = $request->advisor_id;
             $class->academic_year = $request->academic_year;
+
+            // Cập nhật cán bộ lớp
+            $class->monitor_id = $request->monitor_id;
+            $class->secretary_id = $request->secretary_id;
+
             $class->save();
 
             $newIds = [];
@@ -238,7 +246,14 @@ class ClassController extends Controller
 
         $lecturers = Lecturer::with('user')->get();
 
-        $allStudents = $class->students()->with('user')->orderBy('student_code', 'asc')->get();
+        // SỬA Ở ĐÂY: Thêm withTrashed() để lấy cả sinh viên đã xóa
+        $allStudents = $class->students()
+            ->withTrashed()
+            ->with(['user' => function ($q) {
+                $q->withTrashed(); // Lấy cả User đã xóa
+            }])
+            ->orderBy('student_code', 'asc')
+            ->get();
 
         if ($request->has('search') && !empty($request->search)) {
             $keyword = $this->vn_to_str($request->search);
@@ -249,6 +264,7 @@ class ClassController extends Controller
             });
         }
 
+        // ... phần phân trang và trả về JSON giữ nguyên ...
         $currentPage = LengthAwarePaginator::resolveCurrentPage();
         $perPage = 20;
         $currentResults = $allStudents->slice(($currentPage - 1) * $perPage, $perPage)->all();
@@ -277,26 +293,44 @@ class ClassController extends Controller
     {
         $class = Classes::findOrFail($id);
 
-        // CHỈ LẤY GIẢNG VIÊN MÀ USER CHƯA BỊ XÓA MỀM
         $lecturers = Lecturer::whereHas('user', function ($query) {
             $query->whereNull('deleted_at');
         })->with('user')->get();
 
         $department = Department::where('code', 'CNTT')->first();
 
-        $allStudents = $class->students()->with('user')->orderBy('student_code', 'asc')->get();
+        // Lấy danh sách đầy đủ để hiển thị trong Dropdown chọn cán bộ lớp
+        $studentCandidates = $class->students()->orderBy('fullname', 'asc')->get();
+
+        // Query cho bảng danh sách bên dưới (có tìm kiếm & phân trang)
+        $query = $class->students()->with('user')->orderBy('student_code', 'asc');
+
         if ($request->has('search') && !empty($request->search)) {
             $keyword = $this->vn_to_str($request->search);
-            $allStudents = $allStudents->filter(function ($student) use ($keyword) {
+            // Vì search trên Collection sau khi get() sẽ chậm nếu dữ liệu lớn, 
+            // nhưng ở đây ta search trên Query Builder hoặc Collection tùy logic cũ.
+            // Logic cũ của bạn dùng Collection Filter, ta giữ nguyên logic hiển thị bảng:
+            $allStudentsForTable = $query->get();
+            $allStudentsForTable = $allStudentsForTable->filter(function ($student) use ($keyword) {
                 $name = $this->vn_to_str($student->fullname);
                 $code = $this->vn_to_str($student->student_code);
                 return str_contains($name, $keyword) || str_contains($code, $keyword);
             });
+        } else {
+            $allStudentsForTable = $query->get();
         }
+
         $currentPage = LengthAwarePaginator::resolveCurrentPage();
         $perPage = 50;
-        $currentResults = $allStudents->slice(($currentPage - 1) * $perPage, $perPage)->all();
-        $students = new LengthAwarePaginator($currentResults, $allStudents->count(), $perPage, $currentPage, ['path' => LengthAwarePaginator::resolveCurrentPath(), 'query' => $request->query()]);
+        $currentResults = $allStudentsForTable->slice(($currentPage - 1) * $perPage, $perPage)->all();
+
+        $students = new LengthAwarePaginator(
+            $currentResults,
+            $allStudentsForTable->count(),
+            $perPage,
+            $currentPage,
+            ['path' => LengthAwarePaginator::resolveCurrentPath(), 'query' => $request->query()]
+        );
 
         if ($request->ajax()) {
             return response()->json([
@@ -306,7 +340,7 @@ class ClassController extends Controller
             ]);
         }
 
-        return view('admin.classes.edit', compact('class', 'lecturers', 'department', 'students'));
+        return view('admin.classes.edit', compact('class', 'lecturers', 'department', 'students', 'studentCandidates'));
     }
 
     public function updateStudent(Request $request, $id)

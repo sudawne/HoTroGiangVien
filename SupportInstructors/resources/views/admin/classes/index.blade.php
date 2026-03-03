@@ -3,8 +3,6 @@
 
 @section('content')
     <div class="max-w-[1400px] mx-auto">
-
-        {{-- HEADER --}}
         <div class="flex flex-col md:flex-row justify-between items-end md:items-center gap-4 mb-8">
             <div>
                 <h1
@@ -15,7 +13,6 @@
             </div>
 
             <div class="flex gap-2">
-
                 <a href="{{ route('admin.classes.create') }}"
                     class="bg-slate-800 hover:bg-slate-700 dark:bg-white dark:hover:bg-slate-200 text-white dark:text-slate-900 px-4 py-1.5 rounded-sm text-xs font-bold uppercase tracking-wider shadow-sm transition-all flex items-center gap-2">
                     <span class="material-symbols-outlined !text-[16px]">add</span> Tạo mới
@@ -23,22 +20,17 @@
             </div>
         </div>
 
-        {{-- GRID LAYOUT --}}
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
             @forelse($classes as $class)
-                {{-- CARD: Technical Style --}}
                 <div
                     class="group relative flex flex-col bg-white dark:bg-[#1e1e2d] border border-slate-200 dark:border-slate-700 border-l-4 border-l-primary/80 hover:border-l-primary rounded-r-sm shadow-sm hover:shadow-lg transition-all duration-300 h-full">
-
-                    {{-- 1. Main Content --}}
                     <div class="p-5 flex-1">
+                        {{-- Header Card --}}
                         <div class="flex justify-between items-start">
                             <div class="flex flex-col gap-1">
-                                {{-- Technical ID --}}
                                 <span class="font-mono text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                                     Mã Lớp: {{ $class->code }}
                                 </span>
-                                {{-- Class Name --}}
                                 <a href="{{ route('admin.classes.show', $class->id) }}"
                                     class="text-base font-bold text-slate-800 dark:text-white hover:text-primary transition-colors line-clamp-1"
                                     title="{{ $class->name }}">
@@ -46,13 +38,12 @@
                                 </a>
                             </div>
 
-                            {{-- Menu Hover --}}
+                            {{-- Dropdown Menu --}}
                             <div class="relative group/menu -mr-2 -mt-2">
                                 <button
                                     class="p-2 text-slate-300 hover:text-slate-600 dark:text-slate-600 dark:hover:text-slate-300 transition-colors">
                                     <span class="material-symbols-outlined !text-[20px]">more_vert</span>
                                 </button>
-                                {{-- Dropdown --}}
                                 <div class="hidden group-hover/menu:block absolute right-0 top-8 w-44 z-20">
                                     <div
                                         class="bg-white dark:bg-[#1e1e2d] border border-slate-200 dark:border-slate-600 rounded-sm shadow-xl py-1">
@@ -74,22 +65,53 @@
                             </div>
                         </div>
 
-                        {{-- Advisor Info --}}
-                        <div class="mt-4 flex items-center gap-3">
-                            <div
-                                class="w-8 h-8 rounded-sm bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 border border-slate-200 dark:border-slate-600">
-                                <span class="material-symbols-outlined !text-[16px]">person</span>
+                        {{-- Thông tin Cán bộ lớp & Cố vấn --}}
+                        <div class="mt-4 space-y-3">
+                            {{-- Cố vấn học tập --}}
+                            <div class="flex items-center gap-3">
+                                <div
+                                    class="w-8 h-8 rounded-sm bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-500 border border-blue-100 dark:border-blue-800">
+                                    <span class="material-symbols-outlined !text-[16px]">school</span>
+                                </div>
+                                <div class="flex flex-col">
+                                    <span class="text-[10px] text-slate-400 font-medium uppercase">Cố vấn học tập</span>
+                                    <span class="text-xs font-bold text-slate-700 dark:text-slate-200">
+                                        {{ $class->advisor->user->name ?? 'Chưa cập nhật' }}
+                                    </span>
+                                </div>
                             </div>
-                            <div class="flex flex-col">
-                                <span class="text-[10px] text-slate-400 font-medium">Cố vấn học tập</span>
-                                <span class="text-xs font-bold text-slate-700 dark:text-slate-200">
-                                    {{ $class->advisor->user->name ?? 'Chưa cập nhật' }}
-                                </span>
+
+                            {{-- Ban Cán Sự (Grid 2 cột) --}}
+                            <div
+                                class="grid grid-cols-2 gap-2 pt-2 border-t border-dashed border-slate-200 dark:border-slate-700">
+                                {{-- Lớp trưởng --}}
+                                <div class="flex flex-col">
+                                    <span class="text-[10px] text-slate-400 font-medium flex items-center gap-1">
+                                        <span class="material-symbols-outlined !text-[12px] text-amber-500">star</span>
+                                        Lớp trưởng
+                                    </span>
+                                    <span class="text-xs font-semibold text-slate-600 dark:text-slate-300 truncate"
+                                        title="{{ $class->monitor->fullname ?? '' }}">
+                                        {{ $class->monitor->fullname ?? '--' }}
+                                    </span>
+                                </div>
+
+                                {{-- Lớp phó / Thư ký --}}
+                                <div class="flex flex-col">
+                                    <span class="text-[10px] text-slate-400 font-medium flex items-center gap-1">
+                                        <span class="material-symbols-outlined !text-[12px] text-cyan-500">edit_note</span>
+                                        Thư ký
+                                    </span>
+                                    <span class="text-xs font-semibold text-slate-600 dark:text-slate-300 truncate"
+                                        title="{{ $class->secretary->fullname ?? '' }}">
+                                        {{ $class->secretary->fullname ?? '--' }}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    {{-- 2. Technical Footer --}}
+                    {{-- Footer Card --}}
                     <div
                         class="bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-700 px-5 py-3 flex justify-between items-center text-xs">
                         <div class="flex gap-4">
@@ -114,7 +136,6 @@
                     </div>
                 </div>
             @empty
-                {{-- Empty State Technical --}}
                 <div
                     class="col-span-full py-20 flex flex-col items-center justify-center border border-dashed border-slate-300 dark:border-slate-700 rounded-sm bg-slate-50/30">
                     <span class="material-symbols-outlined !text-[40px] text-slate-300 mb-3">grid_off</span>

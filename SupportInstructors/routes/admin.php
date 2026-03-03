@@ -11,50 +11,63 @@ use App\Http\Controllers\Admin\LecturerController;
 
 /*
 |--------------------------------------------------------------------------
-| Admin Routes
+| Admin Routes (Auto prefixed with 'admin' and named 'admin.')
 |--------------------------------------------------------------------------
 */
 
+// --- DASHBOARD ---
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-Route::get('classes/{id}/export', [ClassController::class, 'exportStudents'])->name('classes.export');
-Route::put('students/{id}', [StudentController::class, 'update'])->name('students.update');
-Route::delete('students/{id}', [StudentController::class, 'destroy'])->name('students.destroy');
-Route::post('/classes/upload-preview', [ClassController::class, 'previewUpload'])->name('classes.upload.preview');
-Route::post('/classes/send-emails', [ClassController::class, 'sendEmails'])->name('classes.send_emails');
-Route::resource('classes', ClassController::class);
-Route::resource('students', StudentController::class);
-Route::post('students/bulk-delete', [StudentController::class, 'bulkDestroy'])->name('students.bulk_destroy');
-Route::resource('minutes', MeetingMinuteController::class);
 
-// --- QUẢN LÝ GIẢNG VIÊN (MỚI) ---
-Route::prefix('lecturers')->name('lecturers.')->controller(LecturerController::class)->group(function () {
-    Route::post('/bulk-delete', 'bulkDelete')->name('bulk_delete');   // -> tên route: admin.lecturers.bulk_delete
-    Route::post('/bulk-restore', 'bulkRestore')->name('bulk_restore'); // -> tên route: admin.lecturers.bulk_restore
-    Route::post('/{id}/restore', 'restore')->name('restore');         // -> tên route: admin.lecturers.restore
+// --- QUẢN LÝ LỚP HỌC (CLASSES) ---
+Route::controller(ClassController::class)->prefix('classes')->name('classes.')->group(function () {
+    Route::get('/{id}/export', 'exportStudents')->name('export');
+    Route::post('/upload-preview', 'previewUpload')->name('upload.preview');
+    Route::post('/send-emails', 'sendEmails')->name('send_emails');
 });
+Route::resource('classes', ClassController::class);
 
-// Route Resource mặc định
+// --- QUẢN LÝ SINH VIÊN (STUDENTS) ---
+Route::controller(StudentController::class)->prefix('students')->name('students.')->group(function () {
+    // Các route thao tác hàng loạt và khôi phục phải nằm TRƯỚC Route::resource
+    Route::post('/bulk-delete', 'bulkDestroy')->name('bulk_destroy');
+    Route::post('/bulk-restore', 'bulkRestore')->name('bulk_restore'); // Sửa lỗi RouteNotFound
+    Route::post('/{id}/restore', 'restore')->name('restore');
+});
+Route::resource('students', StudentController::class);
+
+// --- QUẢN LÝ GIẢNG VIÊN (LECTURERS) ---
+Route::controller(LecturerController::class)->prefix('lecturers')->name('lecturers.')->group(function () {
+    Route::post('/bulk-delete', 'bulkDelete')->name('bulk_delete');
+    Route::post('/bulk-restore', 'bulkRestore')->name('bulk_restore');
+    Route::post('/{id}/restore', 'restore')->name('restore');
+});
 Route::resource('lecturers', LecturerController::class);
 
-Route::prefix('academic-warnings')->name('academic_warnings.')->group(function () {
-    Route::get('/', [AcademicWarningController::class, 'index'])->name('index');
-    Route::get('/import', [AcademicWarningController::class, 'showImport'])->name('import');
-    Route::post('/preview', [AcademicWarningController::class, 'preview'])->name('preview');
-    Route::post('/store', [AcademicWarningController::class, 'store'])->name('store');
-    Route::post('/quick-add-student', [AcademicWarningController::class, 'quickAddStudent'])->name('quick_add_student');
+// --- BIÊN BẢN HỌP (MEETING MINUTES) ---
+Route::resource('minutes', MeetingMinuteController::class);
+
+// --- CẢNH BÁO HỌC VỤ (ACADEMIC WARNINGS) ---
+Route::controller(AcademicWarningController::class)->prefix('academic-warnings')->name('academic_warnings.')->group(function () {
+    Route::get('/', 'index')->name('index');
+    Route::get('/import', 'showImport')->name('import');
+    Route::post('/preview', 'preview')->name('preview');
+    Route::post('/store', 'store')->name('store');
+    Route::post('/quick-add-student', 'quickAddStudent')->name('quick_add_student');
 });
 
-Route::controller(ImportController::class)->group(function () {
-    // Import chung
-    Route::get('/imports', 'index')->name('imports.index');
-    Route::post('/imports', 'store')->name('imports.store');
-    Route::post('/imports/{id}/publish', 'publish')->name('imports.publish');
+// --- HỆ THỐNG IMPORT DỮ LIỆU ---
+Route::controller(ImportController::class)->prefix('imports')->name('imports.')->group(function () {
+    Route::get('/', 'index')->name('index');
+    Route::post('/', 'store')->name('store');
+    Route::post('/{id}/publish', 'publish')->name('publish');
 
-    // Import Sinh viên (Modal cũ - nếu còn dùng)
-    Route::post('/imports/students', 'storeStudent')->name('imports.storeStudent');
+    // Import Sinh viên (Modal)
+    Route::post('/students', 'storeStudent')->name('storeStudent');
 
-    // Import Sinh viên theo Lớp (Quy trình mới: Preview -> Store)
-    Route::get('/classes/{id}/import', 'showImportClass')->name('classes.import');
-    Route::post('/classes/import/preview', 'previewImport')->name('classes.import.preview');
-    Route::post('/classes/import/store', 'storeImport')->name('classes.import.store');
+    // Import Sinh viên theo Lớp
+    Route::prefix('classes')->name('classes.')->group(function () {
+        Route::get('/{id}/import', 'showImportClass')->name('import');
+        Route::post('/preview', 'previewImport')->name('preview');
+        Route::post('/store', 'storeImport')->name('store');
+    });
 });

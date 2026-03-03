@@ -44,11 +44,30 @@ class StudentController extends Controller
 
     public function show(string $id)
     {
-        $student = Student::with(['user', 'class', 'relatives', 'debts' => function ($q) {
-            $q->where('status', 'owed');
-        }])->findOrFail($id);
+        // Lấy sinh viên (kể cả đã ẩn) và eager load các quan hệ cần thiết
+        $student = Student::withTrashed()
+            ->with([
+                'user' => function ($q) {
+                    $q->withTrashed();
+                },
+                'class',
+                'relatives',
+                'debts' => function ($q) {
+                    $q->where('status', 'owed');
+                },
+                'academic_warnings.semester', // Cảnh báo học vụ kèm kỳ học
+                'academic_results' => function ($q) {
+                    $q->orderBy('semester_id', 'desc')->with('semester'); // Bảng điểm mới nhất lên đầu
+                },
+                'consultation_logs.advisor.user', // Lịch sử tư vấn kèm người tư vấn
+                'consultation_logs.semester'
+            ])
+            ->findOrFail($id);
 
-        return view('admin.students.show', compact('student'));
+        // Lấy kết quả học tập mới nhất để tính toán các chỉ số trên cùng
+        $latestResult = $student->academic_results->first();
+
+        return view('admin.students.show', compact('student', 'latestResult'));
     }
 
     public function create()

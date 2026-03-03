@@ -1,6 +1,10 @@
 @extends('layouts.admin')
 @section('title', 'Cập nhật Lớp học')
 
+@section('styles')
+    <link href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.default.min.css" rel="stylesheet">
+@endsection
+
 @section('content')
     <div class="w-full px-4 py-6">
         <div class="flex items-center justify-between mb-6">
@@ -74,8 +78,8 @@
                         <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">
                             Cố vấn học tập <span class="text-red-500">*</span>
                         </label>
-                        <select name="advisor_id" required
-                            class="w-full px-3 py-2.5 border border-slate-300 rounded-sm focus:ring-1 transition-colors text-sm cursor-pointer">
+                        <select name="advisor_id" id="select-advisor" required
+                            class="w-full px-3 py-2.5 border border-slate-300 rounded-sm focus:ring-1 transition-colors text-sm">
                             <option value="">-- Chọn Giảng viên --</option>
                             @foreach ($lecturers as $lec)
                                 <option value="{{ $lec->id }}"
@@ -91,41 +95,32 @@
                         <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">
                             Lớp trưởng
                         </label>
-                        <div class="relative">
-                            <select name="monitor_id"
-                                class="w-full pl-3 pr-8 py-2.5 border border-slate-300 rounded-sm focus:ring-1 transition-colors text-sm cursor-pointer appearance-none bg-white">
-                                <option value="">-- Chưa chọn --</option>
-                                @foreach ($studentCandidates as $stu)
-                                    <option value="{{ $stu->id }}"
-                                        {{ old('monitor_id', $class->monitor_id) == $stu->id ? 'selected' : '' }}>
-                                        {{ $stu->student_code }} - {{ $stu->fullname }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            <span
-                                class="absolute right-3 top-2.5 text-slate-400 material-symbols-outlined !text-[18px] pointer-events-none">expand_more</span>
-                        </div>
-                        <p class="text-[10px] text-slate-400 mt-1 italic">Chọn từ danh sách sinh viên hiện có</p>
+                        <select name="monitor_id" id="select-monitor"
+                            class="w-full px-3 py-2.5 border border-slate-300 rounded-sm focus:ring-1 transition-colors text-sm">
+                            <option value="">-- Chọn Lớp trưởng --</option>
+                            @foreach ($studentCandidates as $stu)
+                                <option value="{{ $stu->id }}"
+                                    {{ old('monitor_id', $class->monitor_id) == $stu->id ? 'selected' : '' }}>
+                                    {{ $stu->student_code }} - {{ $stu->fullname }}
+                                </option>
+                            @endforeach
+                        </select>
                     </div>
 
                     <div>
                         <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">
                             Thư ký / Lớp phó
                         </label>
-                        <div class="relative">
-                            <select name="secretary_id"
-                                class="w-full pl-3 pr-8 py-2.5 border border-slate-300 rounded-sm focus:ring-1 transition-colors text-sm cursor-pointer appearance-none bg-white">
-                                <option value="">-- Chưa chọn --</option>
-                                @foreach ($studentCandidates as $stu)
-                                    <option value="{{ $stu->id }}"
-                                        {{ old('secretary_id', $class->secretary_id) == $stu->id ? 'selected' : '' }}>
-                                        {{ $stu->student_code }} - {{ $stu->fullname }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            <span
-                                class="absolute right-3 top-2.5 text-slate-400 material-symbols-outlined !text-[18px] pointer-events-none">expand_more</span>
-                        </div>
+                        <select name="secretary_id" id="select-secretary"
+                            class="w-full px-3 py-2.5 border border-slate-300 rounded-sm focus:ring-1 transition-colors text-sm">
+                            <option value="">-- Chọn Thư ký --</option>
+                            @foreach ($studentCandidates as $stu)
+                                <option value="{{ $stu->id }}"
+                                    {{ old('secretary_id', $class->secretary_id) == $stu->id ? 'selected' : '' }}>
+                                    {{ $stu->student_code }} - {{ $stu->fullname }}
+                                </option>
+                            @endforeach
+                        </select>
                     </div>
 
                     <div class="md:col-span-2 mt-2">
@@ -343,6 +338,49 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            var commonConfig = {
+                create: false,
+                sortField: {
+                    field: "text",
+                    direction: "asc"
+                },
+                render: {
+                    no_results: function(data, escape) {
+                        return '<div class="no-results p-2 text-sm text-slate-500 italic">Không tìm thấy kết quả</div>';
+                    }
+                }
+            };
+
+            if (document.getElementById('select-advisor')) {
+                new TomSelect("#select-advisor", commonConfig);
+            }
+
+            var tomMonitor = null;
+            var tomSecretary = null;
+
+            if (document.getElementById('select-monitor')) {
+                tomMonitor = new TomSelect("#select-monitor", commonConfig);
+            }
+            if (document.getElementById('select-secretary')) {
+                tomSecretary = new TomSelect("#select-secretary", commonConfig);
+            }
+
+            if (tomMonitor && tomSecretary) {
+                tomMonitor.on('change', function(value) {
+                    if (value && value === tomSecretary.getValue()) {
+                        showToast('warning', 'Lớp trưởng và Thư ký không được là cùng một người!');
+                        tomMonitor.clear();
+                    }
+                });
+
+                tomSecretary.on('change', function(value) {
+                    if (value && value === tomMonitor.getValue()) {
+                        showToast('warning', 'Lớp trưởng và Thư ký không được là cùng một người!');
+                        tomSecretary.clear();
+                    }
+                });
+            }
+
             const formClass = document.getElementById('editClassForm');
             const btnPreSubmit = document.getElementById('btn-pre-submit');
             const fileInput = document.getElementById('student_file_input');
@@ -363,24 +401,14 @@
             const studentCountSpan = document.getElementById('student-count');
 
             const loadingModal = document.getElementById('loadingModal');
+            const loadingTitle = document.getElementById('loading-modal-title');
+            const loadingDesc = document.getElementById('loading-modal-desc');
             const progressContainer = document.getElementById('progress-container');
             const progressBar = document.getElementById('progress-bar');
             const progressText = document.getElementById('progress-text');
-            const loadingTitle = document.getElementById('loading-modal-title');
-            const loadingDesc = document.getElementById('loading-modal-desc');
-
-            const universalModal = document.getElementById('universalModal');
-            const uniTitle = document.getElementById('uni-modal-title');
-            const uniDesc = document.getElementById('uni-modal-desc');
-            const uniBtnConfirm = document.getElementById('btn-uni-confirm');
-            const uniBtnCancel = document.getElementById('btn-uni-cancel');
-            const uniBtnText = document.getElementById('uni-modal-btn-text');
-            const uniIcon = document.getElementById('uni-modal-icon');
-            const uniIconBg = document.getElementById('uni-modal-icon-bg');
 
             let pendingCallback = null;
             let cancelCallback = null;
-
             let newStudentsList = [];
 
             function clearValidationErrors(formElement) {
@@ -413,112 +441,11 @@
                 }
             }
 
-            function forceShowUniversalModal() {
-                if (universalModal) {
-                    universalModal.classList.remove('hidden');
-                    universalModal.removeAttribute('style');
-                    universalModal.style.zIndex = '9999';
-                }
-            }
-
-            function forceHideUniversalModal() {
-                if (universalModal) {
-                    universalModal.classList.add('hidden');
-                    universalModal.setAttribute('style', 'display: none !important;');
-                }
-            }
-
-            function showAlert(title, message) {
-                uniTitle.innerText = title;
-                uniDesc.innerText = message;
-                uniBtnText.innerText = 'Đã hiểu';
-                uniIcon.innerText = 'warning';
-                pendingCallback = null;
-                cancelCallback = null;
-                uniBtnConfirm.className =
-                    `px-4 py-2 text-white font-medium rounded-sm shadow-sm text-sm flex items-center gap-2 bg-red-600 hover:bg-red-700`;
-                uniIcon.className = `material-symbols-outlined text-[24px] text-red-600`;
-                uniIconBg.className =
-                    `flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center bg-red-100`;
-                uniBtnCancel.classList.add('hidden');
-                uniBtnConfirm.classList.remove('hidden');
-                forceShowUniversalModal();
-            }
-
-            function showConfirm({
-                title,
-                message,
-                btnText,
-                btnColor = 'blue',
-                icon = 'help',
-                callback,
-                onCancel = null
-            }) {
-                uniTitle.innerText = title;
-                uniDesc.innerText = message;
-                uniBtnText.innerText = btnText;
-                uniIcon.innerText = icon;
-                pendingCallback = callback;
-                cancelCallback = onCancel;
-
-                const colors = {
-                    blue: {
-                        btn: 'bg-blue-600 hover:bg-blue-700',
-                        icon: 'text-blue-600',
-                        bg: 'bg-blue-100'
-                    },
-                    green: {
-                        btn: 'bg-green-600 hover:bg-green-700',
-                        icon: 'text-green-600',
-                        bg: 'bg-green-100'
-                    },
-                    red: {
-                        btn: 'bg-red-600 hover:bg-red-700',
-                        icon: 'text-red-600',
-                        bg: 'bg-red-100'
-                    }
-                };
-                const style = colors[btnColor] || colors.blue;
-
-                uniBtnConfirm.className =
-                    `px-4 py-2 text-white font-medium rounded-sm shadow-sm text-sm flex items-center gap-2 ${style.btn}`;
-                uniIcon.className = `material-symbols-outlined text-[24px] ${style.icon}`;
-                uniIconBg.className =
-                    `flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center ${style.bg}`;
-
-                const btnCancelDOM = document.getElementById('btn-uni-cancel');
-                btnCancelDOM.innerText = onCancel ? 'Không gửi (Chỉ tạo)' : 'Hủy bỏ';
-
-                uniBtnConfirm.classList.remove('hidden');
-                uniBtnCancel.classList.remove('hidden');
-                forceShowUniversalModal();
-            }
-
-            if (uniBtnConfirm) {
-                uniBtnConfirm.addEventListener('click', function() {
-                    forceHideUniversalModal();
-                    setTimeout(() => {
-                        if (pendingCallback) pendingCallback();
-                    }, 400);
-                });
-            }
-            if (uniBtnCancel) {
-                uniBtnCancel.addEventListener('click', function() {
-                    forceHideUniversalModal();
-                    setTimeout(() => {
-                        if (cancelCallback) cancelCallback();
-                        pendingCallback = null;
-                        cancelCallback = null;
-                    }, 400);
-                });
-            }
-
             function renderNewStudentsTable() {
                 if (newStudentsList.length === 0) {
                     newStudentsPreviewArea.innerHTML = '';
                     return;
                 }
-
                 let html = `
                     <div class="mb-2 text-sm font-bold text-blue-700 flex items-center gap-2">
                         <span class="material-symbols-outlined !text-[18px]">playlist_add</span>
@@ -536,7 +463,6 @@
                         </thead>
                         <tbody class="divide-y divide-slate-100">
                 `;
-
                 newStudentsList.forEach((s, index) => {
                     const isDup = s.is_duplicate ? 'bg-red-50' : '';
                     const textDup = s.is_duplicate ?
@@ -556,10 +482,9 @@
                     `;
                 });
                 html += `</tbody></table>`;
-
                 if (newStudentsList.some(s => s.is_duplicate)) {
                     html +=
-                        `<p class="text-red-500 text-xs mt-2 font-bold flex items-center gap-1"><span class="material-symbols-outlined !text-[14px]">warning</span> Có sinh viên bị trùng mã trong danh sách chuẩn bị thêm. Vui lòng xóa dòng trùng để có thể tiếp tục.</p>`;
+                        `<p class="text-red-500 text-xs mt-2 font-bold flex items-center gap-1"><span class="material-symbols-outlined !text-[14px]">warning</span> Có sinh viên bị trùng mã. Vui lòng xử lý.</p>`;
                 }
                 newStudentsPreviewArea.innerHTML = html;
             }
@@ -575,20 +500,17 @@
                     const nameInput = document.getElementById('manual_name');
                     const dobInput = document.getElementById('manual_dob');
                     const statusInput = document.getElementById('manual_status');
-
                     const mssv = mssvInput.value.trim().toUpperCase();
                     const name = nameInput.value.trim();
 
                     if (!mssv || !name) {
-                        showToast("error", "Vui lòng nhập đầy đủ Mã Sinh Viên và Họ Tên.");
+                        showToast("error", "Vui lòng nhập đầy đủ Mã SV và Họ Tên.");
                         return;
                     }
-
                     if (newStudentsList.some(s => s.mssv === mssv)) {
                         showToast("error", "Mã SV này đã tồn tại trong danh sách chuẩn bị thêm!");
                         return;
                     }
-
                     newStudentsList.push({
                         mssv: mssv,
                         name: name,
@@ -596,7 +518,6 @@
                         status: statusInput.value,
                         is_duplicate: false
                     });
-
                     mssvInput.value = '';
                     nameInput.value = '';
                     dobInput.value = '';
@@ -608,13 +529,11 @@
                 fileInput.addEventListener('change', function(e) {
                     let file = e.target.files[0];
                     if (!file) return;
-
                     let formData = new FormData();
                     formData.append('file', file);
                     uploadErrorArea.classList.add('hidden');
-
                     newStudentsPreviewArea.innerHTML =
-                        `<div class="mt-4 text-center text-slate-500 text-sm flex items-center justify-center gap-2 py-4"><span class="animate-spin material-symbols-outlined text-blue-600 !text-[18px]">progress_activity</span> Đang đọc file...</div>`;
+                        `<div class="mt-4 text-center text-slate-500 text-sm py-4">Đang đọc file...</div>`;
 
                     fetch('{{ route('admin.classes.upload.preview') }}', {
                         method: 'POST',
@@ -653,7 +572,6 @@
                 const currentUrl = url || window.location.href;
                 searchSpinner.classList.remove('hidden');
                 tableOverlay.classList.remove('hidden');
-
                 try {
                     const response = await fetch(currentUrl, {
                         headers: {
@@ -661,7 +579,6 @@
                         }
                     });
                     const data = await response.json();
-
                     tableBody.innerHTML = data.html;
                     paginationLinks.innerHTML = data.pagination;
                     if (studentCountSpan) studentCountSpan.innerText = `(${data.total})`;
@@ -678,21 +595,15 @@
                 loadingModal.classList.remove('hidden');
                 progressContainer.classList.add('hidden');
                 loadingTitle.innerText = "Đang cập nhật...";
-                loadingDesc.innerText = "Vui lòng chờ...";
                 btnPreSubmit.disabled = true;
-                btnPreSubmit.innerHTML =
-                    '<span class="material-symbols-outlined !text-[16px] animate-spin">progress_activity</span> Đang xử lý...';
-
                 clearValidationErrors(formClass);
 
                 try {
                     const formData = new FormData(formClass);
                     formData.delete('student_file_temp');
-
                     if (newStudentsList.length > 0) {
                         formData.set('students_list', JSON.stringify(newStudentsList));
                     }
-
                     const response = await fetch(formClass.action, {
                         method: 'POST',
                         headers: {
@@ -702,71 +613,35 @@
                         },
                         body: formData
                     });
-
                     const data = await response.json();
-
                     if (response.status === 422) {
                         loadingModal.classList.add('hidden');
                         btnPreSubmit.disabled = false;
-                        btnPreSubmit.innerHTML =
-                            '<span class="material-symbols-outlined !text-[16px]">save</span> Cập nhật';
                         showServerValidationErrors(data.errors, formClass);
                         return;
                     }
-
                     if (!data.success) throw new Error(data.message || 'Có lỗi xảy ra');
 
                     if (sendEmailInput.value == "1" && data.new_student_ids && data.new_student_ids.length >
                         0) {
-                        await sendEmailsInBatches(data.new_student_ids, null);
+                        await sendEmailsInBatches(data.new_student_ids, data.redirect_url);
                     } else {
-                        loadingModal.classList.add('hidden');
+                        window.location.href = data.redirect_url;
                     }
-
-                    btnPreSubmit.disabled = false;
-                    btnPreSubmit.innerHTML =
-                        '<span class="material-symbols-outlined !text-[16px]">save</span> Cập nhật';
-
-                    newStudentsList = [];
-                    renderNewStudentsTable();
-                    fileInput.value = '';
-
-                    await reloadStudentTable();
-
-                    if (data.new_student_ids && data.new_student_ids.length > 0) {
-                        data.new_student_ids.forEach(id => {
-                            const checkbox = document.querySelector(`.student-checkbox[value="${id}"]`);
-                            if (checkbox) {
-                                const row = checkbox.closest('tr');
-                                if (row) {
-                                    row.classList.add('highlight-row');
-                                    row.scrollIntoView({
-                                        behavior: 'smooth',
-                                        block: 'center'
-                                    });
-                                }
-                            }
-                        });
-                    }
-
                 } catch (error) {
                     loadingModal.classList.add('hidden');
                     btnPreSubmit.disabled = false;
-                    btnPreSubmit.innerHTML =
-                        '<span class="material-symbols-outlined !text-[16px]">save</span> Cập nhật';
-                    alert('Lỗi: ' + error.message);
+                    showToast("error", error.message);
                 }
             }
 
             async function sendEmailsInBatches(studentIds, redirectUrl) {
                 progressContainer.classList.remove('hidden');
                 loadingTitle.innerText = "Đang gửi Email...";
-                loadingDesc.innerText = "Vui lòng không tắt trình duyệt.";
                 progressBar.style.width = "0%";
                 const total = studentIds.length;
                 let processed = 0;
                 const batches = chunkArray(studentIds, 3);
-
                 for (const batch of batches) {
                     try {
                         await fetch('{{ route('admin.classes.send_emails') }}', {
@@ -782,80 +657,56 @@
                         processed += batch.length;
                         const percent = Math.round((processed / total) * 100);
                         progressBar.style.width = `${percent}%`;
-                        progressText.innerText = `Đã gửi ${processed}/${total} (${percent}%)`;
+                        progressText.innerText = `Đã gửi ${processed}/${total}`;
                     } catch (err) {
                         console.error(err);
                     }
                 }
-
-                if (redirectUrl) {
-                    setTimeout(() => window.location.href = redirectUrl, 1000);
-                } else {
+                if (redirectUrl) setTimeout(() => window.location.href = redirectUrl, 1000);
+                else {
                     loadingModal.classList.add('hidden');
-                    progressContainer.classList.add('hidden');
-                    document.querySelectorAll('.student-checkbox').forEach(cb => cb.checked = false);
-                    if (selectAll) selectAll.checked = false;
                     toggleActionBtns();
                 }
             }
 
             if (btnPreSubmit) {
                 btnPreSubmit.addEventListener('click', function() {
-                    clearValidationErrors(formClass);
+                    clearValidationErrors();
                     uploadErrorArea.classList.add('hidden');
-
-                    let hasClientError = false;
+                    let hasError = false;
                     const requiredInputs = formClass.querySelectorAll('[required]');
-                    const customMessages = {
-                        'code': 'Vui lòng nhập Mã lớp',
-                        'academic_year': 'Vui lòng nhập Niên khóa',
-                        'name': 'Vui lòng nhập Tên lớp',
-                        'advisor_id': 'Vui lòng chọn Cố vấn học tập'
-                    };
-
                     requiredInputs.forEach(input => {
                         if (!input.value.trim()) {
                             const fieldName = input.getAttribute('name');
-                            showFieldError(formClass, fieldName, customMessages[fieldName] ||
-                                'Vui lòng nhập thông tin này');
-                            hasClientError = true;
+                            showFieldError(formClass, fieldName, 'Vui lòng nhập thông tin này');
+                            hasError = true;
                         }
                     });
-
                     if (newStudentsList.some(s => s.is_duplicate)) {
-                        showToast("error",
-                            "Vui lòng xóa các sinh viên bị trùng mã (dòng màu đỏ) trong danh sách thêm mới trước khi lưu!"
-                        );
+                        showToast("error", "Vui lòng xóa các sinh viên bị trùng mã!");
                         return;
                     }
-
-                    if (hasClientError) return;
+                    if (hasError) return;
 
                     if (newStudentsList.length > 0) {
-                        showConfirm({
-                            title: 'Gửi thông tin tài khoản?',
-                            message: 'Bạn có muốn hệ thống tự động gửi email cho các sinh viên MỚI vừa thêm không?',
-                            btnText: 'Đồng ý gửi',
-                            btnColor: 'blue',
-                            icon: 'mark_email_unread',
-                            callback: function() {
+                        showConfirm(
+                            'Gửi thông tin tài khoản?',
+                            'Bạn có muốn hệ thống tự động gửi email cho các sinh viên MỚI vừa thêm không?',
+                            'Đồng ý gửi',
+                            'blue',
+                            'mark_email_unread',
+                            function() {
                                 sendEmailInput.value = "1";
                                 submitClassForm();
                             },
-                            onCancel: function() {
+                            function() {
                                 sendEmailInput.value = "0";
                                 submitClassForm();
                             }
-                        });
+                        );
                     } else {
-                        showConfirm({
-                            title: 'Lưu thay đổi',
-                            message: 'Bạn có chắc chắn muốn cập nhật thông tin lớp học này không?',
-                            btnText: 'Lưu ngay',
-                            btnColor: 'blue',
-                            icon: 'save',
-                            callback: submitClassForm
-                        });
+                        showConfirm('Lưu thay đổi', 'Cập nhật thông tin lớp học?', 'Lưu ngay', 'blue',
+                            'save', submitClassForm);
                     }
                 });
             }
@@ -864,7 +715,6 @@
                 const checkboxes = document.querySelectorAll('.student-checkbox');
                 const selectedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
                 const any = selectedCount > 0;
-
                 if (btnSendSelectedEmail) {
                     btnSendSelectedEmail.disabled = !any;
                     btnSendSelectedEmail.classList.toggle('opacity-50', !any);
@@ -873,9 +723,8 @@
                 if (btnDeleteSelected) {
                     if (any) {
                         btnDeleteSelected.classList.remove('hidden');
-                        const textSpan = btnDeleteSelected.querySelector(
-                            'span:not(.material-symbols-outlined)');
-                        if (textSpan) textSpan.innerText = `Xóa (${selectedCount})`;
+                        const span = btnDeleteSelected.querySelector('#btn-delete-text');
+                        if (span) span.innerText = `Xóa (${selectedCount})`;
                     } else {
                         btnDeleteSelected.classList.add('hidden');
                     }
@@ -885,30 +734,25 @@
             function initStudentTableEvents() {
                 const checkboxes = document.querySelectorAll('.student-checkbox');
                 if (selectAll) {
-                    selectAll.onclick = null;
-                    selectAll.checked = false;
                     selectAll.onclick = function() {
                         checkboxes.forEach(cb => cb.checked = selectAll.checked);
                         toggleActionBtns();
                     };
                 }
-                checkboxes.forEach(cb => {
-                    cb.addEventListener('change', toggleActionBtns);
-                });
-                toggleActionBtns();
+                checkboxes.forEach(cb => cb.addEventListener('change', toggleActionBtns));
 
                 document.querySelectorAll('.btn-delete-student').forEach(btn => {
                     btn.addEventListener('click', function() {
                         const form = this.closest('form');
                         const code = this.getAttribute('data-code');
                         const url = form.action;
-                        showConfirm({
-                            title: 'Xóa Sinh Viên?',
-                            message: `Bạn có chắc muốn xóa sinh viên ${code} khỏi hệ thống?`,
-                            btnText: 'Xóa ngay',
-                            btnColor: 'red',
-                            icon: 'warning',
-                            callback: async () => {
+                        showConfirm(
+                            'Xóa Sinh Viên?',
+                            `Bạn có chắc muốn xóa sinh viên ${code} khỏi hệ thống?`,
+                            'Xóa ngay',
+                            'red',
+                            'warning',
+                            async () => {
                                 try {
                                     const response = await fetch(url, {
                                         method: 'POST',
@@ -925,21 +769,18 @@
                                     if (data.success) {
                                         const row = btn.closest('tr');
                                         if (row) row.remove();
-                                        if (studentCountSpan) {
-                                            let count = parseInt(studentCountSpan
-                                                .innerText.replace(/[()]/g, '')
-                                            ) || 0;
-                                            if (count > 0) studentCountSpan
-                                                .innerText = `(${count - 1})`;
-                                        }
+                                        let count = parseInt(studentCountSpan.innerText
+                                            .replace(/[()]/g, '')) || 0;
+                                        if (count > 0) studentCountSpan.innerText =
+                                            `(${count - 1})`;
                                     } else {
-                                        alert("Lỗi: " + data.message);
+                                        showToast("error", "Lỗi: " + data.message);
                                     }
                                 } catch (e) {
-                                    alert("Có lỗi xảy ra khi xóa.");
+                                    showToast("error", "Có lỗi xảy ra khi xóa.");
                                 }
                             }
-                        });
+                        );
                     });
                 });
 
@@ -953,8 +794,7 @@
                             'data-fullname');
                         document.getElementById('edit_email').value = this.getAttribute(
                             'data-email');
-                        document.getElementById('edit_dob').value = this.getAttribute(
-                            'data-dob');
+                        document.getElementById('edit_dob').value = this.getAttribute('data-dob');
                         document.getElementById('edit_status').value = this.getAttribute(
                             'data-status');
                         clearValidationErrors(formEdit);
@@ -965,14 +805,14 @@
                 document.querySelectorAll('.btn-send-single-email').forEach(btn => {
                     btn.addEventListener('click', function() {
                         const id = this.getAttribute('data-id');
-                        showConfirm({
-                            title: 'Gửi Email',
-                            message: 'Gửi thông tin tài khoản cho sinh viên này?',
-                            btnText: 'Gửi',
-                            btnColor: 'blue',
-                            icon: 'send',
-                            callback: () => sendEmailsInBatches([id], null)
-                        });
+                        showConfirm(
+                            'Gửi Email',
+                            'Gửi thông tin tài khoản cho sinh viên này?',
+                            'Gửi',
+                            'blue',
+                            'send',
+                            () => sendEmailsInBatches([id], null)
+                        );
                     });
                 });
             }
@@ -994,12 +834,12 @@
                 });
             }
 
-            const formEditStudent = document.getElementById('formEditStudent');
-            const modalEditStudent = document.getElementById('editStudentModal');
-            if (formEditStudent) {
-                formEditStudent.addEventListener('submit', async function(e) {
+            const formEditStudentInner = document.getElementById('formEditStudent');
+            const modalEditStudentInner = document.getElementById('editStudentModal');
+            if (formEditStudentInner) {
+                formEditStudentInner.addEventListener('submit', async function(e) {
                     e.preventDefault();
-                    clearValidationErrors(formEditStudent);
+                    clearValidationErrors(formEditStudentInner);
                     loadingModal.classList.remove('hidden');
                     progressContainer.classList.add('hidden');
                     loadingTitle.innerText = "Đang cập nhật...";
@@ -1024,17 +864,17 @@
                         const data = await response.json();
                         if (response.status === 422) {
                             loadingModal.classList.add('hidden');
-                            showServerValidationErrors(data.errors, formEditStudent);
+                            showServerValidationErrors(data.errors, formEditStudentInner);
                             return;
                         }
-                        if (!data.success && response.status !== 200) throw new Error(data
-                            .message || "Lỗi cập nhật");
+                        if (!data.success) throw new Error(data.message || "Lỗi cập nhật");
                         loadingModal.classList.add('hidden');
-                        modalEditStudent.classList.add('hidden');
+                        modalEditStudentInner.classList.add('hidden');
                         reloadStudentTable();
+                        showToast("success", "Cập nhật sinh viên thành công!");
                     } catch (error) {
                         loadingModal.classList.add('hidden');
-                        alert("Lỗi: " + error.message);
+                        showToast("error", "Lỗi: " + error.message);
                     } finally {
                         btnSubmit.disabled = false;
                         btnSubmit.innerHTML = originalBtnText;
@@ -1044,16 +884,16 @@
 
             if (btnDeleteSelected) {
                 btnDeleteSelected.addEventListener('click', function() {
-                    const ids = Array.from(document.querySelectorAll('.student-checkbox')).filter(cb =>
-                        cb.checked).map(cb => cb.value);
+                    const ids = Array.from(document.querySelectorAll('.student-checkbox')).filter(cb => cb
+                        .checked).map(cb => cb.value);
                     if (ids.length === 0) return;
-                    showConfirm({
-                        title: 'Xóa ' + ids.length + ' Sinh Viên?',
-                        message: 'Các sinh viên đã chọn sẽ bị chuyển vào thùng rác.',
-                        btnText: 'Xóa tất cả',
-                        btnColor: 'red',
-                        icon: 'delete_forever',
-                        callback: async () => {
+                    showConfirm(
+                        'Xóa ' + ids.length + ' Sinh Viên?',
+                        'Các sinh viên đã chọn sẽ bị chuyển vào thùng rác.',
+                        'Xóa tất cả',
+                        'red',
+                        'delete_forever',
+                        async () => {
                             loadingModal.classList.remove('hidden');
                             progressContainer.classList.add('hidden');
                             loadingTitle.innerText = "Đang xóa dữ liệu...";
@@ -1074,22 +914,21 @@
                                 if (data.success) {
                                     ids.forEach(id => {
                                         const checkbox = document.querySelector(
-                                            `.student-checkbox[value="${id}"]`
-                                        );
-                                        if (checkbox) checkbox.closest('tr')
-                                            .remove();
+                                            `.student-checkbox[value="${id}"]`);
+                                        if (checkbox) checkbox.closest('tr').remove();
                                     });
                                     if (selectAll) selectAll.checked = false;
                                     toggleActionBtns();
+                                    showToast("success", "Đã xóa thành công!");
                                 } else {
-                                    alert("Lỗi: " + data.message);
+                                    showToast("error", "Lỗi: " + data.message);
                                 }
                             } catch (e) {
                                 loadingModal.classList.add('hidden');
-                                alert("Có lỗi xảy ra khi xóa nhiều.");
+                                showToast("error", "Có lỗi xảy ra khi xóa nhiều.");
                             }
                         }
-                    });
+                    );
                 });
             }
 
@@ -1097,72 +936,39 @@
                 btnExportExcel.addEventListener('click', function(e) {
                     e.preventDefault();
                     const url = this.getAttribute('href');
-                    showConfirm({
-                        title: 'Xuất Excel',
-                        message: 'Tải xuống danh sách sinh viên lớp này?',
-                        btnText: 'Tải xuống',
-                        btnColor: 'green',
-                        icon: 'download',
-                        callback: () => window.location.href = url
-                    });
+                    showConfirm(
+                        'Xuất Excel',
+                        'Tải xuống danh sách sinh viên lớp này?',
+                        'Tải xuống',
+                        'green',
+                        'download',
+                        () => window.location.href = url
+                    );
                 });
             }
 
             if (btnSendSelectedEmail) {
                 btnSendSelectedEmail.addEventListener('click', function() {
-                    const ids = Array.from(document.querySelectorAll('.student-checkbox')).filter(cb =>
-                        cb.checked).map(cb => cb.value);
+                    const ids = Array.from(document.querySelectorAll('.student-checkbox')).filter(cb => cb
+                        .checked).map(cb => cb.value);
                     if (ids.length === 0) return;
-                    showConfirm({
-                        title: 'Gửi Email Hàng Loạt',
-                        message: `Gửi cho ${ids.length} sinh viên đã chọn?`,
-                        btnText: 'Gửi ngay',
-                        btnColor: 'blue',
-                        icon: 'send',
-                        callback: () => sendEmailsInBatches(ids, null)
-                    });
+                    showConfirm(
+                        'Gửi Email Hàng Loạt',
+                        `Gửi cho ${ids.length} sinh viên đã chọn?`,
+                        'Gửi ngay',
+                        'blue',
+                        'send',
+                        () => sendEmailsInBatches(ids, null)
+                    );
                 });
             }
 
-            async function sendEmailsInBatches(studentIds, redirectUrl) {
-                progressContainer.classList.remove('hidden');
-                loadingTitle.innerText = "Đang gửi Email...";
-                loadingDesc.innerText = "Vui lòng không tắt trình duyệt.";
-                progressBar.style.width = "0%";
-                const total = studentIds.length;
-                let processed = 0;
-                const batches = chunkArray(studentIds, 3);
-
-                for (const batch of batches) {
-                    try {
-                        await fetch('{{ route('admin.classes.send_emails') }}', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                            },
-                            body: JSON.stringify({
-                                student_ids: batch
-                            })
-                        });
-                        processed += batch.length;
-                        const percent = Math.round((processed / total) * 100);
-                        progressBar.style.width = `${percent}%`;
-                        progressText.innerText = `Đã gửi ${processed}/${total}`;
-                    } catch (err) {
-                        console.error(err);
-                    }
+            function chunkArray(myArray, chunk_size) {
+                var results = [];
+                while (myArray.length) {
+                    results.push(myArray.splice(0, chunk_size));
                 }
-
-                if (redirectUrl) {
-                    setTimeout(() => window.location.href = redirectUrl, 1000);
-                } else {
-                    loadingModal.classList.add('hidden');
-                    progressContainer.classList.add('hidden');
-                    document.querySelectorAll('.student-checkbox').forEach(cb => cb.checked = false);
-                    if (selectAll) selectAll.checked = false;
-                    toggleActionBtns();
-                }
+                return results;
             }
         });
     </script>

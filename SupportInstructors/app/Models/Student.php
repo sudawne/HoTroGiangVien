@@ -4,11 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes; 
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Student extends Model
 {
-    // [QUAN TRỌNG] Sử dụng trait SoftDeletes để kích hoạt xóa mềm
+    // Kích hoạt xóa mềm
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
@@ -22,10 +22,11 @@ class Student extends Model
         'enrollment_year'
     ];
 
-    // Ép kiểu dữ liệu để xử lý ngày tháng dễ hơn
     protected $casts = [
         'dob' => 'date',
     ];
+
+    // --- CÁC MỐI QUAN HỆ (RELATIONSHIPS) ---
 
     public function user()
     {
@@ -34,8 +35,6 @@ class Student extends Model
 
     public function class()
     {
-        // Lưu ý: Model lớp học của bạn tên là "Classes" (số nhiều),
-        // nếu tên file model là Class.php thì sửa thành Class::class
         return $this->belongsTo(Classes::class, 'class_id');
     }
 
@@ -49,8 +48,21 @@ class Student extends Model
         return $this->hasMany(StudentDebt::class);
     }
 
-    public function academicResults()
+    // Đổi tên từ academicResults -> academic_results để khớp với Controller
+    public function academic_results()
     {
         return $this->hasMany(AcademicResult::class);
+    }
+
+    // Thêm quan hệ lấy Cảnh báo học vụ
+    public function academic_warnings()
+    {
+        return $this->hasMany(AcademicWarning::class);
+    }
+
+    // Thêm quan hệ lấy Lịch sử tư vấn
+    public function consultation_logs()
+    {
+        return $this->hasMany(ConsultationLog::class);
     }
 }

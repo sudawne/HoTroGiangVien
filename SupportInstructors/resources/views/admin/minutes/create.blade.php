@@ -2,260 +2,288 @@
 @section('title', 'Tạo biên bản họp lớp')
 
 @section('content')
-<form action="{{ route('admin.minutes.store') }}" method="POST" class="max-w-5xl mx-auto pb-20">
+{{-- Container chính full chiều cao màn hình, không cuộn ở body --}}
+<form action="{{ route('admin.minutes.store') }}" method="POST" class="h-[calc(100vh-65px)] flex flex-col overflow-hidden">
     @csrf
-    
-    {{-- Input ẩn để lưu ID lớp --}}
     <input type="hidden" name="class_id" value="{{ $currentClass->id ?? '' }}">
 
-    {{-- HEADER --}}
-    <div class="flex items-center justify-between gap-4 mb-6 sticky top-4 z-20 bg-slate-50/95 dark:bg-[#151521]/95 backdrop-blur py-2">
+    {{-- HEADER CỐ ĐỊNH --}}
+    <div class="h-16 bg-white dark:bg-[#1e1e2d] border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-6 z-20 shrink-0">
         <div class="flex items-center gap-4">
-            <a href="{{ route('admin.minutes.index') }}" class="p-2 rounded-full bg-white border hover:bg-slate-50 text-slate-500 shadow-sm">
-                <span class="material-symbols-outlined !text-[20px]">arrow_back</span>
+            <a href="{{ route('admin.minutes.index') }}" class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 transition-colors">
+                <span class="material-symbols-outlined">arrow_back</span>
             </a>
             <div>
-                <h1 class="text-2xl font-bold text-slate-800 dark:text-white">Tạo Biên Bản Họp Lớp</h1>
-                <p class="text-slate-500 text-sm">
-                    Lớp: <strong class="text-primary">{{ $currentClass->code ?? 'N/A' }}</strong> - {{ $currentClass->name ?? '' }}
+                <h1 class="text-lg font-bold text-slate-800 dark:text-white uppercase">Tạo Biên Bản Mới</h1>
+                <p class="text-xs text-slate-500">
+                    Lớp: <span class="font-bold text-primary">{{ $currentClass->code ?? '...' }}</span>
                 </p>
             </div>
         </div>
-        <div class="flex gap-2">
-            <button type="submit" name="action" value="draft" class="px-4 py-2 bg-white border border-slate-300 text-slate-700 font-bold rounded shadow-sm hover:bg-slate-50">
-                Lưu nháp
-            </button>
-            <button type="submit" name="action" value="publish" class="px-6 py-2 bg-primary text-white font-bold rounded shadow-lg shadow-primary/30 hover:bg-primary/90 flex items-center gap-2">
-                <span class="material-symbols-outlined !text-[18px]">save</span> Lưu & Xuất Word
-            </button>
-        </div>
-    </div>
-
-    {{-- PHẦN 0: THÔNG TIN CƠ BẢN --}}
-    <div class="bg-white dark:bg-[#1e1e2d] p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm mb-6">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6"> 
-            
-            {{-- Chọn Lớp học --}}
-            <div>
-                <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Lớp sinh hoạt <span class="text-red-500">*</span></label>
-                <select name="class_id" 
-                    onchange="window.location.href = '?class_id=' + this.value"
-                    class="w-full rounded border-slate-300 bg-blue-50 focus:ring-primary font-bold text-blue-700">
-                    @foreach($classes as $cls)
-                        <option value="{{ $cls->id }}" {{ (isset($currentClass) && $currentClass->id == $cls->id) ? 'selected' : '' }}>
-                            {{ $cls->code }} - {{ $cls->name }}
-                        </option>
-                    @endforeach
-                </select>
-                <p class="text-[10px] text-slate-400 mt-1 italic">* Chọn lớp để cập nhật danh sách SV</p>
-            </div>
-
-            {{-- Tên biên bản --}}
-            <div class="md:col-span-2">
-                <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Tên biên bản / Về việc <span class="text-red-500">*</span></label>
-                <input type="text" name="title" required class="w-full rounded border-slate-300 focus:ring-primary font-bold" 
-                    placeholder="VD: Về việc..." value="Biên bản họp lớp tháng {{ now()->format('m/Y') }}">
-            </div>
-
-            {{-- [CẬP NHẬT] Chọn Học kỳ hiển thị Năm học --}}
-            <div>
-                <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Học kỳ & Năm học</label>
-                <select name="semester_id" class="w-full rounded border-slate-300 bg-slate-50 focus:ring-primary">
-                    @foreach($semesters as $sem)
-                        <option value="{{ $sem->id }}" {{ $sem->is_current ? 'selected' : '' }}>
-                            {{-- Hiển thị: Học kỳ 1 (2025-2026) --}}
-                            {{ $sem->name }} ({{ $sem->academic_year }})
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-        </div>
-    </div>
-
-    {{-- MỤC I --}}
-    <div class="bg-white dark:bg-[#1e1e2d] rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm mb-6 overflow-hidden">
-        <div class="bg-slate-100 dark:bg-slate-800 px-6 py-3 border-b border-slate-200 dark:border-slate-700">
-            <h3 class="font-bold text-slate-800 dark:text-white uppercase">I. Thời gian, Địa điểm, Thành phần</h3>
-        </div>
         
-        <div class="p-6 space-y-6">
-            {{-- Thời gian & Địa điểm --}}
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">1. Thời gian bắt đầu</label>
-                    <input type="datetime-local" name="held_at" required 
-                           value="{{ now()->format('Y-m-d\TH:i') }}"
-                           class="w-full rounded border-slate-300 focus:ring-primary">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">2. Địa điểm</label>
-                    <input type="text" name="location" required class="w-full rounded border-slate-300 focus:ring-primary" 
-                        placeholder="VD: Phòng B511">
-                </div>
-            </div>
+        {{-- Các nút thao tác chuyển xuống Footer hoặc để đây tùy ý, nhưng theo yêu cầu là Footer --}}
+        <div class="text-xs text-slate-400 italic">
+            Đang soạn thảo...
+        </div>
+    </div>
 
-            <hr class="border-slate-100 dark:border-slate-700">
-
-            {{-- Thành phần --}}
-            <div>
-                <label class="block text-xs font-bold text-slate-500 uppercase mb-3">3. Thành phần tham dự</label>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {{-- Cố vấn --}}
-                    <div>
-                        <span class="text-sm text-slate-500 block mb-1">Cố vấn học tập</span>
-                        <input type="text" readonly 
-                            value="{{ $currentClass->advisor->user->name ?? 'Chưa cập nhật' }}" 
-                            class="w-full rounded border-slate-200 bg-slate-100 text-slate-500 cursor-not-allowed">
-                    </div>
-                    
-                    {{-- [CẬP NHẬT] Chủ trì (Thêm ID để xử lý JS) --}}
-                    <div>
-                        <span class="text-sm text-slate-500 block mb-1">Chủ trì (Lớp trưởng)</span>
-                        <select name="monitor_id" id="monitor_select" class="w-full rounded border-slate-300 focus:ring-primary">
-                            <option value="">-- Chọn sinh viên --</option>
-                            @foreach($students as $st)
-                                <option value="{{ $st->id }}" {{ ($currentClass->monitor_id == $st->id) ? 'selected' : '' }}>
-                                    {{ $st->fullname }} ({{ $st->student_code }})
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    {{-- [CẬP NHẬT] Thư ký (Thêm ID để xử lý JS) --}}
-                    <div>
-                        <span class="text-sm text-slate-500 block mb-1">Thư ký</span>
-                        <select name="secretary_id" id="secretary_select" class="w-full rounded border-slate-300 focus:ring-primary">
-                            <option value="">-- Chọn sinh viên --</option>
-                            @foreach($students as $st)
-                                <option value="{{ $st->id }}">
-                                    {{ $st->fullname }} ({{ $st->student_code }})
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Điểm danh --}}
-            <div class="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-lg border border-blue-100 dark:border-blue-800"
-                x-data="{ total: {{ $students->count() }}, absent_count: 0 }">
-                <div class="flex items-center gap-8 mb-3">
-                    <div class="text-sm">Tổng số: <strong x-text="total"></strong></div>
-                    <div class="text-sm text-green-600">Có mặt: <strong x-text="total - absent_count"></strong></div>
-                    <div class="text-sm text-red-600">Vắng: <strong x-text="absent_count"></strong></div>
-                </div>
+    {{-- BODY: CHIA 2 CỘT --}}
+    <div class="flex flex-1 overflow-hidden">
+        
+        {{-- CỘT TRÁI: THÔNG TIN CƠ BẢN (CỐ ĐỊNH / SCROLL RIÊNG NẾU DÀI) --}}
+        <div class="w-[400px] bg-slate-50 dark:bg-[#151521] border-r border-slate-200 dark:border-slate-700 flex flex-col overflow-y-auto custom-scrollbar">
+            <div class="p-5 space-y-6">
                 
-                <div>
-                    <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Danh sách vắng (Chọn nhiều)</label>
-                    <select name="absent_list[]" multiple size="5"
-                        x-on:change="absent_count = $event.target.selectedOptions.length"
-                        class="w-full rounded border-slate-300 text-sm bg-white focus:ring-primary">
-                        @foreach($students as $st)
-                            <option value="{{ $st->id }}">{{ $st->fullname }} ({{ $st->student_code }})</option>
-                        @endforeach
-                    </select>
-                    <p class="text-[10px] text-slate-400 mt-1">* Giữ phím Ctrl để chọn nhiều</p>
+                {{-- Group 1: Thông tin chung --}}
+                <div class="bg-white dark:bg-[#1e1e2d] p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase mb-3 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[16px]">info</span> Thông tin chung
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Lớp sinh hoạt <span class="text-red-500">*</span></label>
+                            <select name="class_id" onchange="window.location.href = '?class_id=' + this.value"
+                                class="w-full rounded border-slate-300 bg-blue-50 text-sm focus:ring-primary font-bold text-blue-700">
+                                @foreach($classes as $cls)
+                                    <option value="{{ $cls->id }}" {{ (isset($currentClass) && $currentClass->id == $cls->id) ? 'selected' : '' }}>
+                                        {{ $cls->code }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Tiêu đề biên bản <span class="text-red-500">*</span></label>
+                            <input type="text" name="title" required class="w-full rounded border-slate-300 text-sm focus:ring-primary font-bold" 
+                                value="Biên bản họp lớp tháng {{ now()->format('m/Y') }}">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Học kỳ <span class="text-red-500">*</span></label>
+                            <select name="semester_id" class="w-full rounded border-slate-300 text-sm focus:ring-primary">
+                                @foreach($semesters as $sem)
+                                    <option value="{{ $sem->id }}" {{ $sem->is_current ? 'selected' : '' }}>
+                                        {{ $sem->name }} ({{ $sem->academic_year }})
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Group 2: Thời gian & Địa điểm --}}
+                <div class="bg-white dark:bg-[#1e1e2d] p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase mb-3 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[16px]">schedule</span> Thời gian & Địa điểm
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Bắt đầu</label>
+                                <input type="datetime-local" name="held_at" required value="{{ now()->format('Y-m-d\TH:i') }}"
+                                    class="w-full rounded border-slate-300 text-xs focus:ring-primary">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Kết thúc</label>
+                                <input type="datetime-local" name="ended_at"
+                                    class="w-full rounded border-slate-300 text-xs focus:ring-primary">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Địa điểm</label>
+                            <input type="text" name="location" required class="w-full rounded border-slate-300 text-sm focus:ring-primary" 
+                                placeholder="VD: Phòng B511">
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Group 3: Thành phần nhân sự --}}
+                <div class="bg-white dark:bg-[#1e1e2d] p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase mb-3 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[16px]">group</span> Nhân sự chủ chốt
+                    </h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Cố vấn học tập</label>
+                            <input type="text" readonly value="{{ $currentClass->advisor->user->name ?? 'Chưa cập nhật' }}" 
+                                class="w-full rounded border-slate-200 bg-slate-100 text-xs text-slate-500 cursor-not-allowed">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Chủ trì (Lớp trưởng)</label>
+                            <select name="monitor_id" id="select-monitor" autocomplete="off">
+                                <option value="">-- Chọn --</option>
+                                @foreach($students as $st)
+                                    <option value="{{ $st->id }}" {{ ($currentClass->monitor_id == $st->id) ? 'selected' : '' }}>
+                                        {{ $st->fullname }} ({{ $st->student_code }})
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Thư ký</label>
+                            <select name="secretary_id" id="select-secretary" autocomplete="off">
+                                <option value="">-- Chọn --</option>
+                                @foreach($students as $st)
+                                    <option value="{{ $st->id }}">
+                                        {{ $st->fullname }} ({{ $st->student_code }})
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Group 4: Điểm danh --}}
+                <div class="bg-white dark:bg-[#1e1e2d] p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase mb-3 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[16px]">fact_check</span> Điểm danh
+                    </h3>
+                    
+                    <div class="flex items-center justify-between mb-3 text-xs">
+                        <div class="text-slate-600">Tổng: <strong>{{ $students->count() }}</strong></div>
+                        <div class="text-green-600">Có mặt: <strong id="display-present">{{ $students->count() }}</strong></div>
+                        <div class="text-red-600">Vắng: <strong id="display-absent">0</strong></div>
+                    </div>
+
+                    <div>
+                        <select name="absent_list[]" id="select-absent" multiple placeholder="Chọn người vắng..." autocomplete="off">
+                            @foreach($students as $st)
+                                <option value="{{ $st->id }}">{{ $st->fullname }} ({{ $st->student_code }})</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        {{-- CỘT PHẢI: NỘI DUNG CHÍNH (SCROLL) --}}
+        <div class="flex-1 bg-slate-100 dark:bg-slate-900 overflow-y-auto custom-scrollbar p-8">
+            <div class="max-w-4xl mx-auto space-y-8 pb-20">
+                
+                {{-- MỤC II --}}
+                <div class="bg-white dark:bg-[#1e1e2d] rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+                    <div class="bg-slate-50 dark:bg-slate-800 px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                        <h2 class="text-lg font-bold text-slate-800 dark:text-white uppercase">II. Nội dung cuộc họp</h2>
+                        <span class="material-symbols-outlined text-slate-300">description</span>
+                    </div>
+                    <div class="p-6">
+                        <textarea name="content_discussions" rows="12" class="w-full rounded-lg border-slate-300 focus:ring-primary focus:border-primary text-base leading-relaxed" 
+                            placeholder="- Triển khai các nội dung chính..."></textarea>
+                        
+                        {{-- Quick Actions --}}
+                        <div class="flex flex-wrap gap-2 mt-4">
+                            <button type="button" onclick="appendContent('Triển khai kế hoạch học tập học kỳ mới.')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-medium rounded-md transition border border-slate-200">+ Kế hoạch học tập</button>
+                            <button type="button" onclick="appendContent('Nhắc nhở đóng học phí đúng hạn.')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-medium rounded-md transition border border-slate-200">+ Học phí</button>
+                            <button type="button" onclick="appendContent('Đánh giá điểm rèn luyện.')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-medium rounded-md transition border border-slate-200">+ Điểm rèn luyện</button>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- MỤC III --}}
+                <div class="bg-white dark:bg-[#1e1e2d] rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+                    <div class="bg-slate-50 dark:bg-slate-800 px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                        <h2 class="text-lg font-bold text-slate-800 dark:text-white uppercase">III. Kết luận</h2>
+                        <span class="material-symbols-outlined text-slate-300">gavel</span>
+                    </div>
+                    <div class="p-6">
+                        <textarea name="content_conclusion" rows="6" class="w-full rounded-lg border-slate-300 focus:ring-primary focus:border-primary text-base leading-relaxed" 
+                            placeholder="Thống nhất các nội dung..."></textarea>
+                    </div>
+                </div>
+
+                {{-- MỤC IV --}}
+                <div class="bg-white dark:bg-[#1e1e2d] rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+                    <div class="bg-slate-50 dark:bg-slate-800 px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                        <h2 class="text-lg font-bold text-slate-800 dark:text-white uppercase">IV. Kiến nghị của sinh viên</h2>
+                        <span class="material-symbols-outlined text-slate-300">record_voice_over</span>
+                    </div>
+                    <div class="p-6">
+                        <textarea name="content_requests" rows="4" class="w-full rounded-lg border-slate-300 focus:ring-primary focus:border-primary text-base leading-relaxed" 
+                            placeholder="- Sinh viên Nguyễn Văn A có ý kiến..."></textarea>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    {{-- MỤC II: NỘI DUNG --}}
-    <div class="bg-white dark:bg-[#1e1e2d] rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm mb-6">
-        <div class="bg-slate-100 dark:bg-slate-800 px-6 py-3 border-b border-slate-200 dark:border-slate-700">
-            <h3 class="font-bold text-slate-800 dark:text-white uppercase">II. Nội dung</h3>
-        </div>
-        <div class="p-6">
-            <textarea name="content_discussions" rows="8" class="w-full rounded border-slate-300 focus:ring-primary" placeholder="Nhập nội dung triển khai..."></textarea>
-            
-            {{-- Gợi ý nội dung nhanh --}}
-            <div class="flex gap-2 mt-2">
-                <button type="button" onclick="appendContent('Triển khai kế hoạch học tập học kỳ mới.')" class="px-3 py-1 bg-slate-100 text-slate-600 text-xs rounded-full hover:bg-slate-200 transition">+ Kế hoạch học tập</button>
-                <button type="button" onclick="appendContent('Nhắc nhở sinh viên hoàn thành đóng học phí đúng hạn.')" class="px-3 py-1 bg-slate-100 text-slate-600 text-xs rounded-full hover:bg-slate-200 transition">+ Đóng học phí</button>
-                <button type="button" onclick="appendContent('Triển khai vấn đề điểm rèn luyên và thời gian đánh giá điểm rèn luyên.')" class="px-3 py-1 bg-slate-100 text-slate-600 text-xs rounded-full hover:bg-slate-200 transition">+ Điểm rèn luyện</button>
-            </div>
-        </div>
-    </div>
-
-    {{-- MỤC III: KẾT LUẬN --}}
-    <div class="bg-white dark:bg-[#1e1e2d] rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm mb-6">
-        <div class="bg-slate-100 dark:bg-slate-800 px-6 py-3 border-b border-slate-200 dark:border-slate-700">
-            <h3 class="font-bold text-slate-800 dark:text-white uppercase">III. Kết luận</h3>
-        </div>
-        <div class="p-6">
-            <textarea name="content_conclusion" rows="5" class="w-full rounded border-slate-300 focus:ring-primary" placeholder="Kết quả thống nhất..."></textarea>
-        </div>
-    </div>
-
-    {{-- MỤC IV: KIẾN NGHỊ --}}
-    <div class="bg-white dark:bg-[#1e1e2d] rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm mb-6">
-        <div class="bg-slate-100 dark:bg-slate-800 px-6 py-3 border-b border-slate-200 dark:border-slate-700">
-            <h3 class="font-bold text-slate-800 dark:text-white uppercase">IV. Kiến nghị</h3>
-        </div>
-        <div class="p-6">
-            <textarea name="content_requests" rows="4" class="w-full rounded border-slate-300 focus:ring-primary" placeholder="Ý kiến sinh viên..."></textarea>
-        </div>
-    </div>
-
-    {{-- THỜI GIAN KẾT THÚC --}}
-    <div class="bg-white dark:bg-[#1e1e2d] p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
-        <div class="flex items-center gap-4">
-            <label class="text-sm font-bold text-slate-700 uppercase whitespace-nowrap">Kết thúc lúc:</label>
-            <input type="datetime-local" name="ended_at" class="w-64 rounded border-slate-300 focus:ring-primary">
-        </div>
+    {{-- FOOTER CỐ ĐỊNH --}}
+    <div class="h-16 bg-white dark:bg-[#1e1e2d] border-t border-slate-200 dark:border-slate-700 flex items-center justify-end px-6 gap-3 z-20 shrink-0">
+        <button type="button" onclick="window.history.back()" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded font-medium transition">
+            Hủy bỏ
+        </button>
+        <button type="submit" name="action" value="draft" class="px-5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded shadow-sm transition">
+            Lưu nháp
+        </button>
+        <button type="submit" name="action" value="publish" class="px-6 py-2 bg-primary hover:bg-primary/90 text-white font-bold rounded shadow-md shadow-primary/30 flex items-center gap-2 transition transform active:scale-95">
+            <span class="material-symbols-outlined !text-[18px]">save_as</span> Hoàn tất & Xuất file
+        </button>
     </div>
 
 </form>
 
+{{-- SCRIPTS GIỮ NGUYÊN NHƯ CŨ (TOMSELECT) --}}
 <script>
     function appendContent(text) {
         const textarea = document.querySelector('textarea[name="content_discussions"]');
         textarea.value += (textarea.value ? '\n' : '') + '- ' + text;
     }
 
-    // [CẬP NHẬT] Script xử lý không chọn trùng Chủ trì và Thư ký
-    document.addEventListener('DOMContentLoaded', function () {
-        const monitorSelect = document.getElementById('monitor_select');
-        const secretarySelect = document.getElementById('secretary_select');
-
-        function preventDuplicateRoles(changedSelect) {
-            const monitorVal = monitorSelect.value;
-            const secretaryVal = secretarySelect.value;
-
-            // Nếu người được chọn làm Chủ trì đang được chọn làm Thư ký -> Reset Thư ký
-            if (changedSelect === monitorSelect && monitorVal === secretaryVal && monitorVal !== "") {
-                secretarySelect.value = "";
+    document.addEventListener('DOMContentLoaded', function() {
+        // Cấu hình TomSelect (Giữ nguyên)
+        var commonConfig = {
+            create: false,
+            sortField: { field: "text", direction: "asc" },
+            render: {
+                no_results: function(data, escape) {
+                    return '<div class="no-results p-2 text-sm text-slate-500 italic">Không tìm thấy sinh viên</div>';
+                }
             }
-            // Nếu người được chọn làm Thư ký đang được chọn làm Chủ trì -> Reset Chủ trì
-            if (changedSelect === secretarySelect && secretaryVal === monitorVal && secretaryVal !== "") {
-                monitorSelect.value = "";
-            }
+        };
 
-            // --- Xử lý Ẩn/Hiện Visual (UX) ---
-            
-            // 1. Reset: Bật lại tất cả tùy chọn trước
-            Array.from(monitorSelect.options).forEach(opt => opt.disabled = false);
-            Array.from(secretarySelect.options).forEach(opt => opt.disabled = false);
+        // Khởi tạo TomSelect và lưu vào biến
+        var tomMonitor = new TomSelect("#select-monitor", commonConfig);
+        var tomSecretary = new TomSelect("#select-secretary", commonConfig);
 
-            // 2. Disable người đang làm Chủ trì bên phía Thư ký
-            if (monitorSelect.value) {
-                const opt = secretarySelect.querySelector(`option[value="${monitorSelect.value}"]`);
-                if (opt) opt.disabled = true;
-            }
+        // Khởi tạo TomSelect cho phần vắng mặt
+        var selectAbsent = new TomSelect("#select-absent", {
+            ...commonConfig,
+            plugins: ['remove_button'],
+            onItemAdd: updateAbsentCount,
+            onItemRemove: updateAbsentCount
+        });
 
-            // 3. Disable người đang làm Thư ký bên phía Chủ trì
-            if (secretarySelect.value) {
-                const opt = monitorSelect.querySelector(`option[value="${secretarySelect.value}"]`);
-                if (opt) opt.disabled = true;
+        tomMonitor.on('change', function(value) {
+            if (value && value === tomSecretary.getValue()) {
+                showConfirm(
+                    'Cảnh báo trùng lặp',
+                    'Lớp trưởng và Thư ký không được là cùng một người!', 
+                    function() { },
+                    'danger');
+                tomMonitor.clear(); 
             }
+        });
+
+        tomSecretary.on('change', function(value) {
+            if (value && value === tomMonitor.getValue()) {
+                showConfirm(
+                    'Cảnh báo trùng lặp',
+                    'Lớp trưởng và Thư ký không được là cùng một người!', 
+                    function() { },
+                    'danger');
+                tomSecretary.clear();
+            }
+        });
+
+        function updateAbsentCount() {
+            var totalAbsent = selectAbsent.items.length;
+            var totalStudents = {{ $students->count() }};
+            var elPresent = document.getElementById('display-present');
+            var elAbsent = document.getElementById('display-absent');
+            if(elPresent) elPresent.innerText = totalStudents - totalAbsent;
+            if(elAbsent) elAbsent.innerText = totalAbsent;
         }
-
-        // Gán sự kiện
-        monitorSelect.addEventListener('change', () => preventDuplicateRoles(monitorSelect));
-        secretarySelect.addEventListener('change', () => preventDuplicateRoles(secretarySelect));
-
-        // Chạy 1 lần lúc mới tải trang để lọc dữ liệu ban đầu
-        preventDuplicateRoles(null);
     });
 </script>
 @endsection

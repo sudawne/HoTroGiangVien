@@ -9,19 +9,19 @@ use App\Models\MeetingMinute;
 use App\Models\Student;
 use App\Models\Semester;
 use Illuminate\Support\Facades\Auth;
+use PhpOffice\PhpWord\PhpWord;
+use PhpOffice\PhpWord\IOFactory;
+use PhpOffice\PhpWord\Style\Table;
+use PhpOffice\PhpWord\Shared\Html;
 
 class MeetingMinuteController extends Controller
 {
     public function index(Request $request)
     {
         $query = MeetingMinute::with(['studentClass', 'semester', 'creator']);
-
-        // 1. Logic lọc theo Học kỳ (nếu có)
         if ($request->filled('semester_id')) {
             $query->where('semester_id', $request->semester_id);
         }
-
-        // 2. Logic lọc theo Năm học (nếu có)
         if ($request->filled('academic_year')) {
             $query->whereHas('semester', function($q) use ($request) {
                 $q->where('academic_year', $request->academic_year);
@@ -168,13 +168,12 @@ class MeetingMinuteController extends Controller
     }
     public function approve($id)
     {
-        // Kiểm tra quyền Admin (role_id = 1) 
         if (!Auth::check() || Auth::user()->role_id != 1) {
             return back()->with('error', 'Chỉ Admin mới có quyền duyệt biên bản.');
         }
 
         $minute = MeetingMinute::findOrFail($id);
-        $minute->update(['status' => 'published']); // Chuyển sang trạng thái đã công bố 
+        $minute->update(['status' => 'published']);
 
         return redirect()->route('admin.minutes.index')->with('success', 'Đã phê duyệt và công bố biên bản.');
     }
@@ -201,8 +200,6 @@ class MeetingMinuteController extends Controller
     public function update(Request $request, $id)
     {
         $minute = MeetingMinute::findOrFail($id);
-
-        // Validate tương tự store
         $request->validate([
             'title' => 'required|string|max:255',
             'held_at' => 'required|date',
@@ -233,5 +230,123 @@ class MeetingMinuteController extends Controller
         $minute->delete();
 
         return redirect()->route('admin.minutes.index')->with('success', 'Đã xóa biên bản.');
+    }
+    public function exportWord($id)
+    {
+        $minute = MeetingMinute::with(['studentClass.advisor.user', 'semester', 'creator', 'monitor', 'secretary'])->findOrFail($id);
+        $absentStudents = \App\Models\Student::whereIn('id', $minute->absent_list ?? [])->get();
+
+        // 1. Khởi tạo PHPWord
+        $phpWord = new PhpWord();
+        
+        // Cấu hình mặc định: Font Times New Roman, Cỡ 13 (chuẩn hành chính)
+        $phpWord->setDefaultFontName('Times New Roman');
+        $phpWord->setDefaultFontSize(13);
+
+        // 2. Tạo Section (Trang giấy A4)
+        $section = $phpWord->addSection([
+            'paperSize' => 'A4',
+            'marginTop' => 1134,    // ~2cm
+            'marginLeft' => 1134,
+            'marginRight' => 1134,
+            'marginBottom' => 1134,
+        ]);
+
+        // 3. HEADER: QUỐC HIỆU & TIÊU NGỮ (Dùng bảng không viền để chia 2 bên)
+        $headerTable = $section->addTable(['borderSize' => 0, 'cellMargin' => 0, 'width' => 100 * 50]);
+        $headerTable->addRow();
+        
+        // Cột Trái: Trường/Khoa
+        $leftCell = $headerTable->addCell(5000);
+        $leftCell->addText('TRƯỜNG ĐẠI HỌC KIÊN GIANG', ['bold' => true, 'size' => 12], ['alignment' => 'center']);
+        $leftCell->addText('KHOA THÔNG TIN TRUYỀN THÔNG', ['bold' => true, 'size' => 12], ['alignment' => 'center']);
+        // Kẻ chân (giả lập bằng gạch dưới ________)
+        $leftCell->addText('__________________________', ['bold' => true], ['alignment' => 'center']);
+
+        // Cột Phải: Quốc hiệu
+        $rightCell = $headerTable->addCell(5000);
+        $rightCell->addText('CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', ['bold' => true, 'size' => 12], ['alignment' => 'center']);
+        $rightCell->addText('Độc lập - Tự do - Hạnh phúc', ['bold' => true, 'size' => 13], ['alignment' => 'center']);
+        $rightCell->addText('__________________________', ['bold' => true], ['alignment' => 'center']);
+
+        $section->addTextBreak(1); // Xuống dòng
+
+        // 4. TIÊU ĐỀ BIÊN BẢN
+        $section->addText('BIÊN BẢN HỌP LỚP', ['bold' => true, 'size' => 16], ['alignment' => 'center']);
+        $section->addText($minute->title, ['bold' => true, 'size' => 14], ['alignment' => 'center']);
+        
+        $hocKy = $minute->semester->name ?? '...';
+        $namHoc = $minute->semester->academic_year ?? '...';
+        $section->addText("Học kỳ: {$hocKy}   Năm học: {$namHoc}", ['italic' => true], ['alignment' => 'center']);
+        $section->addTextBreak(1);
+
+        // 5. MỤC I: THÔNG TIN CHUNG
+        $section->addText('I. THỜI GIAN, ĐỊA ĐIỂM, THÀNH PHẦN THAM DỰ', ['bold' => true]);
+        
+        $ngayHop = $minute->held_at ? $minute->held_at->format('H \g\i\ờ i, \n\g\à\y d/m/Y') : '...';
+        $section->addText("1. Thời gian: Bắt đầu lúc {$ngayHop}.");
+        $section->addText("2. Địa điểm: " . $minute->location);
+        
+        $section->addText("3. Thành phần tham dự:");
+        $section->addText("- Cố vấn học tập: " . ($minute->studentClass->advisor->user->name ?? '...'), [], ['indentation' => ['left' => 300]]);
+        $section->addText("- Lớp trưởng (Chủ trì): " . ($minute->monitor->fullname ?? '...'), [], ['indentation' => ['left' => 300]]);
+        $section->addText("- Thư ký: " . ($minute->secretary->fullname ?? '...'), [], ['indentation' => ['left' => 300]]);
+        
+        $siSo = "Tổng số: " . ($minute->attendees_count + count($minute->absent_list ?? [])) . 
+                "; Có mặt: " . $minute->attendees_count . 
+                "; Vắng: " . count($minute->absent_list ?? []);
+        
+        $section->addText("- " . $siSo, [], ['indentation' => ['left' => 300]]);
+        
+        // Liệt kê tên vắng
+        if(count($absentStudents) > 0) {
+            $tenVang = $absentStudents->pluck('fullname')->implode(', ');
+            $section->addText("(Danh sách vắng: {$tenVang})", ['italic' => true], ['indentation' => ['left' => 600]]);
+        }
+
+        $section->addTextBreak(1);
+
+        // 6. NỘI DUNG CHÍNH (Xử lý HTML từ CKEditor)
+        $section->addText('II. NỘI DUNG', ['bold' => true]);
+        // Dùng hàm addHtml để convert thẻ <p>, <b> từ CKEditor sang Word
+        Html::addHtml($section, $minute->content_discussions);
+
+        $section->addTextBreak(1);
+
+        // 7. KẾT LUẬN
+        $section->addText('III. KẾT LUẬN', ['bold' => true]);
+        Html::addHtml($section, $minute->content_conclusion);
+
+        $section->addTextBreak(1);
+
+        // 8. KIẾN NGHỊ
+        $section->addText('IV. KIẾN NGHỊ', ['bold' => true]);
+        Html::addHtml($section, $minute->content_requests);
+
+        $section->addTextBreak(2);
+
+        // 9. CHỮ KÝ (Bảng 2 cột)
+        $footerTable = $section->addTable(['borderSize' => 0, 'width' => 100 * 50]);
+        $footerTable->addRow();
+        
+        $c1 = $footerTable->addCell(5000);
+        $c1->addText('THƯ KÝ', ['bold' => true], ['alignment' => 'center']);
+        $c1->addTextBreak(3); // Khoảng trống ký tên
+        $c1->addText($minute->secretary->fullname ?? '', ['bold' => true], ['alignment' => 'center']);
+
+        $c2 = $footerTable->addCell(5000);
+        $c2->addText('CỐ VẤN HỌC TẬP', ['bold' => true], ['alignment' => 'center']);
+        $c2->addTextBreak(3);
+        $c2->addText($minute->studentClass->advisor->user->name ?? '', ['bold' => true], ['alignment' => 'center']);
+
+        // 10. Xuất file
+        $filename = "Bien-ban-hop-lop-" . ($minute->studentClass->code ?? 'Lop') . "-" . date('d-m-Y') . ".docx";
+        
+        // Save to temp
+        $objWriter = IOFactory::createWriter($phpWord, 'Word2007');
+        
+        return response()->streamDownload(function () use ($objWriter) {
+            $objWriter->save('php://output');
+        }, $filename);
     }
 }

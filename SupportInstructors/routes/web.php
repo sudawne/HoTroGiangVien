@@ -28,4 +28,5 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => 'auth'], fu
     Route::resource('minutes', MeetingMinuteController::class);
     Route::patch('minutes/{id}/approve', [MeetingMinuteController::class, 'approve'])->name('minutes.approve');
     Route::patch('minutes/{id}/reject', [MeetingMinuteController::class, 'reject'])->name('minutes.reject');
+    Route::get('minutes/{id}/export-word', [MeetingMinuteController::class, 'exportWord'])->name('minutes.export_word');
 });

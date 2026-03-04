@@ -142,10 +142,6 @@
                                             Vắng: {{ count($minute->absent_list ?? []) }}
                                         </span>
                                     </div>
-
-                                    <p class="text-sm text-slate-600 dark:text-slate-400 mt-3 line-clamp-2">
-                                        {{ Str::limit($minute->content_discussions, 150) }}
-                                    </p>
                                 </div>
                             </div>
 

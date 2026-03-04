@@ -1,36 +1,44 @@
 @extends('layouts.admin')
-@section('title', 'Tạo biên bản họp lớp')
+@section('title', (Auth::user()->role_id ?? 0) == 1 ? 'Kiểm duyệt biên bản' : 'Chỉnh sửa biên bản')
 
 @section('content')
-{{-- Container chính full chiều cao màn hình, không cuộn ở body --}}
-<form action="{{ route('admin.minutes.store') }}" method="POST" class="h-[calc(100vh-65px)] flex flex-col overflow-hidden">
+{{-- Container chính full chiều cao màn hình, chia 3 phần: Header - Body - Footer --}}
+<form action="{{ route('admin.minutes.update', $minute->id) }}" method="POST" class="h-[calc(100vh-65px)] flex flex-col overflow-hidden">
     @csrf
-    <input type="hidden" name="class_id" value="{{ $currentClass->id ?? '' }}">
+    @method('PUT')
+    
+    {{-- Input ẩn để giữ logic class_id --}}
+    <input type="hidden" name="class_id" value="{{ $minute->class_id }}">
 
-    {{-- HEADER CỐ ĐỊNH --}}
+    {{-- 1. HEADER CỐ ĐỊNH (Chỉ để tiêu đề và nút Back) --}}
     <div class="h-16 bg-white dark:bg-[#1e1e2d] border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-6 z-20 shrink-0">
         <div class="flex items-center gap-4">
             <a href="{{ route('admin.minutes.index') }}" class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 transition-colors">
                 <span class="material-symbols-outlined">arrow_back</span>
             </a>
             <div>
-                <h1 class="text-lg font-bold text-slate-800 dark:text-white uppercase">Tạo Biên Bản Mới</h1>
+                <h1 class="text-lg font-bold text-slate-800 dark:text-white uppercase">
+                    {{ (Auth::user()->role_id ?? 0) == 1 ? 'Kiểm duyệt nội dung' : 'Chỉnh sửa nội dung' }}
+                </h1>
                 <p class="text-xs text-slate-500">
-                    Lớp: <span class="font-bold text-primary">{{ $currentClass->code ?? '...' }}</span>
+                    Lớp: <span class="font-bold text-primary">{{ $minute->studentClass->code ?? '...' }}</span>
                 </p>
             </div>
         </div>
         
-        {{-- Các nút thao tác chuyển xuống Footer hoặc để đây tùy ý, nhưng theo yêu cầu là Footer --}}
         <div class="text-xs text-slate-400 italic">
-            Đang soạn thảo...
+            @if($minute->status == 'published')
+                <span class="text-emerald-600 font-bold flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">lock</span> Đã chốt sổ</span>
+            @else
+                Đang chỉnh sửa...
+            @endif
         </div>
     </div>
 
-    {{-- BODY: CHIA 2 CỘT --}}
+    {{-- 2. BODY: CHIA 2 CỘT (Phần này cuộn được) --}}
     <div class="flex flex-1 overflow-hidden">
         
-        {{-- CỘT TRÁI: THÔNG TIN CƠ BẢN (CỐ ĐỊNH / SCROLL RIÊNG NẾU DÀI) --}}
+        {{-- CỘT TRÁI: THÔNG TIN CƠ BẢN --}}
         <div class="w-[400px] bg-slate-50 dark:bg-[#151521] border-r border-slate-200 dark:border-slate-700 flex flex-col overflow-y-auto custom-scrollbar">
             <div class="p-5 space-y-6">
                 
@@ -41,29 +49,24 @@
                     </h3>
                     
                     <div class="space-y-4">
+                        {{-- Lớp (Readonly) --}}
                         <div>
-                            <label class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Lớp sinh hoạt <span class="text-red-500">*</span></label>
-                            <select name="class_id" onchange="window.location.href = '?class_id=' + this.value"
-                                class="w-full rounded border-slate-300 bg-blue-50 text-sm focus:ring-primary font-bold text-blue-700">
-                                @foreach($classes as $cls)
-                                    <option value="{{ $cls->id }}" {{ (isset($currentClass) && $currentClass->id == $cls->id) ? 'selected' : '' }}>
-                                        {{ $cls->code }}
-                                    </option>
-                                @endforeach
-                            </select>
+                            <label class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Lớp sinh hoạt</label>
+                            <input type="text" readonly value="{{ $minute->studentClass->code }} - {{ $minute->studentClass->name }}"
+                                class="w-full rounded border-slate-200 bg-slate-100 text-sm text-slate-500 font-bold cursor-not-allowed">
                         </div>
 
                         <div>
                             <label class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Tiêu đề biên bản <span class="text-red-500">*</span></label>
                             <input type="text" name="title" required class="w-full rounded border-slate-300 text-sm focus:ring-primary font-bold" 
-                                value="Biên bản họp lớp tháng {{ now()->format('m/Y') }}">
+                                value="{{ old('title', $minute->title) }}">
                         </div>
 
                         <div>
                             <label class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Học kỳ <span class="text-red-500">*</span></label>
                             <select name="semester_id" class="w-full rounded border-slate-300 text-sm focus:ring-primary">
                                 @foreach($semesters as $sem)
-                                    <option value="{{ $sem->id }}" {{ $sem->is_current ? 'selected' : '' }}>
+                                    <option value="{{ $sem->id }}" {{ $minute->semester_id == $sem->id ? 'selected' : '' }}>
                                         {{ $sem->name }} ({{ $sem->academic_year }})
                                     </option>
                                 @endforeach
@@ -81,19 +84,21 @@
                         <div class="grid grid-cols-2 gap-3">
                             <div>
                                 <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Bắt đầu</label>
-                                <input type="datetime-local" name="held_at" required value="{{ now()->format('Y-m-d\TH:i') }}"
+                                <input type="datetime-local" name="held_at" required 
+                                    value="{{ old('held_at', $minute->held_at ? $minute->held_at->format('Y-m-d\TH:i') : '') }}"
                                     class="w-full rounded border-slate-300 text-xs focus:ring-primary">
                             </div>
                             <div>
                                 <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Kết thúc</label>
                                 <input type="datetime-local" name="ended_at"
+                                    value="{{ old('ended_at', $minute->ended_at ? $minute->ended_at->format('Y-m-d\TH:i') : '') }}"
                                     class="w-full rounded border-slate-300 text-xs focus:ring-primary">
                             </div>
                         </div>
                         <div>
                             <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Địa điểm</label>
                             <input type="text" name="location" required class="w-full rounded border-slate-300 text-sm focus:ring-primary" 
-                                placeholder="VD: Phòng B511">
+                                value="{{ old('location', $minute->location) }}">
                         </div>
                     </div>
                 </div>
@@ -106,7 +111,7 @@
                     <div class="space-y-4">
                         <div>
                             <label class="block text-xs font-medium text-slate-700 mb-1">Cố vấn học tập</label>
-                            <input type="text" readonly value="{{ $currentClass->advisor->user->name ?? 'Chưa cập nhật' }}" 
+                            <input type="text" readonly value="{{ $minute->studentClass->advisor->user->name ?? 'Chưa cập nhật' }}" 
                                 class="w-full rounded border-slate-200 bg-slate-100 text-xs text-slate-500 cursor-not-allowed">
                         </div>
                         <div>
@@ -114,7 +119,7 @@
                             <select name="monitor_id" id="select-monitor" autocomplete="off">
                                 <option value="">-- Chọn --</option>
                                 @foreach($students as $st)
-                                    <option value="{{ $st->id }}" {{ ($currentClass->monitor_id == $st->id) ? 'selected' : '' }}>
+                                    <option value="{{ $st->id }}" {{ $minute->monitor_id == $st->id ? 'selected' : '' }}>
                                         {{ $st->fullname }} ({{ $st->student_code }})
                                     </option>
                                 @endforeach
@@ -125,7 +130,7 @@
                             <select name="secretary_id" id="select-secretary" autocomplete="off">
                                 <option value="">-- Chọn --</option>
                                 @foreach($students as $st)
-                                    <option value="{{ $st->id }}">
+                                    <option value="{{ $st->id }}" {{ $minute->secretary_id == $st->id ? 'selected' : '' }}>
                                         {{ $st->fullname }} ({{ $st->student_code }})
                                     </option>
                                 @endforeach
@@ -142,14 +147,19 @@
                     
                     <div class="flex items-center justify-between mb-3 text-xs">
                         <div class="text-slate-600">Tổng: <strong>{{ $students->count() }}</strong></div>
-                        <div class="text-green-600">Có mặt: <strong id="display-present">{{ $students->count() }}</strong></div>
+                        <div class="text-green-600">Có mặt: <strong id="display-present">0</strong></div>
                         <div class="text-red-600">Vắng: <strong id="display-absent">0</strong></div>
                     </div>
 
                     <div>
                         <select name="absent_list[]" id="select-absent" multiple placeholder="Chọn người vắng..." autocomplete="off">
                             @foreach($students as $st)
-                                <option value="{{ $st->id }}">{{ $st->fullname }} ({{ $st->student_code }})</option>
+                                @php
+                                    $isAbsent = in_array($st->id, $minute->absent_list ?? []);
+                                @endphp
+                                <option value="{{ $st->id }}" {{ $isAbsent ? 'selected' : '' }}>
+                                    {{ $st->fullname }} ({{ $st->student_code }})
+                                </option>
                             @endforeach
                         </select>
                     </div>
@@ -170,9 +180,8 @@
                     </div>
                     <div class="p-6">
                         <textarea name="content_discussions" rows="12" class="w-full rounded-lg border-slate-300 focus:ring-primary focus:border-primary text-base leading-relaxed" 
-                            placeholder="- Triển khai các nội dung chính..."></textarea>
+                            placeholder="- Triển khai các nội dung chính...">{{ old('content_discussions', $minute->content_discussions) }}</textarea>
                         
-                        {{-- Quick Actions --}}
                         <div class="flex flex-wrap gap-2 mt-4">
                             <button type="button" onclick="appendContent('Triển khai kế hoạch học tập học kỳ mới.')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-medium rounded-md transition border border-slate-200">+ Kế hoạch học tập</button>
                             <button type="button" onclick="appendContent('Nhắc nhở đóng học phí đúng hạn.')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-medium rounded-md transition border border-slate-200">+ Học phí</button>
@@ -189,7 +198,7 @@
                     </div>
                     <div class="p-6">
                         <textarea name="content_conclusion" rows="6" class="w-full rounded-lg border-slate-300 focus:ring-primary focus:border-primary text-base leading-relaxed" 
-                            placeholder="Thống nhất các nội dung..."></textarea>
+                            placeholder="Thống nhất các nội dung...">{{ old('content_conclusion', $minute->content_conclusion) }}</textarea>
                     </div>
                 </div>
 
@@ -201,29 +210,46 @@
                     </div>
                     <div class="p-6">
                         <textarea name="content_requests" rows="4" class="w-full rounded-lg border-slate-300 focus:ring-primary focus:border-primary text-base leading-relaxed" 
-                            placeholder="- Sinh viên Nguyễn Văn A có ý kiến..."></textarea>
+                            placeholder="- Sinh viên Nguyễn Văn A có ý kiến...">{{ old('content_requests', $minute->content_requests) }}</textarea>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    {{-- FOOTER CỐ ĐỊNH --}}
+    {{-- 3. FOOTER CỐ ĐỊNH Ở DƯỚI CÙNG (Chứa các nút hành động) --}}
     <div class="h-16 bg-white dark:bg-[#1e1e2d] border-t border-slate-200 dark:border-slate-700 flex items-center justify-end px-6 gap-3 z-20 shrink-0">
-        <button type="button" onclick="window.history.back()" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded font-medium transition">
+        
+        <a href="{{ route('admin.minutes.index') }}" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded font-medium transition">
             Hủy bỏ
-        </button>
-        <button type="submit" name="action" value="draft" class="px-5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded shadow-sm transition">
-            Lưu nháp
-        </button>
-        <button type="submit" name="action" value="publish" class="px-6 py-2 bg-primary hover:bg-primary/90 text-white font-bold rounded shadow-md shadow-primary/30 flex items-center gap-2 transition transform active:scale-95">
-            <span class="material-symbols-outlined !text-[18px]">save_as</span> Hoàn tất
+        </a>
+
+        {{-- KHU VỰC DUYỆT CỦA ADMIN --}}
+        @if((Auth::user()->role_id ?? 0) == 1)
+            {{-- Nút Từ Chối --}}
+            <button type="submit" 
+                    formaction="{{ route('admin.minutes.reject', $minute->id) }}" 
+                    class="px-4 py-2 bg-red-50 text-red-600 border border-red-200 font-bold rounded shadow-sm hover:bg-red-100 flex items-center gap-2">
+                <span class="material-symbols-outlined !text-[18px]">cancel</span> Từ chối
+            </button>
+
+            {{-- Nút Duyệt --}}
+            <button type="submit" 
+                    formaction="{{ route('admin.minutes.approve', $minute->id) }}" 
+                    class="px-6 py-2 bg-emerald-600 text-white font-bold rounded shadow-lg shadow-emerald-600/30 hover:bg-emerald-700 flex items-center gap-2">
+                <span class="material-symbols-outlined !text-[18px]">check_circle</span> Duyệt & Công bố
+            </button>
+        @endif
+
+        {{-- Nút Lưu lại (Ai cũng thấy) --}}
+        <button type="submit" name="action" value="draft" class="px-5 py-2 bg-primary hover:bg-primary/90 text-white font-bold rounded shadow-md shadow-primary/30 flex items-center gap-2 transition transform active:scale-95">
+            <span class="material-symbols-outlined !text-[18px]">save</span> Lưu thay đổi
         </button>
     </div>
 
 </form>
 
-{{-- SCRIPTS GIỮ NGUYÊN NHƯ CŨ (TOMSELECT) --}}
+{{-- JAVASCRIPT --}}
 <script>
     function appendContent(text) {
         const textarea = document.querySelector('textarea[name="content_discussions"]');
@@ -231,7 +257,6 @@
     }
 
     document.addEventListener('DOMContentLoaded', function() {
-        // Cấu hình TomSelect (Giữ nguyên)
         var commonConfig = {
             create: false,
             sortField: { field: "text", direction: "asc" },
@@ -242,11 +267,9 @@
             }
         };
 
-        // Khởi tạo TomSelect và lưu vào biến
         var tomMonitor = new TomSelect("#select-monitor", commonConfig);
         var tomSecretary = new TomSelect("#select-secretary", commonConfig);
 
-        // Khởi tạo TomSelect cho phần vắng mặt
         var selectAbsent = new TomSelect("#select-absent", {
             ...commonConfig,
             plugins: ['remove_button'],
@@ -254,24 +277,19 @@
             onItemRemove: updateAbsentCount
         });
 
+        // Chạy lần đầu
+        updateAbsentCount();
+
         tomMonitor.on('change', function(value) {
             if (value && value === tomSecretary.getValue()) {
-                showConfirm(
-                    'Cảnh báo trùng lặp',
-                    'Lớp trưởng và Thư ký không được là cùng một người!', 
-                    function() { },
-                    'danger');
+                alert('Lớp trưởng và Thư ký không được là cùng một người!');
                 tomMonitor.clear(); 
             }
         });
 
         tomSecretary.on('change', function(value) {
             if (value && value === tomMonitor.getValue()) {
-                showConfirm(
-                    'Cảnh báo trùng lặp',
-                    'Lớp trưởng và Thư ký không được là cùng một người!', 
-                    function() { },
-                    'danger');
+                alert('Lớp trưởng và Thư ký không được là cùng một người!');
                 tomSecretary.clear();
             }
         });

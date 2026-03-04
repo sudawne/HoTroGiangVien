@@ -12,18 +12,35 @@ use Illuminate\Support\Facades\Auth;
 
 class MeetingMinuteController extends Controller
 {
-    /**
-     * Hiển thị danh sách biên bản
-     */
-    public function index()
+    public function index(Request $request)
     {
-        // Lấy danh sách biên bản, sắp xếp mới nhất lên đầu
-        // Dùng 'with' để load trước quan hệ, tránh lỗi N+1 query
-        $minutes = MeetingMinute::with(['studentClass', 'semester', 'creator'])
-                    ->orderBy('created_at', 'desc')
-                    ->paginate(10);
+        $query = MeetingMinute::with(['studentClass', 'semester', 'creator']);
 
-        return view('admin.minutes.index', compact('minutes'));
+        // 1. Logic lọc theo Học kỳ (nếu có)
+        if ($request->filled('semester_id')) {
+            $query->where('semester_id', $request->semester_id);
+        }
+
+        // 2. Logic lọc theo Năm học (nếu có)
+        if ($request->filled('academic_year')) {
+            $query->whereHas('semester', function($q) use ($request) {
+                $q->where('academic_year', $request->academic_year);
+            });
+        }
+
+        // 3. Logic lọc theo Trạng thái
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $minutes = $query->orderBy('created_at', 'desc')->paginate(10)->withQueryString();
+
+        // 4. Lấy dữ liệu cho Sidebar: Nhóm học kỳ theo năm học [cite: 5, 8]
+        $academicYears = Semester::orderBy('academic_year', 'desc')
+                            ->get()
+                            ->groupBy('academic_year');
+
+        return view('admin.minutes.index', compact('minutes', 'academicYears'));
     }
 
     /**
@@ -121,13 +138,11 @@ class MeetingMinuteController extends Controller
      */
     public function show($id)
     {
-        $minute = MeetingMinute::with(['studentClass', 'semester', 'monitor', 'secretary'])->findOrFail($id);
+        // Lấy dữ liệu kèm quan hệ để hiển thị tên lớp, sinh viên
+        $minute = MeetingMinute::with(['studentClass', 'semester', 'creator', 'monitor', 'secretary'])->findOrFail($id);
         
-        // Lấy danh sách chi tiết sinh viên vắng (từ mảng ID trong absent_list)
-        $absentStudents = [];
-        if (!empty($minute->absent_list)) {
-            $absentStudents = Student::whereIn('id', $minute->absent_list)->get();
-        }
+        // Lấy danh sách SV vắng mặt từ mảng ID lưu trong absent_list
+        $absentStudents = \App\Models\Student::whereIn('id', $minute->absent_list ?? [])->get();
 
         return view('admin.minutes.show', compact('minute', 'absentStudents'));
     }
@@ -139,14 +154,45 @@ class MeetingMinuteController extends Controller
     {
         $minute = MeetingMinute::findOrFail($id);
         
-        // Load lại các danh sách cần thiết giống hàm create
+        // Nếu đã duyệt (published), không cho phép vào trang sửa
+        if ($minute->status === 'published') {
+            return redirect()->route('admin.minutes.index')->with('error', 'Biên bản đã duyệt không thể chỉnh sửa.');
+        }
+        
         $classes = Classes::all();
         $semesters = Semester::orderBy('start_date', 'desc')->get();
-        
-        $currentClass = Classes::with(['advisor.user', 'students'])->find($minute->class_id);
+        $currentClass = Classes::with('students')->find($minute->class_id);
         $students = $currentClass ? $currentClass->students : collect([]);
 
-        return view('admin.minutes.edit', compact('minute', 'classes', 'semesters', 'currentClass', 'students'));
+        return view('admin.minutes.edit', compact('minute', 'classes', 'semesters', 'students', 'currentClass'));
+    }
+    public function approve($id)
+    {
+        // Kiểm tra quyền Admin (role_id = 1) 
+        if (!Auth::check() || Auth::user()->role_id != 1) {
+            return back()->with('error', 'Chỉ Admin mới có quyền duyệt biên bản.');
+        }
+
+        $minute = MeetingMinute::findOrFail($id);
+        $minute->update(['status' => 'published']); // Chuyển sang trạng thái đã công bố 
+
+        return redirect()->route('admin.minutes.index')->with('success', 'Đã phê duyệt và công bố biên bản.');
+    }
+
+    /**
+     * Hàm Từ Chối/Không Duyệt
+     */
+    public function reject($id)
+    {
+        if (!Auth::check() || Auth::user()->role_id != 1) {
+            return back()->with('error', 'Bạn không có quyền thực hiện hành động này.');
+        }
+
+        $minute = MeetingMinute::findOrFail($id);
+        // Khi không duyệt, ta giữ trạng thái 'draft' để giảng viên có thể sửa lại 
+        $minute->update(['status' => 'draft']); 
+
+        return redirect()->route('admin.minutes.index')->with('warning', 'Đã từ chối biên bản. Yêu cầu giảng viên chỉnh sửa lại.');
     }
 
     /**

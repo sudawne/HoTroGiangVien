@@ -26,7 +26,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
 });
 Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => 'auth'], function () {
     Route::resource('minutes', MeetingMinuteController::class);
-    Route::patch('minutes/{id}/approve', [MeetingMinuteController::class, 'approve'])->name('minutes.approve');
-    Route::patch('minutes/{id}/reject', [MeetingMinuteController::class, 'reject'])->name('minutes.reject');
+    Route::put('minutes/{id}/approve', [MeetingMinuteController::class, 'approve'])->name('minutes.approve');
+    Route::put('minutes/{id}/reject', [MeetingMinuteController::class, 'reject'])->name('minutes.reject');
     Route::get('minutes/{id}/export-word', [MeetingMinuteController::class, 'exportWord'])->name('minutes.export_word');
 });

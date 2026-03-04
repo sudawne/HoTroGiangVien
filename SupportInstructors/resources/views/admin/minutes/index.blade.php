@@ -170,12 +170,12 @@
                                     </a>
 
                                     {{-- Nút XÓA --}}
-                                    <form action="{{ route('admin.minutes.destroy', $minute->id) }}" method="POST" 
-                                        onsubmit="return confirm('Bạn có chắc muốn xóa?');" class="inline">
+                                    <form id="form-delete-minute-{{ $minute->id }}" action="{{ route('admin.minutes.destroy', $minute->id) }}" method="POST" class="inline">
                                         @csrf @method('DELETE')
-                                        <button type="submit"
+                                        {{-- Truyền ID vào hàm confirmDelete --}}
+                                        <button type="button" onclick="confirmDelete({{ $minute->id }})"
                                             class="flex items-center gap-1 px-3 py-1.5 rounded text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 transition-colors border border-red-100">
-                                            <span class="material-symbols-outlined !text-[16px]">delete</span>
+                                            <span class="material-symbols-outlined !text-[16px]">delete</span> Xóa
                                         </button>
                                     </form>
                                 @endif
@@ -197,3 +197,15 @@
     </div>
     </div>
 @endsection
+<script>
+    function confirmDelete() {
+        window.showConfirm(
+            'Xóa biên bản',
+            'Bạn có chắc chắn muốn xóa vĩnh viễn biên bản này không? <br><span class="text-xs text-red-500 italic">Hành động này không thể hoàn tác.</span>',
+            function() {
+                document.getElementById('form-delete-minute').submit();
+            },
+            'danger'
+        );
+    }
+</script>

@@ -231,12 +231,6 @@
         {{-- KHU VỰC DUYỆT CỦA ADMIN --}}
         @if((Auth::user()->role_id ?? 0) == 1)
             <button type="submit" 
-                    formaction="{{ route('admin.minutes.reject', $minute->id) }}" 
-                    class="px-4 py-2 bg-red-50 text-red-600 border border-red-200 font-bold rounded shadow-sm hover:bg-red-100 flex items-center gap-2">
-                <span class="material-symbols-outlined !text-[18px]">cancel</span> Từ chối
-            </button>
-
-            <button type="submit" 
                     formaction="{{ route('admin.minutes.approve', $minute->id) }}" 
                     class="px-6 py-2 bg-emerald-600 text-white font-bold rounded shadow-lg shadow-emerald-600/30 hover:bg-emerald-700 flex items-center gap-2">
                 <span class="material-symbols-outlined !text-[18px]">check_circle</span> Duyệt & Công bố

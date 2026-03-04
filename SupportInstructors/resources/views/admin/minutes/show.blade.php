@@ -31,7 +31,7 @@
                 @if((Auth::user()->role_id ?? 0) == 1)
                     <form action="{{ route('admin.minutes.approve', $minute->id) }}" method="POST" class="inline">
                         @csrf 
-                        {{-- Lưu ý: Nút duyệt dùng POST --}}
+                        @method('PUT')
                         <button type="submit" class="px-4 py-2 bg-emerald-600 text-white font-bold rounded shadow hover:bg-emerald-700 flex items-center gap-2">
                             <span class="material-symbols-outlined text-[18px]">check</span> Duyệt
                         </button>
@@ -54,7 +54,7 @@
         {{-- HEADER: QUỐC HIỆU & TIÊU NGỮ --}}
         <div class="flex justify-between items-start mb-6">
             <div class="text-center w-1/2">
-                <p class="font-bold uppercase m-0">TRƯỜNG ĐẠI HỌC KIÊN GIANG</p>
+                <p class="uppercase m-0">TRƯỜNG ĐẠI HỌC KIÊN GIANG</p>
                 <p class="font-bold uppercase m-0">KHOA THÔNG TIN TRUYỀN THÔNG</p>
                 <div class="h-[1px] bg-black w-1/3 mx-auto mt-1"></div>
             </div>
@@ -69,7 +69,7 @@
         <div class="text-center mb-6">
             <h1 class="font-bold text-[16px] uppercase mb-1">BIÊN BẢN HỌP LỚP</h1>
             <p class="font-bold mb-1">{{ $minute->title }}</p>
-            <p class="font-bold">Học kỳ: {{ $minute->semester->name ?? '...' }} &nbsp;&nbsp; Năm học: {{ $minute->semester->academic_year ?? '...' }}</p>
+            <p>Học kỳ: {{ $minute->semester->name ?? '...' }} &nbsp;Năm học: {{ $minute->semester->academic_year ?? '...' }}</p>
         </div>
 
         {{-- MỤC I --}}
@@ -92,9 +92,6 @@
                         - Tổng số sinh viên: {{ $minute->attendees_count + count($minute->absent_list ?? []) }}; 
                         Có mặt: {{ $minute->attendees_count }}; 
                         Vắng: {{ count($minute->absent_list ?? []) }}
-                        @if(count($absentStudents) > 0)
-                            <br>&nbsp;&nbsp;(Vắng: {{ $absentStudents->pluck('fullname')->implode(', ') }})
-                        @endif
                     </li>
                 </ul>
             </div>

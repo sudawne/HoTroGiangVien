@@ -5,6 +5,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MeetingMinuteController;
+use App\Http\Controllers\Admin\TrainingPointController;
 
 Route::get('/', [HomeController::class, 'index'])->name('index');
 
@@ -29,4 +30,5 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => 'auth'], fu
     Route::put('minutes/{id}/approve', [MeetingMinuteController::class, 'approve'])->name('minutes.approve');
     Route::put('minutes/{id}/reject', [MeetingMinuteController::class, 'reject'])->name('minutes.reject');
     Route::get('minutes/{id}/export-word', [MeetingMinuteController::class, 'exportWord'])->name('minutes.export_word');
+    Route::resource('training-point', TrainingPointController::class);
 });

@@ -2,8 +2,6 @@
 </div>
 
 <script>
-    // type: 'success', 'error', 'warning', 'info'
-    // message: Nội dung thông báo
     window.showToast = function(type, message) {
         const container = document.getElementById('toast-container');   
         const config = {

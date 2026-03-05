@@ -75,7 +75,7 @@ class GenerateNextYearSemesters extends Command
         // --- HỌC KỲ 3 / HÈ (Tháng 6 năm End -> Tháng 8 năm End) ---
         $data[] = [
             'code'          => "{$nextStartYear}_{$nextEndYear}_HK3",
-            'name'          => 'Học kỳ 3 (Hè)',
+            'name'          => 'Học kỳ 3',
             'academic_year' => $academicYearString,
             'start_date'    => "{$nextEndYear}-06-20",
             'end_date'      => "{$nextEndYear}-08-05",

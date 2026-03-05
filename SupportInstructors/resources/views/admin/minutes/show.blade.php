@@ -69,7 +69,11 @@
         <div class="text-center mb-6">
             <h1 class="font-bold text-[16px] uppercase mb-1">BIÊN BẢN HỌP LỚP</h1>
             <p class="font-bold mb-1">{{ $minute->title }}</p>
-            <p>Học kỳ: {{ $minute->semester->name ?? '...' }} &nbsp;Năm học: {{ $minute->semester->academic_year ?? '...' }}</p>
+            @php
+                $tenHocKyDB = $minute->semester->name ?? ''; 
+                $soHocKy = trim(str_ireplace('Học kỳ', '', $tenHocKyDB));
+            @endphp
+            <p>Học kỳ: {{ $soHocKy ?? '...' }}&nbsp;Năm học: {{ $minute->semester->academic_year ?? '...' }}</p>
         </div>
 
         {{-- MỤC I --}}

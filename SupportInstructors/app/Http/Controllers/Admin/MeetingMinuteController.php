@@ -147,10 +147,12 @@ class MeetingMinuteController extends Controller
         $section->addTextBreak(1);
 
         // Tiêu đề
+        $tenHocKyDB = $minute->semester->name ?? ''; 
+        $soHocKy = trim(str_ireplace('Học kỳ', '', $tenHocKyDB));
         $section->addText('BIÊN BẢN HỌP LỚP', ['bold' => true, 'size' => 16], ['alignment' => 'center']);
         $section->addText($minute->title, ['bold' => true, 'size' => 14], ['alignment' => 'center']);
         $section->addText(
-            "Học kỳ: " . ($minute->semester->name ?? '...') . " Năm học: " . ($minute->semester->academic_year ?? '...'),
+            "Học kỳ: ".($soHocKy ?? '...') . " Năm học: " . ($minute->semester->academic_year ?? '...'),
             ['italic' => false], ['alignment' => 'center']);
         $section->addTextBreak(1);
 

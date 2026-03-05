@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AcademicResultController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ClassController;
@@ -34,6 +35,8 @@ Route::controller(StudentController::class)->prefix('students')->name('students.
     Route::post('/{id}/restore', 'restore')->name('restore');
 });
 Route::resource('students', StudentController::class);
+
+Route::resource('academic-results', AcademicResultController::class);
 
 // --- QUẢN LÝ GIẢNG VIÊN (LECTURERS) ---
 Route::controller(LecturerController::class)->prefix('lecturers')->name('lecturers.')->group(function () {

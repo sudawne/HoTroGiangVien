@@ -57,7 +57,7 @@ class LoginController extends Controller
         return match ($user->role->name) {
             'ADMIN'    => redirect()->route('admin.dashboard'),
             'LECTURER' => redirect()->route('lecturer.dashboard'),
-            'STUDENT'  => redirect()->route('student.dashboard'),
+            'STUDENT'  => redirect()->route('student.index'),
             default    => abort(403, 'Tài khoản chưa được phân quyền'),
         };
     }

@@ -38,12 +38,18 @@
         .prose-content p:last-child {
             margin-bottom: 0;
         }
+
+        /* small helper to ensure comments area doesn't get unexpected horizontal scroll */
+        .comments-wrap {
+            width: 100%;
+            overflow: visible;
+        }
     </style>
 @endsection
 
 @section('content')
-    <div class="w-full min-h-screen bg-white font-inter pb-16 -m-4 md:-m-6">
-        <main class="mx-auto flex w-full max-w-[800px] flex-col px-4 sm:px-0 py-8">
+    <div class="w-full min-h-screen bg-white font-inter pb-16 m-0">
+        <main class="mx-auto flex w-full max-w-none flex-col px-6 md:px-10 py-8">
 
             <div class="flex items-center justify-between mb-6 font-lexend">
                 <a href="{{ route('admin.notifications.index') }}"
@@ -136,19 +142,21 @@
                             <span class="material-symbols-outlined !text-[12px]"
                                 style="font-variation-settings:'FILL' 1">thumb_up</span>
                         </div>
-                        <span>{{ $notification->likes_count }}</span>
+                        <span id="likes-count">{{ $notification->likes_count }}</span>
                     </div>
                     <div>
-                        <span class="hover:underline cursor-pointer">{{ $notification->comments_count }} bình luận</span>
+                        <span id="comments-count"
+                            class="hover:underline cursor-pointer">{{ $notification->comments_count }} bình luận</span>
                     </div>
                 </div>
 
                 <div class="flex items-center gap-2 pt-2 border-b border-slate-200 pb-2">
-                    <form action="{{ route('admin.notifications.like', $notification->id) }}" method="POST"
+                    <form id="like-form" action="{{ route('admin.notifications.like', $notification->id) }}" method="POST"
                         class="flex-1">@csrf
-                        <button type="submit"
+                        <button id="like-button" type="submit"
                             class="w-full flex items-center justify-center gap-2 py-2 rounded-lg hover:bg-slate-100 text-[14px] font-semibold transition-colors {{ $notification->isLikedBy(Auth::id()) ? 'text-blue-600' : 'text-slate-600' }}">
-                            <span class="material-symbols-outlined !text-[20px]" {!! $notification->isLikedBy(Auth::id()) ? 'style="font-variation-settings: \'FILL\' 1"' : '' !!}>thumb_up</span>
+                            <span id="like-icon" class="material-symbols-outlined !text-[20px]"
+                                {!! $notification->isLikedBy(Auth::id()) ? 'style="font-variation-settings: \'FILL\' 1"' : '' !!}>thumb_up</span>
                             Thích
                         </button>
                     </form>
@@ -162,7 +170,7 @@
             </article>
 
             {{-- Comments --}}
-            <section class="flex flex-col">
+            <section class="flex flex-col comments-wrap">
                 @if ($notification->allow_comments)
                     {{-- Form tạo comment gốc --}}
                     <div class="flex gap-3 mb-8 items-start">
@@ -171,7 +179,8 @@
                             {{ substr(Auth::user()->name, 0, 1) }}
                         </div>
                         <div class="flex-1">
-                            <form action="{{ route('admin.notifications.comment', $notification->id) }}" method="POST"
+                            <form id="main-comment-form"
+                                action="{{ route('admin.notifications.comment', $notification->id) }}" method="POST"
                                 class="relative group bg-slate-100 rounded-lg px-3 py-2.5 border border-slate-200 focus-within:border-slate-400 focus-within:bg-white transition-all duration-200 min-h-[44px] focus-within:min-h-[85px] focus-within:pb-10">
                                 @csrf
                                 <textarea id="main-comment-input" name="content" required placeholder="Viết bình luận..." rows="1"
@@ -190,7 +199,7 @@
                     </div>
 
                     {{-- Danh sách comment --}}
-                    <div class="flex flex-col gap-6">
+                    <div id="comments-list" class="flex flex-col gap-6">
                         @forelse($notification->comments as $comment)
                             @php $replyCount = isset($comment->replies) ? $comment->replies->count() : 0; @endphp
 
@@ -299,7 +308,7 @@
                                         {{-- Reply form --}}
                                         <div x-show="openReply" x-transition class="mt-3 ml-10" style="display:none;">
                                             <form action="{{ route('admin.notifications.comment', $notification->id) }}"
-                                                method="POST" class="flex gap-2 items-start">
+                                                method="POST" class="reply-form flex gap-2 items-start">
                                                 @csrf
                                                 <input type="hidden" name="parent_id" value="{{ $comment->id }}">
                                                 <div
@@ -361,6 +370,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Scroll to hash and highlight
             if (window.location.hash) {
                 let targetId = window.location.hash;
                 let targetElement = document.querySelector(targetId);
@@ -372,6 +382,253 @@
                     });
                 }
             }
+
+            // Helper: check response is JSON
+            function isJsonResponse(res) {
+                const ct = res.headers.get('content-type') || '';
+                return ct.indexOf('application/json') !== -1;
+            }
+
+            // AJAX Like button (graceful fallback to full POST if server doesn't return JSON)
+            const likeForm = document.getElementById('like-form');
+            if (likeForm) {
+                likeForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const url = this.action;
+                    const tokenInput = this.querySelector('input[name="_token"]');
+                    const token = tokenInput ? tokenInput.value : document.querySelector(
+                        'meta[name="csrf-token"]')?.content;
+
+                    // disable button while sending
+                    const btn = document.getElementById('like-button');
+                    btn.disabled = true;
+
+                    fetch(url, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': token || '',
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json'
+                            },
+                            credentials: 'same-origin'
+                        })
+                        .then(res => {
+                            if (!isJsonResponse(res)) {
+                                // fallback: reload (server likely redirected)
+                                window.location.reload();
+                                return;
+                            }
+                            return res.json();
+                        })
+                        .then(data => {
+                            if (!data) return;
+                            if (data.success) {
+                                const likesCountEl = document.getElementById('likes-count');
+                                if (likesCountEl && typeof data.likes_count !== 'undefined') {
+                                    likesCountEl.textContent = data.likes_count;
+                                }
+                                const likeBtn = document.getElementById('like-button');
+                                const likeIcon = document.getElementById('like-icon');
+                                if (data.liked) {
+                                    likeBtn.classList.remove('text-slate-600');
+                                    likeBtn.classList.add('text-blue-600');
+                                    if (likeIcon) likeIcon.style.fontVariationSettings = "'FILL' 1";
+                                } else {
+                                    likeBtn.classList.remove('text-blue-600');
+                                    likeBtn.classList.add('text-slate-600');
+                                    if (likeIcon) likeIcon.style.fontVariationSettings = "''";
+                                }
+                            } else {
+                                // if server returned success=false, fallback to reload or show message
+                                if (data.message) {
+                                    alert(data.message);
+                                } else {
+                                    window.location.reload();
+                                }
+                            }
+                        })
+                        .catch(err => {
+                            console.error(err);
+                            // network or parsing error — reload to ensure consistent UI
+                            window.location.reload();
+                        })
+                        .finally(() => {
+                            btn.disabled = false;
+                        });
+                });
+            }
+
+            // AJAX Comment submit (applies to main comment form and reply forms)
+            const commentForms = document.querySelectorAll('form[action$="/comment"]');
+            commentForms.forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    // if form is the main comment form or a reply form — try AJAX
+                    e.preventDefault();
+
+                    const url = this.action;
+                    const tokenInput = this.querySelector('input[name="_token"]');
+                    const token = tokenInput ? tokenInput.value : document.querySelector(
+                        'meta[name="csrf-token"]')?.content;
+                    const submitBtn = this.querySelector('button[type="submit"]') || this
+                        .querySelector('input[type="submit"]');
+
+                    // collect form data
+                    const fd = new FormData(this);
+
+                    // disable submit
+                    if (submitBtn) submitBtn.disabled = true;
+
+                    fetch(url, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': token || '',
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json'
+                            },
+                            credentials: 'same-origin',
+                            body: fd
+                        })
+                        .then(res => {
+                            if (!isJsonResponse(res)) {
+                                // fallback to full submit (postback)
+                                this.submit();
+                                return;
+                            }
+                            return res.json();
+                        })
+                        .then(data => {
+                            if (!data) return;
+                            if (data.success) {
+                                // If server returned comment payload, render it inline. Expect structure:
+                                // data.comment: { id, user_name, user_initial, content (HTML), created_at, parent_id }
+                                // data.comments_count: integer (optional)
+                                const c = data.comment;
+                                if (c && typeof c.id !== 'undefined') {
+                                    // create element
+                                    const wrapper = document.createElement('div');
+                                    wrapper.className =
+                                        'relative p-2 -mx-2 transition-colors duration-500 target-comment';
+                                    wrapper.id = 'comment-' + c.id;
+
+                                    if (!c.parent_id) {
+                                        // top-level comment: insert at beginning of #comments-list
+                                        wrapper.innerHTML = `
+                                            <div class="flex gap-3 items-start min-w-0">
+                                                <div class="flex-none">
+                                                    <div class="h-10 w-10 overflow-hidden rounded-lg bg-slate-200 text-slate-700 flex items-center justify-center font-bold text-sm border border-slate-300">
+                                                    ${c.user_initial || ''}
+                                                    </div>
+                                                </div>
+                                                <div class="flex-1 min-w-0">
+                                                    <div class="block bg-slate-50 border border-slate-200/80 rounded-xl py-2 px-3.5 max-w-full break-words text-left">
+                                                        <div class="flex items-center gap-2 flex-wrap">
+                                                            <span class="font-bold text-[14px] text-slate-900">${c.user_name || ''}</span>
+                                                            <span class="text-[12px] text-slate-500 ml-1">${c.created_at || ''}</span>
+                                                        </div>
+                                                        <div class="mt-1 text-[14.5px] text-slate-800 leading-relaxed break-words w-full">
+                                                            ${c.content || ''}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>`;
+                                        const list = document.getElementById('comments-list');
+                                        if (list) list.insertBefore(wrapper, list.firstChild);
+                                    } else {
+                                        // reply: try to find parent comment and append into its replies area
+                                        const parentEl = document.getElementById('comment-' + c
+                                            .parent_id);
+                                        if (parentEl) {
+                                            // find or create replies container under parent
+                                            let repliesContainer = parentEl.querySelector(
+                                                '.replies-container');
+                                            if (!repliesContainer) {
+                                                repliesContainer = document.createElement(
+                                                    'div');
+                                                repliesContainer.className =
+                                                    'ml-10 mt-3 flex flex-col gap-3 relative before:content-[\'\'] before:absolute before:-left-[1.35rem] before:top-0 before:bottom-0 before:w-[2px] before:bg-slate-200 before:rounded-full replies-container';
+                                                // insert after the main body of parent
+                                                const parentBody = parentEl.querySelector(
+                                                    '.flex-1');
+                                                if (parentBody) parentBody.appendChild(
+                                                    repliesContainer);
+                                                else parentEl.appendChild(repliesContainer);
+                                            }
+
+                                            const replyHtml = document.createElement('div');
+                                            replyHtml.id = 'comment-' + c.id;
+                                            replyHtml.className =
+                                                'bg-white border border-slate-100 shadow-sm rounded-xl p-2.5 flex gap-3 items-start w-full break-words';
+                                            replyHtml.innerHTML = `
+                                                <div class="w-8 h-8 flex-none flex items-center justify-center rounded-lg bg-slate-100 text-slate-700 font-bold text-sm border border-slate-200">
+                                                    ${c.user_initial || ''}
+                                                </div>
+                                                <div class="flex-1 min-w-0 text-left">
+                                                    <div class="flex flex-col gap-0.5 items-start w-full">
+                                                        <span class="font-bold text-[14px] text-slate-900">${c.user_name || ''}</span>
+                                                        <div class="text-[14.5px] text-slate-800 leading-relaxed break-words w-full">
+                                                            ${c.content || ''}
+                                                        </div>
+                                                    </div>
+                                                    <div class="mt-2 flex gap-3 font-bold text-[13px] text-slate-500">
+                                                        <button class="hover:underline hover:text-slate-900 transition-colors">Phản hồi</button>
+                                                        <span>·</span>
+                                                        <span>${c.created_at || ''}</span>
+                                                    </div>
+                                                </div>`;
+                                            repliesContainer.appendChild(replyHtml);
+                                        } else {
+                                            // if cannot find parent, fallback to prepend in comments list
+                                            const list = document.getElementById(
+                                                'comments-list');
+                                            if (list) list.insertBefore(wrapper, list
+                                                .firstChild);
+                                        }
+                                    }
+
+                                    // update comments count if provided
+                                    const commentsCountEl = document.getElementById(
+                                        'comments-count');
+                                    if (commentsCountEl && typeof data.comments_count !==
+                                        'undefined') {
+                                        commentsCountEl.textContent = data.comments_count +
+                                            ' bình luận';
+                                    }
+
+                                    // clear the form input that was used
+                                    const contentInput = this.querySelector('[name="content"]');
+                                    if (contentInput) {
+                                        contentInput.value = '';
+                                        if (contentInput.tagName.toLowerCase() === 'textarea') {
+                                            contentInput.style.height = '';
+                                        }
+                                    }
+
+                                    // remove highlight after some time
+                                    setTimeout(() => {
+                                        wrapper.classList.remove('target-comment');
+                                    }, 3000);
+
+                                    return;
+                                }
+
+                                // if no structured comment comes back, fallback
+                                window.location.reload();
+                            } else {
+                                if (data.message) alert(data.message);
+                                else window.location.reload();
+                            }
+                        })
+                        .catch(err => {
+                            console.error(err);
+                            // On error, fallback to full submit to keep behavior consistent
+                            this.submit();
+                        })
+                        .finally(() => {
+                            if (submitBtn) submitBtn.disabled = false;
+                        });
+                });
+            });
+
         });
     </script>
 @endsection

@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\LecturerController;
 use App\Http\Controllers\Admin\NotificationController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Request;
 
 /*
 |--------------------------------------------------------------------------
@@ -88,12 +89,5 @@ Route::controller(ImportController::class)->prefix('imports')->name('imports.')-
 });
 
 
-// Đánh dấu đã xem thông báo trên Header
-Route::post('/alerts/mark-read', function () {
-    if (Auth::check()) {
-        DB::table('users')->where('id', Auth::id())->update([
-            'last_alert_check' => now()
-        ]);
-    }
-    return response()->json(['success' => true]);
-})->name('alerts.mark_read');
+Route::post('/alerts/mark-read', [NotificationController::class, 'markRead'])->name('alerts.mark_read');
+Route::post('/alerts/mark-read-all', [NotificationController::class, 'markReadAll'])->name('alerts.mark_read_all');

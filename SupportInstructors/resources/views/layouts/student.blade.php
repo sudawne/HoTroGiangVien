@@ -1,71 +1,74 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" class="light">
 
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@yield('title', 'Cổng Thông Tin Sinh Viên')</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>@yield('title', 'Cổng thông tin Sinh viên')</title>
 
-    {{-- Google Fonts & Icons --}}
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
         rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-
-    {{-- Tailwind CSS & Alpine.js --}}
-    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap"
+        rel="stylesheet" />
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
-    <script>
+    <script id="tailwind-config">
         tailwind.config = {
+            darkMode: "class",
             theme: {
                 extend: {
                     colors: {
-                        primary: "#463acb"
+                        "primary": "#1a365d",
+                        "primary-light": "#2a528a",
+                        "background-light": "#f0f2f5",
+                        "background-dark": "#101622",
                     },
                     fontFamily: {
-                        sans: ["Inter", "sans-serif"]
+                        "display": ["Lexend", "sans-serif"],
+                        "body": ["Inter", "sans-serif"]
                     },
-                }
-            }
+                },
+            },
         }
     </script>
+    <style>
+        .hide-scroll::-webkit-scrollbar {
+            display: none;
+        }
 
+        .hide-scroll {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        [x-cloak] {
+            display: none !important;
+        }
+    </style>
     @yield('styles')
 </head>
 
-<body class="bg-[#f0f2f5] text-slate-800 font-sans antialiased">
+<body class="bg-background-light dark:bg-background-dark font-body text-slate-900 dark:text-slate-100 min-h-screen">
 
-    {{-- THANH ĐIỀU HƯỚNG TRÊN CÙNG (HEADER) CHO SINH VIÊN --}}
-    <header class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-50">
-        <div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-            <div class="flex items-center gap-2 text-primary font-bold text-lg">
-                <span class="material-symbols-outlined !text-[28px]">school</span>
-                <span>Cổng Sinh Viên</span>
-            </div>
+    <div class="relative flex min-h-screen w-full flex-col group/design-root">
 
-            <div class="flex items-center gap-4">
-                <div class="font-medium text-sm text-slate-600">
-                    Xin chào, {{ Auth::user()->name ?? 'Sinh viên' }}
-                </div>
-                <form action="/logout" method="POST">
-                    @csrf
-                    <button type="submit"
-                        class="p-2 bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-600 rounded-full transition-colors"
-                        title="Đăng xuất">
-                        <span class="material-symbols-outlined !text-[20px] block">logout</span>
-                    </button>
-                </form>
-            </div>
-        </div>
-    </header>
+        @include('partials.student.header')
 
-    {{-- NƠI HIỂN THỊ NỘI DUNG CHÍNH (BẢNG TIN SẼ NẰM Ở ĐÂY) --}}
-    <main>
-        @yield('content')
-    </main>
+        {{-- Đổi Grid để tạo Layout 2 cột: Trái (col-span-4) và Phải (col-span-8) --}}
+        {{-- Sửa max-w-[1280px] và gap-6 để tràn đều và thoáng hơn --}}
+        <main class="flex-1 w-full max-w-[1280px] mx-auto px-4 sm:px-6 py-6 grid grid-cols-12 gap-6 items-start">
 
-    {{-- NƠI CHỨA CÁC THÔNG BÁO POPUP (NẾU CÓ) --}}
+            @include('partials.student.sidebar')
+
+            @yield('content')
+
+        </main>
+    </div>
+
     @include('partials.toast')
+    @include('partials.confirm_modal')
 
     @yield('scripts')
 </body>

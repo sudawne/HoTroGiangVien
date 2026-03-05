@@ -1,11 +1,12 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Student\DashboardController;
+use App\Http\Controllers\Student\HomeController;
 
-// Trang chủ bảng tin (Newsfeed) -> Tên route thực tế: student.dashboard
-Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+Route::get('/', [HomeController::class, 'index'])->name('index');
 
-// Xử lý Like & Comment -> Tên route thực tế: student.notifications.like / .comment
-Route::post('/notifications/{id}/like', [DashboardController::class, 'toggleLike'])->name('notifications.like');
-Route::post('/notifications/{id}/comment', [DashboardController::class, 'storeComment'])->name('notifications.comment');
+// Xử lý Like & Comment
+Route::post('/notifications/{id}/like', [HomeController::class, 'toggleLike'])->name('notifications.like');
+Route::post('/notifications/{id}/comment', [HomeController::class, 'storeComment'])->name('notifications.comment');
+Route::post('/student/alerts/mark-read', [HomeController::class, 'markRead'])->name('student.alerts.mark_read');
+Route::post('/student/alerts/mark-read-all', [HomeController::class, 'markReadAll'])->name('student.alerts.mark_read_all');

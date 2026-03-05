@@ -12,6 +12,7 @@ use App\Models\Student;
 use App\Mail\StudentNotificationMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
@@ -177,8 +178,7 @@ class NotificationController extends Controller
 
     public function show($id)
     {
-        // Chỉ lấy những Comment gốc (parent_id = null), sau đó load luôn các replies của nó
-        // Bổ sung eager-load replies.parent.user để có thể biết reply trả lời ai
+        // Lấy cả likes_count và comments_count; đồng thời eager-load replies và users
         $notification = Notification::with([
             'sender',
             'class',
@@ -186,7 +186,7 @@ class NotificationController extends Controller
                 $q->whereNull('parent_id')
                     ->with(['user', 'replies.user', 'replies.parent.user']);
             }
-        ])->withCount('likes')->findOrFail($id);
+        ])->withCount(['likes', 'comments'])->findOrFail($id);
 
         return view('admin.notifications.show', compact('notification'));
     }
@@ -201,15 +201,30 @@ class NotificationController extends Controller
         return redirect()->route('admin.notifications.index')->with('success', 'Đã xóa thông báo!');
     }
 
-    public function toggleLike($id)
+    public function toggleLike(Request $request, $id)
     {
         $userId = Auth::id();
         $like = NotificationLike::where('notification_id', $id)->where('user_id', $userId)->first();
+
         if ($like) {
             $like->delete();
+            $liked = false;
         } else {
             NotificationLike::create(['notification_id' => $id, 'user_id' => $userId]);
+            $liked = true;
         }
+
+        // Lấy lại tổng số like
+        $likesCount = NotificationLike::where('notification_id', $id)->count();
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'liked' => $liked,
+                'likes_count' => $likesCount,
+            ]);
+        }
+
         return back();
     }
 
@@ -218,6 +233,9 @@ class NotificationController extends Controller
         $notification = Notification::findOrFail($id);
 
         if (!$notification->allow_comments) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Bài viết này đã tắt tính năng bình luận.'], 422);
+            }
             return back()->with('error', 'Bài viết này đã tắt tính năng bình luận.');
         }
 
@@ -227,18 +245,35 @@ class NotificationController extends Controller
             'content_prefix' => 'nullable|string'
         ]);
 
-        // Nếu có prefix (tức là có tag tên @AiĐó), thì gộp nó vào trước content
         $finalContent = $request->content;
         if ($request->filled('content_prefix')) {
             $finalContent = $request->content_prefix . $finalContent;
         }
 
-        NotificationComment::create([
+        $comment = NotificationComment::create([
             'notification_id' => $id,
             'user_id' => Auth::id(),
             'content' => $finalContent,
             'parent_id' => $request->parent_id
         ]);
+
+        // Reload relations needed for response
+        $comment->load('user', 'parent');
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'comment' => [
+                    'id' => $comment->id,
+                    'user_name' => $comment->user->name,
+                    'user_initial' => substr($comment->user->name, 0, 1),
+                    'content' => nl2br(e(trim($comment->content))),
+                    'created_at' => $comment->created_at->diffForHumans(), // sẽ hiển thị theo locale Carbon
+                    'parent_id' => $comment->parent_id,
+                ],
+                'comments_count' => NotificationComment::where('notification_id', $id)->count()
+            ]);
+        }
 
         return back()->with('success', 'Đã thêm bình luận!');
     }
@@ -271,5 +306,49 @@ class NotificationController extends Controller
         }
 
         return $countRealEmails;
+    }
+
+    public function markRead(Request $request)
+    {
+        if (Auth::check() && $request->filled('alert_id')) {
+            $alertId = $request->input('alert_id');
+            $userId = Auth::id();
+
+            // Sử dụng UPSERT để tránh lỗi trùng lặp dữ liệu
+            DB::table('user_read_alerts')->upsert([
+                [
+                    'user_id' => $userId,
+                    'alert_id' => $alertId,
+                    'read_at' => now()
+                ]
+            ], ['user_id', 'alert_id'], ['read_at']);
+        }
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Đánh dấu TẤT CẢ thông báo là ĐÃ ĐỌC
+     */
+    public function markReadAll(Request $request)
+    {
+        if (Auth::check() && $request->filled('alert_ids')) {
+            $userId = Auth::id();
+            $alertIds = $request->input('alert_ids');
+            $data = [];
+
+            foreach ($alertIds as $id) {
+                $data[] = [
+                    'user_id' => $userId,
+                    'alert_id' => $id,
+                    'read_at' => now()
+                ];
+            }
+
+            if (!empty($data)) {
+                DB::table('user_read_alerts')->upsert($data, ['user_id', 'alert_id'], ['read_at']);
+            }
+        }
+        return response()->json(['success' => true]);
     }
 }

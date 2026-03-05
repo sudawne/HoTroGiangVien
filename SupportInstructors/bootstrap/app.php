@@ -40,7 +40,7 @@ return Application::configure(basePath: dirname(__DIR__))
             return match ($user->role->name) {
                 'ADMIN'    => route('admin.dashboard'),
                 'LECTURER' => route('lecturer.dashboard'),
-                'STUDENT'  => route('student.dashboard'),
+                'STUDENT'  => route('student.index'),
                 default    => '/',
             };
         });

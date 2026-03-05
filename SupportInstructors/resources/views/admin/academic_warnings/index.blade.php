@@ -79,14 +79,11 @@
             {{-- Form này không cần action submit vì ta dùng JS, nhưng để method GET để giữ URL clean --}}
             <form id="filterForm" method="GET">
                 <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                    
-                    {{-- [SỬA] Input Tìm kiếm: Thêm ID và sự kiện oninput --}}
                     <div class="relative flex-1 max-w-md">
                         <span class="material-symbols-outlined absolute left-3 top-2.5 text-slate-400 !text-[16px]">search</span>
                         <input id="searchInput" name="search" value="{{ request('search') }}"
                             class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-sm text-sm py-2 pl-9 pr-3 focus:ring-primary focus:border-primary text-slate-700 dark:text-slate-300"
                             placeholder="Tìm nhanh tên hoặc MSSV..." type="text" autocomplete="off" />
-                        {{-- Icon loading xoay xoay (Mặc định ẩn) --}}
                         <span id="searchSpinner" class="material-symbols-outlined absolute right-3 top-2.5 text-primary !text-[16px] animate-spin hidden">sync</span>
                     </div>
 
@@ -168,6 +165,7 @@
                             <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase">MSSV</th>
                             <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Họ và tên</th>
                             <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Lớp</th>
+                            <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Học kỳ</th>
                             <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase text-center">GPA</th>
                             <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase text-center">Nợ tín</th>
                             <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Mức cảnh báo</th>
@@ -175,7 +173,6 @@
                             <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase text-right">Tác vụ</th>
                         </tr>
                     </thead>
-                    {{-- [SỬA] Thêm ID tableBody để JS cập nhật nội dung vào đây --}}
                     <tbody id="tableBody" class="divide-y divide-slate-100 dark:divide-slate-800">
                         @include('admin.academic_warnings.partials.table_rows')
                     </tbody>

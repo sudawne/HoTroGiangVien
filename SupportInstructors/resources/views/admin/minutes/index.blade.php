@@ -170,11 +170,10 @@
                                     </a>
 
                                     {{-- Nút XÓA --}}
-                                    <form id="form-delete-minute-{{ $minute->id }}" action="{{ route('admin.minutes.destroy', $minute->id) }}" method="POST" class="inline">
+                                    <form id="form-delete-minute-{{ $minute->id }}" action="{{ route('admin.minutes.destroy', $minute->id) }}" method="POST" class="flex items-center">
                                         @csrf @method('DELETE')
-                                        {{-- Truyền ID vào hàm confirmDelete --}}
                                         <button type="button" onclick="confirmDelete({{ $minute->id }})"
-                                            class="flex items-center gap-1 px-3 py-1.5 rounded text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 transition-colors border border-red-100">
+                                            class="flex items-center gap-1 px-3 py-1.5 rounded text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 transition-colors border border-red-100 h-full">
                                             <span class="material-symbols-outlined !text-[16px]">delete</span> Xóa
                                         </button>
                                     </form>

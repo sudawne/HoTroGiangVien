@@ -18,6 +18,12 @@
         <td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
             {{ $warning->student->class->code ?? 'N/A' }}
         </td>
+        <td class="px-6 py-4">
+            <span class="text-xs font-bold text-primary bg-primary/5 px-2 py-1 rounded-sm border border-primary/10">
+                {{ $warning->semester->name }}
+            </span>
+            <p class="text-[10px] text-slate-400 mt-0.5">{{ $warning->semester->academic_year }}</p>
+        </td>
         <td class="px-6 py-4 text-sm text-center font-bold {{ $warning->gpa_term < 2.0 ? 'text-red-500' : 'text-slate-700' }}">
             {{ $warning->gpa_term }}
         </td>
@@ -40,9 +46,10 @@
         </td>
         <td class="px-6 py-4 text-right">
             <div class="flex items-center justify-end gap-2">
-                <button class="p-1.5 text-slate-400 hover:text-primary transition-colors" title="Xem chi tiết">
-                    <span class="material-symbols-outlined !text-[15px]">visibility</span>
-                </button>
+                <a href="{{ route('admin.students.show', $warning->student_id) }}" 
+                class="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:text-indigo-700 transition-colors">
+                    <span class="material-symbols-outlined !text-[16px]">visibility</span>
+                </a>
             </div>
         </td>
     </tr>

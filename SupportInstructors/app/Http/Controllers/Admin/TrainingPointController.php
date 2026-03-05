@@ -136,7 +136,7 @@ class TrainingPointController extends Controller
                 'self_score' => $selfScore,
                 'class_score' => $classScore,
                 'student_id' => $student_id,
-                'status' => $status, // 'valid', 'error', 'warning'
+                'status' => $status, 
                 'message' => $message,
             ];
         }
@@ -158,7 +158,6 @@ class TrainingPointController extends Controller
         DB::beginTransaction();
         try {
             foreach ($data as $row) {
-                // Chỉ lưu những dòng có student_id (Hợp lệ hoặc Warning)
                 if ($row['student_id']) {
                     TrainingPoint::updateOrCreate(
                         [

@@ -2,7 +2,7 @@
 @section('title', 'Hồ sơ Sinh viên: ' . $student->student_code)
 
 @section('content')
-    <div class="w-full px-4 py-6" x-data="{ activeTab: 'warnings' }">
+    <div class="w-full px-4 py-6" x-data="{ activeTab: 'warnings', selectedSemester: 'all' }">
 
         {{-- HEADER & BACK BUTTON --}}
         <div class="flex items-center justify-between mb-6">
@@ -193,7 +193,7 @@
                     <h3
                         class="text-2xl font-bold {{ $debtCount > 0 ? 'text-red-600' : 'text-slate-800 dark:text-white' }}">
                         {{ $debtCount }} <span
-                            class="text-sm font-medium {{ $debtCount > 0 ? 'text-red-400' : 'text-slate-400' }}">môn</span>
+                            class="text-sm font-medium {{ $debtCount > 0 ? 'text-red-400' : 'text-slate-400' }}">TC</span>
                     </h3>
                 </div>
                 <div

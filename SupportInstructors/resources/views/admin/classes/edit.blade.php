@@ -402,13 +402,10 @@
 
             const loadingModal = document.getElementById('loadingModal');
             const loadingTitle = document.getElementById('loading-modal-title');
-            const loadingDesc = document.getElementById('loading-modal-desc');
             const progressContainer = document.getElementById('progress-container');
             const progressBar = document.getElementById('progress-bar');
             const progressText = document.getElementById('progress-text');
 
-            let pendingCallback = null;
-            let cancelCallback = null;
             let newStudentsList = [];
 
             function clearValidationErrors(formElement) {
@@ -689,24 +686,24 @@
                     if (hasError) return;
 
                     if (newStudentsList.length > 0) {
+                        // CHUẨN HÓA LẠI THAM SỐ GỌI MODAL
                         showConfirm(
-                            'Gửi thông tin tài khoản?',
-                            'Bạn có muốn hệ thống tự động gửi email cho các sinh viên MỚI vừa thêm không?',
-                            'Đồng ý gửi',
-                            'blue',
-                            'mark_email_unread',
+                            'Lưu và Gửi Email',
+                            'Có sinh viên mới được thêm. Cập nhật và tự động gửi email tài khoản cho họ?',
                             function() {
                                 sendEmailInput.value = "1";
                                 submitClassForm();
                             },
-                            function() {
-                                sendEmailInput.value = "0";
-                                submitClassForm();
-                            }
+                            'primary'
                         );
                     } else {
-                        showConfirm('Lưu thay đổi', 'Cập nhật thông tin lớp học?', 'Lưu ngay', 'blue',
-                            'save', submitClassForm);
+                        // CHUẨN HÓA LẠI THAM SỐ GỌI MODAL
+                        showConfirm(
+                            'Lưu thay đổi',
+                            'Xác nhận cập nhật thông tin lớp học?',
+                            submitClassForm,
+                            'primary'
+                        );
                     }
                 });
             }
@@ -741,80 +738,83 @@
                 }
                 checkboxes.forEach(cb => cb.addEventListener('change', toggleActionBtns));
 
-                document.querySelectorAll('.btn-delete-student').forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        const form = this.closest('form');
-                        const code = this.getAttribute('data-code');
-                        const url = form.action;
-                        showConfirm(
-                            'Xóa Sinh Viên?',
-                            `Bạn có chắc muốn xóa sinh viên ${code} khỏi hệ thống?`,
-                            'Xóa ngay',
-                            'red',
-                            'warning',
-                            async () => {
-                                try {
-                                    const response = await fetch(url, {
-                                        method: 'POST',
-                                        headers: {
-                                            'X-Requested-With': 'XMLHttpRequest',
-                                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                                            'Content-Type': 'application/x-www-form-urlencoded'
-                                        },
-                                        body: new URLSearchParams({
-                                            '_method': 'DELETE'
-                                        })
-                                    });
-                                    const data = await response.json();
-                                    if (data.success) {
-                                        const row = btn.closest('tr');
-                                        if (row) row.remove();
-                                        let count = parseInt(studentCountSpan.innerText
-                                            .replace(/[()]/g, '')) || 0;
-                                        if (count > 0) studentCountSpan.innerText =
-                                            `(${count - 1})`;
-                                    } else {
-                                        showToast("error", "Lỗi: " + data.message);
-                                    }
-                                } catch (e) {
-                                    showToast("error", "Có lỗi xảy ra khi xóa.");
-                                }
-                            }
-                        );
-                    });
-                });
+                // EVENT DELEGATION cho tbody để tránh mất sự kiện khi filter
+                if (tableBody) {
+                    tableBody.addEventListener('click', function(e) {
+                        const target = e.target.closest('button');
+                        if (!target) return;
 
-                document.querySelectorAll('.btn-edit-student').forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        const id = this.getAttribute('data-id');
-                        const formEdit = document.getElementById('formEditStudent');
-                        const editModal = document.getElementById('editStudentModal');
-                        formEdit.action = `/admin/students/${id}`;
-                        document.getElementById('edit_fullname').value = this.getAttribute(
-                            'data-fullname');
-                        document.getElementById('edit_email').value = this.getAttribute(
-                            'data-email');
-                        document.getElementById('edit_dob').value = this.getAttribute('data-dob');
-                        document.getElementById('edit_status').value = this.getAttribute(
-                            'data-status');
-                        clearValidationErrors(formEdit);
-                        editModal.classList.remove('hidden');
-                    });
-                });
+                        // NÚT XÓA (ẨN)
+                        if (target.classList.contains('btn-delete-student')) {
+                            const code = target.getAttribute('data-code');
+                            const url = target.closest('form') ? target.closest('form').action :
+                                `/admin/students/${target.getAttribute('data-id')}`;
 
-                document.querySelectorAll('.btn-send-single-email').forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        const id = this.getAttribute('data-id');
-                        showConfirm(
-                            'Gửi Email',
-                            'Gửi thông tin tài khoản cho sinh viên này?',
-                            'Gửi',
-                            'blue',
-                            'send',
-                            () => sendEmailsInBatches([id], null)
-                        );
+                            // CHUẨN HÓA LẠI THAM SỐ GỌI MODAL
+                            showConfirm(
+                                'Xóa Sinh Viên?',
+                                `Bạn có chắc muốn xóa sinh viên ${code} khỏi hệ thống?`,
+                                async () => {
+                                        try {
+                                            const response = await fetch(url, {
+                                                method: 'POST',
+                                                headers: {
+                                                    'X-Requested-With': 'XMLHttpRequest',
+                                                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                                    'Content-Type': 'application/x-www-form-urlencoded'
+                                                },
+                                                body: new URLSearchParams({
+                                                    '_method': 'DELETE'
+                                                })
+                                            });
+                                            const data = await response.json();
+                                            if (data.success) {
+                                                target.closest('tr').remove();
+                                                let count = parseInt(studentCountSpan.innerText.replace(
+                                                    /[()]/g, '')) || 0;
+                                                if (count > 0) studentCountSpan.innerText =
+                                                    `(${count - 1})`;
+                                                showToast("success", "Đã xóa thành công!");
+                                            } else {
+                                                showToast("error", "Lỗi: " + data.message);
+                                            }
+                                        } catch (e) {
+                                            showToast("error", "Có lỗi xảy ra khi xóa.");
+                                        }
+                                    },
+                                    'danger'
+                            );
+                        }
+
+                        // NÚT SỬA
+                        if (target.classList.contains('btn-edit-student')) {
+                            const id = target.getAttribute('data-id');
+                            const formEdit = document.getElementById('formEditStudent');
+                            const editModal = document.getElementById('editStudentModal');
+                            formEdit.action = `/admin/students/${id}`;
+                            document.getElementById('edit_fullname').value = target.getAttribute(
+                                'data-fullname');
+                            document.getElementById('edit_email').value = target.getAttribute('data-email');
+                            document.getElementById('edit_dob').value = target.getAttribute('data-dob');
+                            document.getElementById('edit_status').value = target.getAttribute(
+                                'data-status');
+                            clearValidationErrors(formEdit);
+                            editModal.classList.remove('hidden');
+                        }
+
+                        // NÚT GỬI MAIL ĐƠN LẺ
+                        if (target.classList.contains('btn-send-single-email')) {
+                            const id = target.getAttribute('data-id');
+                            // CHUẨN HÓA LẠI THAM SỐ GỌI MODAL
+                            showConfirm(
+                                'Gửi Email',
+                                'Gửi thông tin tài khoản cho sinh viên này?',
+                                () => sendEmailsInBatches([id], null),
+                                'primary'
+                            );
+                        }
                     });
-                });
+                }
             }
             initStudentTableEvents();
 
@@ -887,47 +887,46 @@
                     const ids = Array.from(document.querySelectorAll('.student-checkbox')).filter(cb => cb
                         .checked).map(cb => cb.value);
                     if (ids.length === 0) return;
+                    // CHUẨN HÓA LẠI THAM SỐ GỌI MODAL
                     showConfirm(
                         'Xóa ' + ids.length + ' Sinh Viên?',
                         'Các sinh viên đã chọn sẽ bị chuyển vào thùng rác.',
-                        'Xóa tất cả',
-                        'red',
-                        'delete_forever',
                         async () => {
-                            loadingModal.classList.remove('hidden');
-                            progressContainer.classList.add('hidden');
-                            loadingTitle.innerText = "Đang xóa dữ liệu...";
-                            try {
-                                const response = await fetch(
-                                    '{{ route('admin.students.bulk_destroy') }}', {
-                                        method: 'POST',
-                                        headers: {
-                                            'Content-Type': 'application/json',
-                                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                                        },
-                                        body: JSON.stringify({
-                                            ids: ids
-                                        })
-                                    });
-                                const data = await response.json();
-                                loadingModal.classList.add('hidden');
-                                if (data.success) {
-                                    ids.forEach(id => {
-                                        const checkbox = document.querySelector(
-                                            `.student-checkbox[value="${id}"]`);
-                                        if (checkbox) checkbox.closest('tr').remove();
-                                    });
-                                    if (selectAll) selectAll.checked = false;
-                                    toggleActionBtns();
-                                    showToast("success", "Đã xóa thành công!");
-                                } else {
-                                    showToast("error", "Lỗi: " + data.message);
+                                loadingModal.classList.remove('hidden');
+                                progressContainer.classList.add('hidden');
+                                loadingTitle.innerText = "Đang xóa dữ liệu...";
+                                try {
+                                    const response = await fetch(
+                                        '{{ route('admin.students.bulk_destroy') }}', {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                            },
+                                            body: JSON.stringify({
+                                                ids: ids
+                                            })
+                                        });
+                                    const data = await response.json();
+                                    loadingModal.classList.add('hidden');
+                                    if (data.success) {
+                                        ids.forEach(id => {
+                                            const checkbox = document.querySelector(
+                                                `.student-checkbox[value="${id}"]`);
+                                            if (checkbox) checkbox.closest('tr').remove();
+                                        });
+                                        if (selectAll) selectAll.checked = false;
+                                        toggleActionBtns();
+                                        showToast("success", "Đã xóa thành công!");
+                                    } else {
+                                        showToast("error", "Lỗi: " + data.message);
+                                    }
+                                } catch (e) {
+                                    loadingModal.classList.add('hidden');
+                                    showToast("error", "Có lỗi xảy ra khi xóa nhiều.");
                                 }
-                            } catch (e) {
-                                loadingModal.classList.add('hidden');
-                                showToast("error", "Có lỗi xảy ra khi xóa nhiều.");
-                            }
-                        }
+                            },
+                            'danger'
                     );
                 });
             }
@@ -936,13 +935,12 @@
                 btnExportExcel.addEventListener('click', function(e) {
                     e.preventDefault();
                     const url = this.getAttribute('href');
+                    // CHUẨN HÓA LẠI THAM SỐ GỌI MODAL
                     showConfirm(
                         'Xuất Excel',
                         'Tải xuống danh sách sinh viên lớp này?',
-                        'Tải xuống',
-                        'green',
-                        'download',
-                        () => window.location.href = url
+                        () => window.location.href = url,
+                        'primary'
                     );
                 });
             }
@@ -952,13 +950,12 @@
                     const ids = Array.from(document.querySelectorAll('.student-checkbox')).filter(cb => cb
                         .checked).map(cb => cb.value);
                     if (ids.length === 0) return;
+                    // CHUẨN HÓA LẠI THAM SỐ GỌI MODAL
                     showConfirm(
                         'Gửi Email Hàng Loạt',
                         `Gửi cho ${ids.length} sinh viên đã chọn?`,
-                        'Gửi ngay',
-                        'blue',
-                        'send',
-                        () => sendEmailsInBatches(ids, null)
+                        () => sendEmailsInBatches(ids, null),
+                        'primary'
                     );
                 });
             }

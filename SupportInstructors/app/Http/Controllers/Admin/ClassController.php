@@ -171,7 +171,7 @@ class ClassController extends Controller
                 return response()->json([
                     'success' => true,
                     'message' => 'Cập nhật lớp học thành công!',
-                    'redirect_url' => null,
+                    'redirect_url' => route('admin.classes.index'), // Đổi thành link danh sách lớp
                     'new_student_ids' => $newIds
                 ]);
             }

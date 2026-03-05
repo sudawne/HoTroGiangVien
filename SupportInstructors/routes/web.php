@@ -30,5 +30,9 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => 'auth'], fu
     Route::put('minutes/{id}/approve', [MeetingMinuteController::class, 'approve'])->name('minutes.approve');
     Route::put('minutes/{id}/reject', [MeetingMinuteController::class, 'reject'])->name('minutes.reject');
     Route::get('minutes/{id}/export-word', [MeetingMinuteController::class, 'exportWord'])->name('minutes.export_word');
-    Route::resource('training-point', TrainingPointController::class);
+    
+    Route::get('training-points/import', [TrainingPointController::class, 'import'])->name('training_points.import');
+    Route::post('training-points/preview', [TrainingPointController::class, 'preview'])->name('training_points.preview');
+    Route::post('training-points/store-import', [TrainingPointController::class, 'storeImport'])->name('training_points.store_import');
+    Route::resource('training_points', TrainingPointController::class);
 });

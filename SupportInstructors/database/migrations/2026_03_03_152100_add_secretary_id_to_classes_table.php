@@ -6,10 +6,12 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up(): void
+    public function up()
     {
         Schema::table('classes', function (Blueprint $table) {
-            $table->foreignId('secretary_id')->nullable()->after('monitor_id')->constrained('students')->nullOnDelete();
+            if (!Schema::hasColumn('classes', 'secretary_id')) {
+                $table->foreignId('secretary_id')->nullable()->after('monitor_id'); // Code cũ của bạn
+            }
         });
     }
 

@@ -65,4 +65,8 @@ class Student extends Model
     {
         return $this->hasMany(ConsultationLog::class);
     }
+    public function studentClass()
+    {
+        return $this->belongsTo(Classes::class, 'class_id', 'id');
+    }
 }

@@ -151,38 +151,41 @@
                                 Người tạo: <span class="font-bold">{{ $minute->creator->name ?? 'N/A' }}</span>
                             </div>
                             
-                            <div class="flex gap-2 self-end sm:self-auto">
+                            {{-- ACTION BUTTONS --}}
+                            <div class="flex gap-2 self-end sm:self-auto flex-wrap items-stretch">
                                 {{-- Nút XEM --}}
                                 <a href="{{ route('admin.minutes.show', $minute->id) }}"
                                     class="flex items-center gap-1 px-3 py-1.5 rounded text-xs font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 transition-colors border border-slate-200">
                                     <span class="material-symbols-outlined !text-[16px]">visibility</span> Xem
                                 </a>
 
+                                {{-- Nút Tải Word --}}
+                                <a href="{{ route('admin.minutes.export_word', $minute->id) }}" 
+                                class="flex items-center gap-1 px-3 py-1.5 rounded text-xs font-bold text-primary bg-primary/5 hover:bg-primary/10 transition-colors border border-primary/10">
+                                    <span class="material-symbols-outlined !text-[16px]">download</span> Word
+                                </a>
+
                                 @if($minute->status === 'draft')
+                                    {{-- Nút Sửa / Kiểm duyệt --}}
                                     <a href="{{ route('admin.minutes.edit', $minute->id) }}"
                                         class="flex items-center gap-1 px-3 py-1.5 rounded text-xs font-bold text-orange-600 bg-orange-50 hover:bg-orange-100 transition-colors border border-orange-100">
                                         
                                         @if((Auth::user()->role_id ?? 0) == 1)
-                                            <span class="material-symbols-outlined !text-[16px]">fact_check</span> Kiểm duyệt
+                                            <span class="material-symbols-outlined !text-[16px]">fact_check</span> Duyệt
                                         @else
-                                            <span class="material-symbols-outlined !text-[16px]">edit</span> Sửa đổi
+                                            <span class="material-symbols-outlined !text-[16px]">edit</span> Sửa
                                         @endif
                                     </a>
 
-                                    {{-- Nút XÓA --}}
-                                    <form id="form-delete-minute-{{ $minute->id }}" action="{{ route('admin.minutes.destroy', $minute->id) }}" method="POST" class="flex items-center">
+                                    {{-- Nút XÓA (Đã Fix ID và CSS) --}}
+                                    <form id="form-delete-minute-{{ $minute->id }}" action="{{ route('admin.minutes.destroy', $minute->id) }}" method="POST" class="contents">
                                         @csrf @method('DELETE')
                                         <button type="button" onclick="confirmDelete({{ $minute->id }})"
-                                            class="flex items-center gap-1 px-3 py-1.5 rounded text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 transition-colors border border-red-100 h-full">
+                                            class="flex items-center gap-1 px-3 py-1.5 rounded text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 transition-colors border border-red-100 cursor-pointer">
                                             <span class="material-symbols-outlined !text-[16px]">delete</span> Xóa
                                         </button>
                                     </form>
                                 @endif
-
-                                {{-- Nút Tải Word --}}
-                                <button class="flex items-center gap-1 px-3 py-1.5 rounded text-xs font-bold text-primary bg-primary/5 hover:bg-primary/10 transition-colors border border-primary/10">
-                                    <span class="material-symbols-outlined !text-[16px]">download</span> Word
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -197,12 +200,12 @@
     </div>
 @endsection
 <script>
-    function confirmDelete() {
+    function confirmDelete(minuteId) {
         window.showConfirm(
             'Xóa biên bản',
             'Bạn có chắc chắn muốn xóa vĩnh viễn biên bản này không? <br><span class="text-xs text-red-500 italic">Hành động này không thể hoàn tác.</span>',
             function() {
-                document.getElementById('form-delete-minute').submit();
+                document.getElementById('form-delete-minute-' + minuteId).submit();
             },
             'danger'
         );

@@ -177,7 +177,17 @@ class NotificationController extends Controller
 
     public function show($id)
     {
-        $notification = Notification::with(['sender', 'class', 'comments.user'])->withCount('likes')->findOrFail($id);
+        // Chỉ lấy những Comment gốc (parent_id = null), sau đó load luôn các replies của nó
+        // Bổ sung eager-load replies.parent.user để có thể biết reply trả lời ai
+        $notification = Notification::with([
+            'sender',
+            'class',
+            'comments' => function ($q) {
+                $q->whereNull('parent_id')
+                    ->with(['user', 'replies.user', 'replies.parent.user']);
+            }
+        ])->withCount('likes')->findOrFail($id);
+
         return view('admin.notifications.show', compact('notification'));
     }
 
@@ -211,12 +221,25 @@ class NotificationController extends Controller
             return back()->with('error', 'Bài viết này đã tắt tính năng bình luận.');
         }
 
-        $request->validate(['content' => 'required|string|max:1000']);
+        $request->validate([
+            'content' => 'required|string|max:1000',
+            'parent_id' => 'nullable|exists:notification_comments,id',
+            'content_prefix' => 'nullable|string'
+        ]);
+
+        // Nếu có prefix (tức là có tag tên @AiĐó), thì gộp nó vào trước content
+        $finalContent = $request->content;
+        if ($request->filled('content_prefix')) {
+            $finalContent = $request->content_prefix . $finalContent;
+        }
+
         NotificationComment::create([
             'notification_id' => $id,
             'user_id' => Auth::id(),
-            'content' => $request->content
+            'content' => $finalContent,
+            'parent_id' => $request->parent_id
         ]);
+
         return back()->with('success', 'Đã thêm bình luận!');
     }
 
@@ -235,6 +258,7 @@ class NotificationController extends Controller
         $countRealEmails = count($realStudentEmails);
 
         if ($countRealEmails > 0) {
+            // tạm thời gửi tới test email (thực tế bạn có thể dùng $realStudentEmails hoặc chia batches)
             $testEmails = ['nguyen22082006204@vnkgu.edu.vn'];
 
             try {

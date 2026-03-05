@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\MeetingMinuteController;
 use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\AcademicWarningController;
 use App\Http\Controllers\Admin\LecturerController;
+use App\Http\Controllers\Admin\NotificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -37,6 +38,15 @@ Route::controller(StudentController::class)->prefix('students')->name('students.
 Route::resource('students', StudentController::class);
 
 Route::resource('academic-results', AcademicResultController::class);
+
+// --- THÔNG BÁO & TIN TỨC ---
+Route::controller(NotificationController::class)->prefix('notifications')->name('notifications.')->group(function () {
+    Route::post('/{id}/approve', 'approve')->name('approve');
+    Route::post('/{id}/like', 'toggleLike')->name('like');
+    Route::post('/{id}/comment', 'storeComment')->name('comment');
+});
+// Mở lại các route edit, update
+Route::resource('notifications', NotificationController::class);
 
 // --- QUẢN LÝ GIẢNG VIÊN (LECTURERS) ---
 Route::controller(LecturerController::class)->prefix('lecturers')->name('lecturers.')->group(function () {

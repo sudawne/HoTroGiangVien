@@ -69,6 +69,7 @@
 
     @include('partials.toast')
     @include('partials.confirm_modal')
+    @include('partials.chat-widget')
 
     @yield('scripts')
 </body>

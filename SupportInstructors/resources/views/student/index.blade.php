@@ -42,6 +42,7 @@
     </style>
 @endsection
 
+
 @section('content')
     @php
         $student = Auth::user()->student;
@@ -74,7 +75,8 @@
 
         {{-- BÀI VIẾT --}}
         @forelse($notifications as $notify)
-            <article data-notification-id="{{ $notify->id }}" x-data="{ showComments: false }"
+            <article id="notification-{{ $notify->id }}" data-notification-id="{{ $notify->id }}"
+                x-data="{ showComments: false }"
                 class="post-card bg-white rounded-sm shadow-sm border border-slate-200 overflow-hidden">
                 <div class="p-4 sm:p-5">
                     <div class="flex justify-between items-start mb-3 post-header">
@@ -617,56 +619,188 @@
 
         window.highlightCommentBubble = function(hash) {
             let el = document.querySelector(hash);
-            if (!el) return;
+            if (!el) {
+                console.warn('Không tìm thấy bình luận trên trang hiện tại:', hash);
+                return;
+            }
 
-            // Xử lý nết mục tiêu là comment
+            // 1. ÉP ALPINEJS MỞ KHU VỰC BÌNH LUẬN CỦA BÀI VIẾT
             let art = el.closest('article');
-            if (art && art.__x) art.__x.$data.showComments = true;
-
-            let replyWrap = el.closest('.replies-wrap');
-            if (replyWrap) {
-                let parentComment = replyWrap.closest('[id^="comment-"]');
-                if (parentComment && parentComment.__x) {
-                    parentComment.__x.$data.showAllReplies = true;
+            if (art) {
+                // Cách gọi chuẩn của AlpineJS V3
+                if (typeof Alpine !== 'undefined' && typeof Alpine.$data === 'function') {
+                    let data = Alpine.$data(art);
+                    if (data && data.showComments !== undefined) {
+                        data.showComments = true;
+                    }
+                }
+                // Fallback tự động click nút "Bình luận" nếu Alpine API không rớt vào case trên
+                else {
+                    let commentsDiv = art.querySelector('[x-show="showComments"]');
+                    let btn = art.querySelector('button[\\@click="showComments = !showComments"]');
+                    if (commentsDiv && window.getComputedStyle(commentsDiv).display === 'none' && btn) {
+                        btn.click();
+                    }
                 }
             }
 
-            // Đợi DOM mở ra rồi cuộn và nháy màu
+            // 2. ÉP ALPINEJS MỞ DANH SÁCH TRẢ LỜI CON (NẾU ĐÍCH ĐẾN BỊ ẨN)
+            let replyWrap = el.closest('.replies-wrap');
+            if (replyWrap) {
+                let parentComment = replyWrap.closest('[id^="comment-"]');
+                if (parentComment) {
+                    if (typeof Alpine !== 'undefined' && typeof Alpine.$data === 'function') {
+                        let pData = Alpine.$data(parentComment);
+                        if (pData && pData.showAllReplies !== undefined) {
+                            pData.showAllReplies = true;
+                        }
+                    }
+                }
+            }
+
+            // 3. ĐỢI DOM MỞ XONG RỒI MỚI CUỘN VÀ NHÁY SÁNG (Tăng thời gian đợi lên 250ms)
+            setTimeout(() => {
+                // Cuộn tới giữa màn hình
+                el.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+
+                // Tìm vùng có nền trắng để nháy sáng
+                let bubble = el.querySelector('.bg-white, .bg-slate-50, .bg-slate-100, .bg-slate-200\\/80') ||
+                    el;
+
+                let originalBg = bubble.style.backgroundColor;
+                let originalTransition = bubble.style.transition;
+
+                // Tắt hiệu ứng mượt tạm thời, đổi màu ngay sang xanh nhạt
+                bubble.style.transition = 'none';
+                bubble.style.backgroundColor = '#dbeafe';
+
+                void bubble.offsetWidth; // Ép trình duyệt vẽ lại DOM ngay lập tức
+
+                // Phai màu từ từ sau 500ms để người dùng kịp nhìn
+                setTimeout(() => {
+                    bubble.style.transition = 'background-color 2s ease-in-out';
+                    bubble.style.backgroundColor = originalBg;
+
+                    // Xóa rác CSS sau khi chớp xong
+                    setTimeout(() => {
+                        bubble.style.transition = originalTransition;
+                        bubble.style.backgroundColor = '';
+                    }, 2000);
+                }, 500);
+            }, 250);
+        };
+        window.highlightPost = function(hash) {
+            let el = document.querySelector(hash);
+            if (!el) {
+                console.warn('Không tìm thấy bài viết:', hash);
+                return;
+            }
+
+            // Chỉ đợi 1 chút rồi cuộn tới giữa màn hình, bỏ qua logic mở Comment
             setTimeout(() => {
                 el.scrollIntoView({
                     behavior: 'smooth',
                     block: 'center'
                 });
 
-                let bubble = el.classList.contains('bg-white') || el.classList.contains('post-card') ? el : (el
-                    .querySelector('.bg-white, .bg-slate-50') || el);
+                // Đổi màu nền sang xanh nhạt để nháy sáng
+                let originalBg = el.style.backgroundColor;
+                let originalTransition = el.style.transition;
 
-                let originalBg = bubble.style.backgroundColor;
-                let originalTransition = bubble.style.transition;
+                el.style.transition = 'none';
+                el.style.backgroundColor = '#dbeafe';
 
-                bubble.style.transition = 'none';
-                bubble.style.backgroundColor = '#dbeafe'; // Nháy màu xanh nhạt Blue-100
+                void el.offsetWidth; // Ép trình duyệt vẽ lại ngay lập tức
 
-                void bubble.offsetWidth;
-
+                // Sau 500ms thì phai màu dần về như cũ
                 setTimeout(() => {
-                    bubble.style.transition = 'background-color 2s ease-in-out';
-                    bubble.style.backgroundColor = originalBg;
+                    el.style.transition = 'background-color 2s ease-in-out';
+                    el.style.backgroundColor = originalBg;
+
+                    // Xóa rác CSS
                     setTimeout(() => {
-                        bubble.style.transition = originalTransition;
-                        bubble.style.backgroundColor = '';
+                        el.style.transition = originalTransition;
+                        el.style.backgroundColor = '';
                     }, 2000);
-                }, 400);
-            }, 150);
+                }, 500);
+            }, 100);
         };
+        // Component Xử lý Tìm kiếm Hệ thống
+        window.searchSystem = function() {
+            return {
+                searchQuery: '',
+                results: [],
+                isLoading: false,
+                isOpen: false,
+                debounceTimer: null,
 
-        // Lắng nghe hash lúc mới load trang
-        document.addEventListener('DOMContentLoaded', function() {
-            if (window.location.hash) {
-                setTimeout(() => {
-                    window.highlightCommentBubble(window.location.hash);
-                }, 300);
+                init() {
+                    // Lắng nghe sự thay đổi của input để gọi API
+                    this.$watch('searchQuery', (val) => {
+                        const query = val.trim();
+                        if (query.length === 0) {
+                            this.results = [];
+                            this.isOpen = false;
+                            return;
+                        }
+
+                        this.isOpen = true;
+                        this.isLoading = true;
+                        clearTimeout(this.debounceTimer);
+
+                        // Đợi 400ms sau khi người dùng ngừng gõ mới gọi API để chống spam request
+                        this.debounceTimer = setTimeout(() => {
+                            this.fetchData(query);
+                        }, 400);
+                    });
+                },
+
+                async fetchData(query) {
+                    try {
+                        // Nhớ đảm bảo trong web.php bạn đã khai báo route này
+                        const response = await fetch(
+                            `{{ url('/student/search-api') }}?q=${encodeURIComponent(query)}`);
+                        if (response.ok) {
+                            this.results = await response.json();
+                        }
+                    } catch (error) {
+                        console.error('Lỗi tìm kiếm:', error);
+                    } finally {
+                        this.isLoading = false;
+                    }
+                },
+
+                handleResultClick(targetUrl) {
+                    this.isOpen = false;
+                    this.searchQuery = ''; // Reset input sau khi bấm
+
+                    let targetObj = new URL(targetUrl, window.location.origin);
+                    let currentPath = window.location.pathname.replace(/\/$/, '');
+                    let targetPath = targetObj.pathname.replace(/\/$/, '');
+
+                    // Logic mượn từ phần chuông thông báo
+                    if (currentPath === targetPath) {
+                        if (window.history.pushState) {
+                            window.history.pushState(null, null, targetObj.search + targetObj.hash);
+                        } else {
+                            window.location.hash = targetObj.hash;
+                        }
+
+                        // Gọi lại hàm cuộn và nháy sáng bài viết đã định nghĩa sẵn
+                        // Gọi hàm cuộn bài viết mới tạo (không mở bình luận)
+                        if (targetObj.hash && typeof window.highlightPost === 'function') {
+                            window.highlightPost(targetObj.hash);
+                        } else {
+                            window.location.reload();
+                        }
+                    } else {
+                        window.location.href = targetUrl;
+                    }
+                }
             }
-        });
+        }
     </script>
 @endsection

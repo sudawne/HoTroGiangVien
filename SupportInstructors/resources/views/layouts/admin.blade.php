@@ -130,6 +130,7 @@
             opacity: 0.9;
             transition: opacity 0.3s;
         }
+
         @keyframes slideIn {
             from {
                 opacity: 0;
@@ -171,6 +172,8 @@
     </div>
     @include('partials.toast')
     @include('partials.confirm_modal')
+
+
 </body>
 
 </html>

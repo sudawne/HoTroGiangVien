@@ -18,7 +18,6 @@ class Notification extends Model
         'attachment_url',
         'attachment_name',
         'target_audience',
-        'class_id',
         'status',
         'allow_comments',
     ];
@@ -29,10 +28,9 @@ class Notification extends Model
         return $this->belongsTo(User::class, 'sender_id');
     }
 
-    // Gửi cho lớp nào
-    public function class()
+    public function classes()
     {
-        return $this->belongsTo(Classes::class, 'class_id');
+        return $this->belongsToMany(Classes::class, 'class_notification', 'notification_id', 'class_id');
     }
 
     // Người đã Like

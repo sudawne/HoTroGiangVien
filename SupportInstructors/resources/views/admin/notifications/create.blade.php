@@ -18,28 +18,27 @@
 @section('content')
     <script src="https://cdn.ckeditor.com/ckeditor5/40.0.0/classic/ckeditor.js"></script>
 
-    <div class="w-full px-4 py-6">
-        <div class="mb-4">
+    <div class="w-full px-4 md:px-8 py-6">
+        <div class="mb-6 flex items-center justify-between">
             <a href="{{ route('admin.notifications.index') }}"
-                class="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-primary transition-colors">
-                <span class="material-symbols-outlined !text-[18px]">arrow_back</span> Quay lại danh sách
+                class="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-100 py-1.5 px-3 rounded-lg transition-colors -ml-3">
+                <span class="material-symbols-outlined !text-[20px]">arrow_back</span>
+                Quay lại danh sách
             </a>
+            <h1 class="text-xl font-bold text-slate-800 uppercase flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary !text-[24px]">campaign</span> Soạn Bài Đăng Mới
+            </h1>
         </div>
 
-        <div class="bg-white border border-slate-200 rounded-sm shadow-sm overflow-hidden">
-            <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50">
-                <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2">
-                    <span class="material-symbols-outlined text-primary">edit_square</span> Soạn Bài Đăng Mới
-                </h3>
-            </div>
-
+        <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
             <form id="notification-form" action="{{ route('admin.notifications.store') }}" method="POST"
-                enctype="multipart/form-data" class="p-6 space-y-6">
+                enctype="multipart/form-data" class="p-6 md:p-8 space-y-8">
                 @csrf
                 <input type="hidden" name="action" id="form-action" value="draft">
 
-                <div class="p-5 border border-blue-100 bg-blue-50/30 rounded-sm">
-                    <label class="block text-sm font-bold text-slate-800 mb-3">Phạm vi gửi thông báo <span
+                {{-- CHỌN ĐỐI TƯỢNG NHẬN --}}
+                <div class="p-5 border border-blue-100 bg-blue-50/30 rounded-lg">
+                    <label class="block text-sm font-bold text-slate-800 mb-4">Phạm vi gửi thông báo <span
                             class="text-red-500">*</span></label>
                     <div class="flex flex-wrap gap-8 mb-4">
                         <label class="flex items-center gap-2 cursor-pointer">
@@ -47,50 +46,53 @@
                                 class="w-4 h-4 text-primary focus:ring-primary"
                                 {{ old('target_audience', 'all') == 'all' ? 'checked' : '' }}
                                 onclick="document.getElementById('classSelectBox').classList.add('hidden')">
-                            <span class="font-medium text-slate-700">Tất cả sinh viên Toàn Khoa</span>
+                            <span class="font-medium text-slate-700">Tất cả sinh viên Toàn Khoa / Toàn trường</span>
                         </label>
                         <label class="flex items-center gap-2 cursor-pointer">
                             <input type="radio" name="target_audience" value="class"
                                 class="w-4 h-4 text-primary focus:ring-primary"
                                 {{ old('target_audience') == 'class' ? 'checked' : '' }}
                                 onclick="document.getElementById('classSelectBox').classList.remove('hidden')">
-                            <span class="font-medium text-slate-700">Chỉ gửi cho một Lớp cụ thể</span>
+                            <span class="font-medium text-slate-700">Chỉ gửi cho các Lớp cụ thể</span>
                         </label>
                     </div>
 
+                    {{-- Chọn nhiều lớp bằng TomSelect --}}
                     <div id="classSelectBox"
-                        class="{{ old('target_audience') == 'class' ? '' : 'hidden' }} transition-all duration-300">
-                        <select name="class_id"
-                            class="w-full md:w-1/2 px-4 py-2.5 border border-slate-300 rounded-sm text-sm focus:ring-1 focus:ring-primary">
-                            <option value="">-- Click để chọn lớp học --</option>
+                        class="{{ old('target_audience') == 'class' ? '' : 'hidden' }} transition-all duration-300 pl-6">
+                        <select name="class_ids[]" id="select-multiple-classes" multiple
+                            placeholder="Click để chọn một hoặc nhiều lớp..." autocomplete="off" class="w-full text-sm">
                             @foreach ($classes as $c)
-                                <option value="{{ $c->id }}" {{ old('class_id') == $c->id ? 'selected' : '' }}>
+                                <option value="{{ $c->id }}"
+                                    {{ is_array(old('class_ids')) && in_array($c->id, old('class_ids')) ? 'selected' : '' }}>
                                     {{ $c->code }} - {{ $c->name }}
                                 </option>
                             @endforeach
                         </select>
-                        @error('class_id')
+                        @error('class_ids')
                             <p class="text-red-500 text-xs mt-1.5 font-medium">{{ $message }}</p>
                         @enderror
                     </div>
                 </div>
 
+                {{-- TIÊU ĐỀ --}}
                 <div>
                     <label class="block text-sm font-bold text-slate-800 mb-2">Tiêu đề bài viết <span
                             class="text-red-500">*</span></label>
                     <input type="text" name="title" value="{{ old('title') }}" required
                         placeholder="Nhập tiêu đề thật rõ ràng..."
-                        class="w-full px-4 py-3 border border-slate-300 rounded-sm focus:ring-1 focus:ring-primary text-base font-medium">
+                        class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary text-base font-semibold shadow-sm transition-all">
                     @error('title')
                         <p class="text-red-500 text-xs mt-1.5 font-medium">{{ $message }}</p>
                     @enderror
                 </div>
 
+                {{-- MỨC ĐỘ & FILE --}}
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label class="block text-sm font-bold text-slate-800 mb-2">Mức độ ưu tiên</label>
                         <select name="type"
-                            class="w-full px-4 py-3 border border-slate-300 rounded-sm focus:ring-1 focus:ring-primary">
+                            class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-sm transition-all">
                             <option value="info" {{ old('type') == 'info' ? 'selected' : '' }}>🔵 Thông tin chung (Bình
                                 thường)</option>
                             <option value="warning" {{ old('type') == 'warning' ? 'selected' : '' }}>🟡 Cảnh báo / Nhắc nhở
@@ -101,7 +103,7 @@
                     <div>
                         <label class="block text-sm font-bold text-slate-800 mb-2">Đính kèm tài liệu (nếu có)</label>
                         <input type="file" name="attachment" accept=".pdf,.doc,.docx,.xls,.xlsx,.zip,.rar"
-                            class="block w-full text-sm text-slate-500 file:mr-4 file:py-3 file:px-4 file:border-0 file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer border border-slate-300 rounded-sm">
+                            class="block w-full text-sm text-slate-500 file:mr-4 file:py-3 file:px-4 file:border-0 file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer border border-slate-300 rounded-lg shadow-sm">
                         @error('attachment')
                             <p class="text-red-500 text-xs mt-1.5 font-medium">{{ $message }}</p>
                         @enderror
@@ -117,22 +119,26 @@
                     </div>
                 </div>
 
+                {{-- NỘI DUNG CKEDITOR --}}
                 <div>
                     <label class="block text-sm font-bold text-slate-800 mb-2">Nội dung chi tiết <span
                             class="text-red-500">*</span></label>
-                    <textarea id="editor" name="message" placeholder="Bắt đầu soạn thảo nội dung tại đây...">{{ old('message') }}</textarea>
+                    <div class="rounded-lg shadow-sm border border-slate-200">
+                        <textarea id="editor" name="message" placeholder="Bắt đầu soạn thảo nội dung tại đây...">{{ old('message') }}</textarea>
+                    </div>
                     @error('message')
                         <p class="text-red-500 text-xs mt-1.5 font-medium">{{ $message }}</p>
                     @enderror
                 </div>
 
-                <div class="pt-6 border-t border-slate-100 flex flex-wrap justify-end gap-3">
+                {{-- NÚT XỬ LÝ --}}
+                <div class="pt-6 border-t border-slate-200 flex flex-wrap justify-end gap-3">
                     <button type="button" onclick="submitForm('draft')"
-                        class="px-6 py-3 bg-slate-200 text-slate-700 rounded-sm font-bold hover:bg-slate-300 transition-colors">
+                        class="px-6 py-3 bg-slate-200 text-slate-700 rounded-lg font-bold hover:bg-slate-300 transition-colors shadow-sm">
                         Lưu Nháp (Chưa gửi)
                     </button>
                     <button type="button" onclick="submitForm('send')"
-                        class="px-6 py-3 bg-primary text-white rounded-sm font-bold hover:bg-primary/90 flex items-center gap-2 shadow-md transition-colors">
+                        class="px-6 py-3 bg-primary text-white rounded-lg font-bold hover:bg-primary-dark flex items-center gap-2 shadow-md transition-all hover:-translate-y-0.5">
                         <span class="material-symbols-outlined !text-[20px]">send</span>
                         {{ Auth::user()->role_id == 1 ? 'Đăng Bài & Gửi Email Ngay' : 'Gửi Admin Xét Duyệt' }}
                     </button>
@@ -141,12 +147,21 @@
         </div>
     </div>
 
-    @include('admin.classes.partials.universal_confirm_modal')
-
     <script>
         let myEditor;
 
         document.addEventListener('DOMContentLoaded', function() {
+            // 1. Khởi tạo TomSelect (Chọn nhiều lớp)
+            if (document.querySelector('#select-multiple-classes')) {
+                new TomSelect("#select-multiple-classes", {
+                    plugins: ['remove_button'],
+                    maxItems: null,
+                    placeholder: "Click để chọn một hoặc nhiều lớp...",
+                    hideSelected: true
+                });
+            }
+
+            // 2. Khởi tạo CKEditor 
             ClassicEditor
                 .create(document.querySelector('#editor'), {
                     toolbar: ['heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList',
@@ -155,14 +170,20 @@
                     heading: {
                         options: [{
                                 model: 'paragraph',
-                                title: 'Paragraph',
+                                title: 'Đoạn văn bình thường',
                                 class: 'ck-heading_paragraph'
                             },
                             {
                                 model: 'heading1',
+                                view: 'h2',
+                                title: 'Tiêu đề lớn',
+                                class: 'ck-heading_heading1'
+                            },
+                            {
+                                model: 'heading2',
                                 view: 'h3',
                                 title: 'Tiêu đề nhỏ',
-                                class: 'ck-heading_heading1'
+                                class: 'ck-heading_heading2'
                             }
                         ]
                     }
@@ -171,7 +192,7 @@
                     myEditor = editor;
                 })
                 .catch(error => {
-                    console.error(error);
+                    console.error('Lỗi khởi tạo CKEditor:', error);
                 });
         });
 
@@ -179,15 +200,29 @@
             let form = document.getElementById('notification-form');
             let actionInput = document.getElementById('form-action');
 
+            // Cập nhật dữ liệu từ Editor
             if (myEditor) {
                 document.querySelector('#editor').value = myEditor.getData();
             }
 
+            // BẮT LỖI TÙY CHỈNH: Bắt buộc chọn lớp nếu check Radio "Gửi cho Lớp cụ thể"
+            let isClassTarget = document.querySelector('input[name="target_audience"][value="class"]').checked;
+            let classSelect = document.getElementById('select-multiple-classes');
+
+            if (isClassTarget && classSelect.selectedOptions.length === 0) {
+                alert('Vui lòng chọn ít nhất 1 lớp học để gửi thông báo!');
+                // Focus lại vào ô chọn lớp
+                if (classSelect.tomselect) classSelect.tomselect.focus();
+                return;
+            }
+
+            // Validate HTML5 mặc định (Tiêu đề, v.v)
             if (!form.checkValidity()) {
                 form.reportValidity();
                 return;
             }
 
+            // Xử lý gửi Form
             actionInput.value = actionType;
 
             if (actionType === 'send') {
@@ -203,38 +238,6 @@
                 document.getElementById('form-action').value = 'draft';
                 form.submit();
             }
-        }
-
-        function showConfirm(title, message, callback, type = 'primary') {
-            const modal = document.getElementById('universalModal');
-            document.getElementById('uni-modal-title').innerText = title;
-            document.getElementById('uni-modal-desc').innerHTML = message;
-            const btnConfirm = document.getElementById('btn-uni-confirm');
-
-            btnConfirm.onclick = () => {
-                modal.classList.add('hidden');
-                callback();
-            };
-
-            const icon = document.getElementById('uni-modal-icon');
-            const iconBg = document.getElementById('uni-modal-icon-bg');
-
-            if (type === 'danger') {
-                btnConfirm.className =
-                    "px-4 py-2 text-white font-medium rounded-sm text-sm bg-red-600 hover:bg-red-700 flex items-center gap-2";
-                icon.innerText = 'warning';
-                icon.className = 'material-symbols-outlined text-[24px] text-red-600';
-                iconBg.className = 'flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center bg-red-100';
-            } else {
-                btnConfirm.className =
-                    "px-4 py-2 text-white font-medium rounded-sm text-sm bg-blue-600 hover:bg-blue-700 flex items-center gap-2";
-                icon.innerText = 'help';
-                icon.className = 'material-symbols-outlined text-[24px] text-blue-600';
-                iconBg.className = 'flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center bg-blue-100';
-            }
-
-            modal.classList.remove('hidden');
-            modal.removeAttribute('style');
         }
     </script>
 @endsection

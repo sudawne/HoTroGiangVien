@@ -22,7 +22,7 @@ class NotificationController extends Controller
     public function index(Request $request)
     {
         $classes = Classes::orderBy('code', 'asc')->get();
-        $query = Notification::with(['sender', 'class'])->withCount(['likes', 'comments']);
+        $query = Notification::with(['sender', 'classes'])->withCount(['likes', 'comments']);
 
         $roleFilter = $request->input('role_filter', 'all');
         if ($roleFilter === 'admin') {
@@ -41,7 +41,9 @@ class NotificationController extends Controller
         }
 
         if ($request->filled('class_id')) {
-            $query->where('target_audience', 'class')->where('class_id', $request->class_id);
+            $query->where('target_audience', 'class')->whereHas('classes', function ($q) use ($request) {
+                $q->where('classes.id', $request->class_id);
+            });
         }
 
         $notifications = $query->orderBy('id', 'desc')->paginate(15)->withQueryString();
@@ -62,7 +64,8 @@ class NotificationController extends Controller
             'message' => 'required|string',
             'type' => 'required|in:info,warning,urgent',
             'target_audience' => 'required|in:all,class',
-            'class_id' => 'required_if:target_audience,class|nullable|exists:classes,id',
+            'class_ids' => 'required_if:target_audience,class|array',
+            'class_ids.*' => 'exists:classes,id',
             'attachment' => 'nullable|file|max:10240',
         ]);
 
@@ -88,11 +91,15 @@ class NotificationController extends Controller
             'type' => $request->type,
             'status' => $status,
             'target_audience' => $request->target_audience,
-            'class_id' => $request->target_audience === 'class' ? $request->class_id : null,
             'attachment_url' => $filePath,
             'attachment_name' => $fileName,
             'allow_comments' => $allowComments,
         ]);
+
+        // Lưu mảng các lớp vào bảng trung gian
+        if ($request->target_audience === 'class' && $request->has('class_ids')) {
+            $notification->classes()->sync($request->class_ids);
+        }
 
         if ($status === 'approved') {
             $count = $this->sendNotificationEmails($notification);
@@ -105,7 +112,7 @@ class NotificationController extends Controller
 
     public function edit($id)
     {
-        $notification = Notification::findOrFail($id);
+        $notification = Notification::with('classes')->findOrFail($id);
         if ($notification->status === 'approved') {
             return redirect()->route('admin.notifications.index')->with('error', 'Không thể sửa thông báo đã xuất bản!');
         }
@@ -125,7 +132,7 @@ class NotificationController extends Controller
             'message' => 'required|string',
             'type' => 'required|in:info,warning,urgent',
             'target_audience' => 'required|in:all,class',
-            'class_id' => 'required_if:target_audience,class|nullable|exists:classes,id',
+            'class_ids' => 'required_if:target_audience,class|array',
             'attachment' => 'nullable|file|max:10240',
         ]);
 
@@ -151,9 +158,15 @@ class NotificationController extends Controller
             'type' => $request->type,
             'status' => $status,
             'target_audience' => $request->target_audience,
-            'class_id' => $request->target_audience === 'class' ? $request->class_id : null,
             'allow_comments' => $allowComments,
         ]);
+
+        // Cập nhật lại danh sách lớp nhận thông báo
+        if ($request->target_audience === 'class' && $request->has('class_ids')) {
+            $notification->classes()->sync($request->class_ids);
+        } else {
+            $notification->classes()->detach(); // Nếu chọn Toàn trường thì xóa sạch các liên kết lớp
+        }
 
         if ($status === 'approved') {
             $count = $this->sendNotificationEmails($notification);
@@ -178,10 +191,9 @@ class NotificationController extends Controller
 
     public function show($id)
     {
-        // Lấy cả likes_count và comments_count; đồng thời eager-load replies và users
         $notification = Notification::with([
             'sender',
-            'class',
+            'classes',
             'comments' => function ($q) {
                 $q->whereNull('parent_id')
                     ->with(['user', 'replies.user', 'replies.parent.user']);
@@ -214,7 +226,6 @@ class NotificationController extends Controller
             $liked = true;
         }
 
-        // Lấy lại tổng số like
         $likesCount = NotificationLike::where('notification_id', $id)->count();
 
         if ($request->wantsJson() || $request->ajax()) {
@@ -257,7 +268,6 @@ class NotificationController extends Controller
             'parent_id' => $request->parent_id
         ]);
 
-        // Reload relations needed for response
         $comment->load('user', 'parent');
 
         if ($request->wantsJson() || $request->ajax()) {
@@ -268,7 +278,7 @@ class NotificationController extends Controller
                     'user_name' => $comment->user->name,
                     'user_initial' => substr($comment->user->name, 0, 1),
                     'content' => nl2br(e(trim($comment->content))),
-                    'created_at' => $comment->created_at->diffForHumans(), // sẽ hiển thị theo locale Carbon
+                    'created_at' => $comment->created_at->diffForHumans(),
                     'parent_id' => $comment->parent_id,
                 ],
                 'comments_count' => NotificationComment::where('notification_id', $id)->count()
@@ -283,7 +293,9 @@ class NotificationController extends Controller
         if ($notification->target_audience === 'all') {
             $realStudentEmails = User::where('role_id', 3)->whereNotNull('email')->pluck('email')->toArray();
         } else {
-            $realStudentEmails = Student::where('class_id', $notification->class_id)
+            // Lấy ID của tất cả các lớp đã chọn
+            $classIds = $notification->classes->pluck('id')->toArray();
+            $realStudentEmails = Student::whereIn('class_id', $classIds)
                 ->whereHas('user', function ($q) {
                     $q->whereNotNull('email');
                 })
@@ -293,7 +305,7 @@ class NotificationController extends Controller
         $countRealEmails = count($realStudentEmails);
 
         if ($countRealEmails > 0) {
-            // tạm thời gửi tới test email (thực tế bạn có thể dùng $realStudentEmails hoặc chia batches)
+            // EMAIL TEST - Thay bằng $realStudentEmails nếu hệ thống chạy thật
             $testEmails = ['nguyen22082006204@vnkgu.edu.vn'];
 
             try {
@@ -301,7 +313,7 @@ class NotificationController extends Controller
                 Mail::bcc($testEmails)->send(new StudentNotificationMail($notification));
             } catch (\Exception $e) {
                 Log::error("LỖI GỬI MAIL NGHIÊM TRỌNG: " . $e->getMessage());
-                session()->flash('warning', 'Đăng bài thành công nhưng GỬI MAIL THẤT BẠI. Xem file log (storage/logs/laravel.log) để biết chi tiết.');
+                session()->flash('warning', 'Đăng bài thành công nhưng GỬI MAIL THẤT BẠI.');
             }
         }
 
@@ -314,7 +326,6 @@ class NotificationController extends Controller
             $alertId = $request->input('alert_id');
             $userId = Auth::id();
 
-            // Sử dụng UPSERT để tránh lỗi trùng lặp dữ liệu
             DB::table('user_read_alerts')->upsert([
                 [
                     'user_id' => $userId,
@@ -323,13 +334,9 @@ class NotificationController extends Controller
                 ]
             ], ['user_id', 'alert_id'], ['read_at']);
         }
-
         return response()->json(['success' => true]);
     }
 
-    /**
-     * Đánh dấu TẤT CẢ thông báo là ĐÃ ĐỌC
-     */
     public function markReadAll(Request $request)
     {
         if (Auth::check() && $request->filled('alert_ids')) {

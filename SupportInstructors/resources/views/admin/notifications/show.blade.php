@@ -92,7 +92,7 @@
                             <span>•</span>
                             <span class="flex items-center gap-1 text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">
                                 <span class="material-symbols-outlined !text-[14px]">group</span>
-                                {{ $notification->target_audience == 'all' ? 'Toàn Trường' : 'Lớp ' . ($notification->class->code ?? '') }}
+                                {{ $notification->target_audience == 'all' ? 'Toàn Trường' : 'Lớp ' . $notification->classes->pluck('code')->implode(', ') }}
                             </span>
                             <span>•</span>
                             <span

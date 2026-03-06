@@ -116,8 +116,10 @@
                                             trường</span>
                                     @else
                                         <span
-                                            class="font-bold text-green-700 bg-green-50 px-2 py-1 rounded text-xs border border-green-200">Lớp
-                                            {{ $notify->class->code ?? 'N/A' }}</span>
+                                            class="font-bold text-green-700 bg-green-50 px-2 py-1 rounded text-xs border border-green-200 block max-w-[150px] truncate"
+                                            title="{{ $notify->classes->pluck('code')->implode(', ') }}">
+                                            Các lớp: {{ $notify->classes->pluck('code')->implode(', ') }}
+                                        </span>
                                     @endif
                                 </td>
 

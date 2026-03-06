@@ -1,13 +1,12 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MeetingMinuteController;
 use App\Http\Controllers\Admin\TrainingPointController;
 
-Route::get('/', [HomeController::class, 'index'])->name('index');
+Route::get('/', [LoginController::class, 'showLoginForm'])->name('login');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');

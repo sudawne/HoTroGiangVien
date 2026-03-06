@@ -302,7 +302,7 @@
                             class="px-5 py-3 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap"
                             :class="activeTab === 'academic' ? 'border-primary text-primary bg-white dark:bg-[#1e1e2d]' :
                                 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100/50'">
-                            <span class="material-symbols-outlined !text-[18px]">menu_book</span>
+                            <span class="material-symbols-outlined !text-[18px]">x</span>
                             Điểm số
                         </button>
 

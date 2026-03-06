@@ -36,17 +36,41 @@ class TrainingPointController extends Controller
             });
         }
 
+        if ($request->filled('rank')) {
+            switch ($request->rank) {
+                case 'xuatsac': // 90 - 100
+                    $query->where('final_score', '>=', 90);
+                    break;
+                case 'tot': 
+                    $query->whereBetween('final_score', [80, 89]);
+                    break;
+                case 'kha': 
+                    $query->whereBetween('final_score', [65, 79]);
+                    break;
+                case 'trungbinh': 
+                    $query->whereBetween('final_score', [50, 64]);
+                    break;
+                case 'yeu': 
+                    $query->where('final_score', '<', 50)->whereNotNull('final_score');
+                    break;
+                case 'chuaxet': 
+                    $query->whereNull('final_score');
+                    break;
+            }
+        }
+
         // 3. Thực thi Query & Phân trang
         // Lưu ý: Đổi 'first_name' thành 'fullname' nếu bảng students chưa tách tên
         $trainingPoints = $query->join('students', 'training_points.student_id', '=', 'students.id')
                                 ->orderBy('students.class_id')
-                                ->orderBy('students.fullname', 'asc') // [ĐÃ SỬA] Sắp xếp theo Fullname cho an toàn
-                                ->select('training_points.*') // Chỉ lấy cột của bảng điểm để tránh trùng ID
+                                ->orderBy('students.fullname', 'asc')
+                                ->select('training_points.*') 
                                 ->paginate(10)
                                 ->withQueryString();
-
+        if ($request->ajax()) {
+            return view('admin.training_points.partials.table_rows', compact('trainingPoints'))->render();
+        }
         // 4. Thống kê (Stats)
-        // Clone query để giữ nguyên các điều kiện lọc (nếu đang lọc lớp nào thì chỉ thống kê lớp đó)
         $statsQuery = TrainingPoint::query();
         
         // Áp dụng lại các filter cho stats (để thống kê chính xác theo bộ lọc hiện tại)

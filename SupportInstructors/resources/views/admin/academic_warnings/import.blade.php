@@ -86,7 +86,6 @@
                     <p class="text-slate-500 dark:text-slate-400 mb-6">Kéo thả file vào đây hoặc bấm nút "Chọn file Excel" ở trên</p>
                     <div class="flex gap-4 text-xs text-slate-400 font-mono">
                         <span class="bg-slate-100 dark:bg-slate-900 px-2 py-1 rounded border dark:border-slate-700">.XLSX</span>
-                        <span class="bg-slate-100 dark:bg-slate-900 px-2 py-1 rounded border dark:border-slate-700">.XLS</span>
                         <span class="bg-slate-100 dark:bg-slate-900 px-2 py-1 rounded border dark:border-slate-700">.CSV</span>
                     </div>
                 </div>

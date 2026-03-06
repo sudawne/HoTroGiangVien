@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MeetingMinuteController;
 use App\Http\Controllers\Admin\TrainingPointController;
+use App\Http\Controllers\Admin\AcademicResultController;
 
 Route::get('/', [LoginController::class, 'showLoginForm'])->name('login');
 
@@ -34,4 +35,9 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => 'auth'], fu
     Route::post('training-points/preview', [TrainingPointController::class, 'preview'])->name('training_points.preview');
     Route::post('training-points/store-import', [TrainingPointController::class, 'storeImport'])->name('training_points.store_import');
     Route::resource('training_points', TrainingPointController::class);
+
+    Route::get('academic-results/import', [AcademicResultController::class, 'import'])->name('academic_results.import');
+    Route::post('academic-results/preview', [AcademicResultController::class, 'preview'])->name('academic_results.preview');
+    Route::post('academic-results/store-import', [AcademicResultController::class, 'storeImport'])->name('academic_results.store_import');
+    Route::resource('academic_results', AcademicResultController::class);
 });

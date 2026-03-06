@@ -19,9 +19,6 @@
                 <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Theo dõi GPA hệ 10, hệ 4 và xếp loại học lực của sinh viên.</p>
             </div>
             <div class="flex items-center gap-2">
-                <a href="{{ route('admin.academic_results.import') }}" class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-sm font-medium transition-all shadow-sm text-sm">
-                    <span class="material-symbols-outlined !text-[18px]">upload_file</span> Import Excel
-                </a>
                 <button class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-sm font-medium transition-all shadow-sm text-sm">
                     <span class="material-symbols-outlined !text-[18px]">download</span> Xuất Báo cáo
                 </button>
@@ -104,6 +101,10 @@
                         <button type="button" id="toggleFilterBtn" class="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-sm font-medium py-2 px-3 rounded-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-all flex items-center gap-2">
                             <span class="material-symbols-outlined !text-[16px]">filter_list</span> Bộ lọc
                         </button>
+                        <a href="{{ route('admin.academic_results.import') }}" class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium py-2 px-3 rounded-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-2">
+                            <span class="material-symbols-outlined !text-[16px] text-blue-600">upload_file</span>
+                            <span class="hidden sm:inline">Nhập Excel</span>
+                        </a>
                     </div>
                 </div>
 
@@ -151,13 +152,15 @@
                             </select>
                         </div>
 
-                        {{-- Nút Reset --}}
+                        {{-- 4. Nút Xóa lọc (Chuẩn theo mẫu Warning) --}}
                         <div class="flex items-end">
                             <button type="button" onclick="resetFilters()" 
-                                    class="h-[38px] px-4 text-sm font-medium rounded-sm transition-all flex items-center gap-2
+                                    class="h-[28.6px] px-4 py-2 text-sm font-medium rounded-sm transition-all flex items-center gap-2
                                     bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400
-                                    hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 hover:border-red-200 w-full justify-center">
-                                <span class="material-symbols-outlined !text-[18px]">filter_alt_off</span> Xóa lọc
+                                    hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200
+                                    w-full md:w-auto justify-center md:justify-start">
+                                <span class="material-symbols-outlined !text-[18px]">filter_alt_off</span>
+                                <span>Xóa lọc</span>
                             </button>
                         </div>
                     </div>

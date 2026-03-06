@@ -73,8 +73,9 @@
 
         {{-- Thao tác --}}
         <td class="px-6 py-4 text-right">
-            <a href="#" class="text-slate-400 hover:text-primary transition-colors p-2 rounded-sm hover:bg-slate-100 inline-block" title="Chỉnh sửa">
-                <span class="material-symbols-outlined !text-[18px]">edit</span>
+            <a href="{{ route('admin.students.show', $point->student_id) }}"
+            class="text-slate-400 hover:text-primary transition-colors p-2 rounded-sm hover:bg-slate-100 inline-block" title="Chỉnh sửa">
+                <span class="material-symbols-outlined !text-[18px]">visibility</span>
             </a>
         </td>
     </tr>

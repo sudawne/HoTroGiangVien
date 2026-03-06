@@ -56,11 +56,9 @@
         {{-- Tác vụ --}}
         <td class="px-6 py-4 text-right">
             <div class="flex items-center justify-end gap-2">
-                <a href="#" class="p-1.5 hover:bg-slate-100 rounded text-slate-500 hover:text-blue-600 transition-colors" title="Xem chi tiết">
+                <a href="{{ route('admin.students.show', $result->student_id) }}"
+                    class="p-1.5 hover:bg-slate-100 rounded text-slate-500 hover:text-blue-600 transition-colors" title="Xem chi tiết">
                     <span class="material-symbols-outlined !text-[18px]">visibility</span>
-                </a>
-                <a href="#" class="p-1.5 hover:bg-slate-100 rounded text-slate-500 hover:text-orange-600 transition-colors" title="Chỉnh sửa">
-                    <span class="material-symbols-outlined !text-[18px]">edit</span>
                 </a>
             </div>
         </td>

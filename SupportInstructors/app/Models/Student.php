@@ -69,4 +69,8 @@ class Student extends Model
     {
         return $this->belongsTo(Classes::class, 'class_id', 'id');
     }
+
+    public function trainingPoints() {
+        return $this->hasMany(TrainingPoint::class, 'student_id', 'id');
+    }
 }

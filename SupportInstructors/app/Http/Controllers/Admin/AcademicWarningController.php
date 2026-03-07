@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Exports\WarningsExport;
 use Illuminate\Http\Request;
 use App\Models\AcademicWarning;
 use App\Models\Student;
@@ -16,7 +17,9 @@ use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use PhpOffice\PhpSpreadsheet\Shared\Date;
 use Carbon\Carbon;
-use Illuminate\Support\Str; // Xử lý tên tiếng việt
+use Illuminate\Support\Str; 
+use Barryvdh\DomPDF\Facade\Pdf;
+
 class AcademicWarningController extends Controller
 {
     public function index(Request $request)
@@ -316,5 +319,41 @@ class AcademicWarningController extends Controller
         if (mb_stripos($text, 'Lần 2') !== false) return 2;
         if (mb_stripos($text, 'Thôi học') !== false || mb_stripos($text, 'Buộc thôi học') !== false) return 3;
         return 0; 
+    }
+
+    public function export(Request $request) 
+    {
+        // 1. Lọc dữ liệu (Logic giống hệt hàm index để đảm bảo bộ lọc khớp với những gì đang xem)
+        $query = AcademicWarning::with(['student.studentClass', 'semester']);
+
+        if ($request->filled('semester_id')) {
+            $query->where('semester_id', $request->semester_id);
+        }
+        if ($request->filled('level')) {
+            $query->where('warning_level', $request->level);
+        }
+        if ($request->filled('class_id')) {
+            $query->whereHas('student', fn($q) => $q->where('class_id', $request->class_id));
+        }
+
+        $data = $query->get();
+
+        // 2. Xử lý xuất file
+        if ($request->format === 'excel') {
+            // Class WarningsExport vẫn để ở app/Exports là chuẩn nhất của Laravel
+            return Excel::download(new WarningsExport($data), 'danh-sach-canh-bao.xlsx');
+        } 
+        elseif ($request->format === 'pdf') {
+            // [QUAN TRỌNG] Load view từ thư mục warning: resources/views/admin/academic_warnings/pdf_export.blade.php
+            $pdf = Pdf::loadView('admin.academic_warnings.pdf_export', compact('data'));
+            
+            // Cấu hình font và khổ giấy
+            $pdf->setOption('defaultFont', 'DejaVu Serif');
+            $pdf->setPaper('a4', 'portrait');
+            
+            return $pdf->download('danh-sach-canh-bao.pdf');
+        }
+        
+        return back();
     }
 }

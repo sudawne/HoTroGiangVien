@@ -125,9 +125,6 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const CSRF_TOKEN = "{{ csrf_token() }}";
-
-            // Helpers and AJAX handlers (unchanged)
-            // ... (you can keep the existing AJAX code from previous file)
         });
     </script>
 @endsection

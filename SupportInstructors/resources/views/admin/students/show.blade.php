@@ -241,7 +241,7 @@
                     <div>
                         <p class="text-xs font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wider">Xếp loại Học lực</p>
                         <div class="flex items-center">
-                            <span class="text-lg font-bold px-3 py-1 rounded border uppercase shadow-sm"
+                            <span class="text-sm font-bold px-3 py-1 rounded border uppercase shadow-sm"
                                   x-text="dataMap[selectedSemester]?.rank"
                                   :class="dataMap[selectedSemester]?.rank_color">
                             </span>

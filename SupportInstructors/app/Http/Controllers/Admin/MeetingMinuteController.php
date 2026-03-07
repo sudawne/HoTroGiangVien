@@ -10,12 +10,13 @@ use App\Models\Student;
 use App\Models\Semester;
 use Illuminate\Support\Facades\Auth;
 
+
 // --- KHAI BÁO THƯ VIỆN ---
 use Illuminate\Support\Str;                 // Xử lý chuỗi
 use PhpOffice\PhpWord\PhpWord;              // Class chính tạo file Word
 use PhpOffice\PhpWord\IOFactory;            // Class xuất file
-use PhpOffice\PhpWord\Shared\Html;          // Class xử lý HTML
-// Không cần use TblWidth nữa để tránh lỗi
+use PhpOffice\PhpWord\Shared\Html;          
+use Barryvdh\DomPDF\Facade\Pdf;
 // --------------------------
 
 class MeetingMinuteController extends Controller
@@ -217,5 +218,45 @@ class MeetingMinuteController extends Controller
         return response()->streamDownload(function () use ($objWriter) {
             $objWriter->save('php://output');
         }, $filename);
+    }
+
+    public function exportPdf($id)
+    {
+        // 1. Lấy dữ liệu
+        $minute = MeetingMinute::with([
+            'studentClass.advisor.user', 
+            'semester', 
+            'creator', 
+            'monitor', 
+            'secretary'
+        ])->findOrFail($id);
+
+        $absentStudents = \App\Models\Student::whereIn('id', $minute->absent_list ?? [])->get();
+
+        // 2. Chuẩn bị dữ liệu cho View
+        $data = [
+            'minute' => $minute,
+            'absentStudents' => $absentStudents,
+            'advisorName' => $minute->studentClass->advisor->user->name ?? '',
+            'monitorName' => $minute->monitor->fullname ?? '',
+            'secretaryName' => $minute->secretary->fullname ?? '',
+            'totalStudents' => ($minute->attendees_count + count($minute->absent_list ?? [])),
+            'presentCount' => $minute->attendees_count,
+            'absentCount' => count($minute->absent_list ?? []),
+            'day' => $minute->held_at ? $minute->held_at->format('d') : '...',
+            'month' => $minute->held_at ? $minute->held_at->format('m') : '...',
+            'year' => $minute->held_at ? $minute->held_at->format('Y') : '...',
+            'timeStart' => $minute->held_at ? $minute->held_at->format('H:i') : '...',
+            'timeEnd' => $minute->ended_at ? $minute->ended_at->format('H:i') : '...',
+        ];
+
+        // 3. Load View và xuất PDF
+        // Lưu ý: Cần tạo file view 'admin.minutes.pdf_template' ở Bước 3
+        $pdf = Pdf::loadView('admin.minutes.pdf_template', $data);
+        
+        // Cấu hình font chữ tiếng Việt (DejaVu Sans là font mặc định hỗ trợ UTF-8 tốt nhất trong DomPDF)
+        $pdf->setOption('defaultFont', 'DejaVu Sans');
+        
+        return $pdf->download('Bien-ban-' . Str::slug($minute->title) . '.pdf');
     }
 }

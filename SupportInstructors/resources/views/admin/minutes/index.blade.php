@@ -164,6 +164,10 @@
                                 class="flex items-center gap-1 px-3 py-1.5 rounded text-xs font-bold text-primary bg-primary/5 hover:bg-primary/10 transition-colors border border-primary/10">
                                     <span class="material-symbols-outlined !text-[16px]">download</span> Word
                                 </a>
+                                <a href="{{ route('admin.minutes.export_pdf', $minute->id) }}" 
+                                class="flex items-center gap-1 px-3 py-1.5 rounded text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 transition-colors border border-red-100">
+                                    <span class="material-symbols-outlined !text-[16px]">picture_as_pdf</span> PDF
+                                </a>
 
                                 @if($minute->status === 'draft')
                                     {{-- Nút Sửa / Kiểm duyệt --}}

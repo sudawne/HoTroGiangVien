@@ -71,6 +71,7 @@ Route::controller(AcademicWarningController::class)->prefix('academic-warnings')
     Route::post('/quick-add-student', 'quickAddStudent')->name('quick_add_student');
 });
 
+
 // --- HỆ THỐNG IMPORT DỮ LIỆU ---
 Route::controller(ImportController::class)->prefix('imports')->name('imports.')->group(function () {
     Route::get('/', 'index')->name('index');

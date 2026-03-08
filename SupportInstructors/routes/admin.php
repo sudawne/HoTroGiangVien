@@ -97,6 +97,7 @@ Route::post('course-cancellations/preview', [CourseCancellationController::class
 Route::post('course-cancellations/store-import', [CourseCancellationController::class, 'storeImport'])->name('course_cancellations.store_import'); // Lưu chính thức
 Route::get('course-cancellations', [CourseCancellationController::class, 'index'])->name('course_cancellations.index');
 Route::delete('course-cancellations/{id}', [CourseCancellationController::class, 'destroy'])->name('course_cancellations.destroy');
+Route::post('subjects/quick-store', [SubjectController::class, 'quickStore'])->name('subjects.quick_store');
 // --- MÔN HỌC ---
 Route::resource('subjects', SubjectController::class)->except(['create', 'show', 'edit']);
 

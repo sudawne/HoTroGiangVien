@@ -61,4 +61,28 @@ class SubjectController extends Controller
         Subject::destroy($id);
         return redirect()->route('admin.subjects.index')->with('success', 'Đã xóa môn học.');
     }
+    public function quickStore(Request $request)
+    {
+        $request->validate([
+            'code' => 'required|unique:subjects,code',
+            'name' => 'required',
+            'credits' => 'required|integer|min:0'
+        ]);
+
+        try {
+            $subject = Subject::create([
+                'code' => $request->code,
+                'name' => $request->name,
+                'credits' => $request->credits
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Thêm môn học thành công!',
+                'subject_id' => $subject->id
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
 }

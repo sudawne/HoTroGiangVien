@@ -16,12 +16,18 @@ return new class extends Migration
 
         Schema::create('course_cancellations', function (Blueprint $table) {
             $table->id();
+            // Liên kết sinh viên
             $table->foreignId('student_id')->constrained('students')->cascadeOnDelete();
+            
+            // Liên kết học kỳ
             $table->foreignId('semester_id')->constrained('semesters')->cascadeOnDelete();
-            $table->string('subject_code')->comment('Mã học phần');
-            $table->string('subject_name')->comment('Tên học phần');
+            
+            // Liên kết môn học (Quan trọng: Bảng subjects phải có trước)
+            $table->foreignId('subject_id')->constrained('subjects')->cascadeOnDelete();
+            
+            // Lý do (Mặc định: Nợ học phí)
             $table->string('reason')->default('Nợ học phí')->comment('Lý do xóa');
-            $table->decimal('debt_amount', 15, 0)->nullable()->comment('Số tiền nợ (nếu có)');
+            
             $table->timestamps();
         });
     }

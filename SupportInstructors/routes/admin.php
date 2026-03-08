@@ -91,10 +91,12 @@ Route::post('training-points/store-import', [TrainingPointController::class, 'st
 Route::resource('training_points', TrainingPointController::class);
 
 // --- HỦY HỌC PHẦN (COURSE CANCELLATIONS) ---
+Route::get('course-cancellations/export', [CourseCancellationController::class, 'export'])->name('course_cancellations.export');
+Route::get('course-cancellations/import', [CourseCancellationController::class, 'showImportForm'])->name('course_cancellations.import'); // Trang upload
+Route::post('course-cancellations/preview', [CourseCancellationController::class, 'preview'])->name('course_cancellations.preview'); // Xử lý xem trước
+Route::post('course-cancellations/store-import', [CourseCancellationController::class, 'storeImport'])->name('course_cancellations.store_import'); // Lưu chính thức
 Route::get('course-cancellations', [CourseCancellationController::class, 'index'])->name('course_cancellations.index');
-Route::post('course-cancellations/import', [CourseCancellationController::class, 'import'])->name('course_cancellations.import');
 Route::delete('course-cancellations/{id}', [CourseCancellationController::class, 'destroy'])->name('course_cancellations.destroy');
-
 // --- MÔN HỌC ---
 Route::resource('subjects', SubjectController::class)->except(['create', 'show', 'edit']);
 

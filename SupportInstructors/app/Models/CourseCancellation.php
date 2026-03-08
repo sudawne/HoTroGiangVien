@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -12,21 +11,20 @@ class CourseCancellation extends Model
     protected $fillable = [
         'student_id',
         'semester_id',
-        'subject_code',
-        'subject_name',
+        'subject_id', // Thay subject_code/name bằng subject_id
         'reason',
-        'debt_amount',
     ];
 
-    // Quan hệ với Sinh viên
-    public function student()
-    {
+    public function student() {
         return $this->belongsTo(Student::class);
     }
 
-    // Quan hệ với Học kỳ
-    public function semester()
-    {
+    public function semester() {
         return $this->belongsTo(Semester::class);
+    }
+
+    // Thêm quan hệ với Môn học
+    public function subject() {
+        return $this->belongsTo(Subject::class);
     }
 }

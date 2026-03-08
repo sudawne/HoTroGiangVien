@@ -13,6 +13,8 @@ use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\AcademicResultController;
 use App\Http\Controllers\Admin\TrainingPointController;
 use App\Http\Controllers\Admin\SubjectController;
+use App\Http\Controllers\Admin\SearchController;
+use App\Http\Controllers\Admin\ProfileController;
 
 /*
 |--------------------------------------------------------------------------
@@ -117,3 +119,8 @@ Route::controller(ImportController::class)->prefix('imports')->name('imports.')-
 // --- CHUÔNG THÔNG BÁO HEADER ---
 Route::post('/alerts/mark-read', [NotificationController::class, 'markRead'])->name('alerts.mark_read');
 Route::post('/alerts/mark-read-all', [NotificationController::class, 'markReadAll'])->name('alerts.mark_read_all');
+Route::get('/global-search', [SearchController::class, 'globalSearch'])->name('global.search');
+
+Route::get('/change-password', [ProfileController::class, 'showChangePassword'])->name('profile.change_password');
+Route::post('/send-otp', [ProfileController::class, 'sendOtp'])->name('profile.send_otp');
+Route::post('/update-password', [ProfileController::class, 'updatePassword'])->name('profile.update_password');

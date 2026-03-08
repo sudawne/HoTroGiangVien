@@ -115,13 +115,102 @@
             class="lg:hidden p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded transition-colors">
             <span class="material-symbols-outlined !text-[18px]">menu</span>
         </button>
-        <div class="relative w-full max-w-md hidden sm:block">
-            <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                <span class="material-symbols-outlined !text-[15px]">search</span>
-            </span>
-            <input
-                class="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded bg-slate-50 text-sm placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-shadow"
-                placeholder="Tìm kiếm sinh viên, lớp học..." type="text" />
+        <div class="relative w-full max-w-md hidden sm:block" 
+            x-data="{
+                query: '',
+                isLoading: false,
+                isOpen: false,
+                results: { students: [], lecturers: [] },
+                
+                performSearch() {
+                    if (this.query.length < 2) {
+                        this.isOpen = false;
+                        this.results = { students: [], lecturers: [] };
+                        return;
+                    }
+                    
+                    this.isLoading = true;
+                    this.isOpen = true;
+                    
+                    fetch('{{ route('admin.global.search') }}?q=' + encodeURIComponent(this.query))
+                        .then(response => response.json())
+                        .then(data => {
+                            this.results = data;
+                            this.isLoading = false;
+                        })
+                        .catch(() => {
+                            this.isLoading = false;
+                        });
+                },
+                closeSearch() {
+                    this.isOpen = false;
+                }
+            }"
+            @click.away="closeSearch()">
+
+            {{-- Input Box --}}
+            <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <span class="material-symbols-outlined !text-[18px]">search</span>
+                </span>
+                
+                <input x-model="query"
+                    @input.debounce.300ms="performSearch()"
+                    @focus="if(query.length >= 2) isOpen = true"
+                    class="block w-full pl-10 pr-10 py-2 border border-slate-200 rounded-lg bg-slate-50 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-700 dark:text-slate-200 dark:bg-slate-800 dark:border-slate-700"
+                    placeholder="Tìm kiếm sinh viên..." 
+                    type="text" 
+                    autocomplete="off" />
+
+                {{-- Loading Spinner --}}
+                <div x-show="isLoading" class="absolute inset-y-0 right-0 pr-3 flex items-center" style="display: none;">
+                    <span class="material-symbols-outlined !text-[18px] text-primary animate-spin">sync</span>
+                </div>
+            </div>
+
+            {{-- Dropdown Kết quả --}}
+            <div x-show="isOpen" 
+                x-transition:enter="transition ease-out duration-100"
+                x-transition:enter-start="opacity-0 translate-y-1"
+                x-transition:enter-end="opacity-100 translate-y-0"
+                class="absolute top-full left-0 w-full mt-2 bg-white dark:bg-[#1e1e2d] rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 overflow-hidden z-50 max-h-[500px] overflow-y-auto"
+                style="display: none;">
+
+                {{-- State: Không tìm thấy --}}
+                <div x-show="!isLoading && results.students.length === 0 && results.lecturers.length === 0" class="p-8 text-center text-slate-500 dark:text-slate-400">
+                    <span class="material-symbols-outlined !text-[40px] opacity-30 mb-2">search_off</span>
+                    <p class="text-sm">Không tìm thấy kết quả nào cho "<span x-text="query" class="font-bold"></span>"</p>
+                </div>
+                <div x-show="results.students.length > 0">
+                    <div class="px-4 py-2 bg-emerald-50/50 dark:bg-slate-800 border-y border-emerald-100 dark:border-slate-700 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-emerald-600 !text-[16px]">person</span>
+                        <span class="text-xs font-bold text-emerald-600 uppercase tracking-wider">Sinh viên</span>
+                    </div>
+                    <ul>
+                        <template x-for="std in results.students" :key="'std-' + std.id">
+                            <li>
+                                <a :href="std.url" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors border-b border-slate-50 dark:border-slate-700/30 last:border-0 group">
+                                    <div class="relative">
+                                        <img :src="std.avatar" class="w-10 h-10 rounded-full object-cover border border-slate-200 shadow-sm" alt="Avatar">
+                                        <span class="absolute -bottom-1 -right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center">
+                                            <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full border border-white"></span>
+                                        </span>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-bold text-slate-800 dark:text-slate-200 truncate group-hover:text-primary transition-colors" x-text="std.name"></p>
+                                        <div class="flex items-center gap-2 mt-1">
+                                            <span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-100 text-slate-600 border border-slate-200" x-text="std.info"></span>
+                                            <span class="text-xs text-slate-400" x-text="std.sub_info"></span>
+                                        </div>
+                                    </div>
+                                    <span class="material-symbols-outlined text-slate-300 group-hover:text-primary !text-[18px] transition-colors">chevron_right</span>
+                                </a>
+                            </li>
+                        </template>
+                    </ul>
+                </div>
+                
+            </div>
         </div>
     </div>
 
@@ -150,20 +239,19 @@
                 let isRead = row ? row.getAttribute('data-is-read') === 'true' : true;
         
                 let goToComment = () => {
-                    this.alertOpen = false; // Đóng popup
+                    this.alertOpen = false; 
                     let currentPath = window.location.pathname;
                     let targetObj = new URL(targetUrl, window.location.origin);
         
-                    // KIỂM TRA: NẾU ĐANG Ở CÙNG 1 TRANG BÀI VIẾT
                     if (currentPath === targetObj.pathname) {
                         if (window.history.pushState) {
-                            window.history.pushState(null, null, targetObj.hash); // Update URL ko reload
+                            window.history.pushState(null, null, targetObj.hash); 
                         } else {
                             window.location.hash = targetObj.hash;
                         }
         
                         if (targetObj.hash) {
-                            window.highlightCommentBubble(targetObj.hash); // Cuộn và Highlight
+                            window.highlightCommentBubble(targetObj.hash);
                         } else {
                             window.location.reload();
                         }

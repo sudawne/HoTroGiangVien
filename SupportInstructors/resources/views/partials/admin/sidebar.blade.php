@@ -111,10 +111,10 @@
 
             <div
                 class="absolute bottom-full left-0 w-full mb-2 bg-white dark:bg-[#1e1e2d] border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg overflow-hidden invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200">
-                <a href="#"
+                <a href="{{ route('admin.profile.change_password') }}"
                     class="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors">
                     <span class="material-symbols-outlined !text-[16px]">settings</span>
-                    <span class="text-sm font-medium">Hệ thống</span>
+                    <span class="text-sm font-medium">Đổi mật khẩu</span>
                 </a>
                 <div class="h-[1px] bg-slate-100 dark:bg-slate-700 mx-2"></div>
                 <form method="POST" action="{{ route('logout') }}">

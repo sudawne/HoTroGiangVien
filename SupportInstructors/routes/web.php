@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\MeetingMinuteController;
 use App\Http\Controllers\Admin\TrainingPointController;
 use App\Http\Controllers\Admin\AcademicResultController;
 use App\Http\Controllers\Admin\AcademicWarningController;
+use App\Http\Controllers\AIController;
 use App\Http\Controllers\ChatController;
 
 Route::get('/', [LoginController::class, 'showLoginForm'])->name('login');
@@ -55,3 +56,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/chat/recall/{messageId}', [ChatController::class, 'recallMessage']);
     Route::post('/chat/delete-for-me/{messageId}', [ChatController::class, 'deleteForMe']);
 });
+
+Route::get('minutes/{id}/export-pdf', [MeetingMinuteController::class, 'exportPdf'])->name('minutes.export_pdf');
+
+Route::get('academic-warnings/export', [AcademicWarningController::class, 'export'])->name('academic_warnings.export');
+Route::resource('academic-warnings', AcademicWarningController::class);
+
+Route::post('/ai/ask', [AIController::class, 'askAI'])
+    ->middleware(['web', 'auth', 'role:ADMIN,LECTURER'])
+    ->name('ai.ask');

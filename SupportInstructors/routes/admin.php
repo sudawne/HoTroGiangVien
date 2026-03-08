@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\AcademicWarningController;
 use App\Http\Controllers\Admin\LecturerController;
 use App\Http\Controllers\Admin\NotificationController;
+use App\Http\Controllers\AIController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Request;

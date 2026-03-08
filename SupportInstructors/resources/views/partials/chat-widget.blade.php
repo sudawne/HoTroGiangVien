@@ -12,34 +12,91 @@
         class="absolute bottom-16 right-0 w-[320px] sm:w-[350px] h-[500px] bg-white rounded-sm shadow-[0_5px_25px_-5px_rgba(0,0,0,0.2)] border border-slate-300 flex flex-col overflow-hidden">
 
         {{-- HEADER --}}
-        <div class="bg-blue-600 text-white px-4 py-3 flex justify-between items-center z-10 shrink-0 shadow-sm relative">
-            <div class="flex items-center gap-2 w-full">
+        {{-- HEADER MỚI NÂNG CẤP --}}
+        <div class="bg-blue-600 text-white px-4 py-3 flex justify-between items-center z-20 shrink-0 shadow-md relative">
+            <div class="flex items-center gap-3 w-full">
+                {{-- Nút Quay lại --}}
                 <button x-show="activeChat" @click="goBack()"
-                    class="w-7 h-7 -ml-2 rounded hover:bg-white/20 flex items-center justify-center transition-colors">
-                    <span class="material-symbols-outlined !text-[18px]">arrow_back</span>
+                    class="w-8 h-8 -ml-2 rounded-full hover:bg-white/20 flex items-center justify-center transition-colors">
+                    <span class="material-symbols-outlined !text-[20px]">arrow_back</span>
                 </button>
 
-                <div class="flex flex-col flex-1 min-w-0">
-                    <h3 class="font-bold text-[14px] leading-tight truncate"
-                        x-text="activeChat ? activeChat.name : 'Nhắn tin hỗ trợ'"></h3>
-                    <p class="text-[11px] text-blue-100 font-medium truncate"
-                        x-text="activeChat ? (activeChat.is_online ? 'Đang hoạt động' : 'Ngoại tuyến') : 'Chọn người liên hệ'">
-                    </p>
+                {{-- Thông tin người dùng (Khi đang chat) --}}
+                <div x-show="activeChat" class="flex items-center gap-2 flex-1 min-w-0" style="display: none;">
+                    <div class="relative shrink-0">
+                        <div class="w-9 h-9 rounded-full bg-white text-blue-600 flex items-center justify-center font-bold text-[14px] shadow-inner"
+                            x-text="activeChat ? activeChat.name.charAt(0).toUpperCase() : ''"></div>
+                        <div x-show="activeChat?.is_online"
+                            class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-400 border-2 border-blue-600 rounded-full">
+                        </div>
+                    </div>
+                    <div class="flex flex-col min-w-0">
+                        <h3 class="font-bold text-[14px] leading-tight truncate" x-text="activeChat?.name"></h3>
+                        <p class="text-[11px] text-blue-100 font-medium truncate"
+                            x-text="activeChat?.is_online ? 'Đang hoạt động' : getRoleName(activeChat?.role_id)"></p>
+                    </div>
+                </div>
+
+                {{-- Thông tin (Khi ở danh bạ) --}}
+                <div x-show="!activeChat" class="flex flex-col flex-1 min-w-0">
+                    <h3 class="font-bold text-[15px] leading-tight">Nhắn tin hỗ trợ</h3>
+                    <p class="text-[11px] text-blue-100 font-medium">Chọn người liên hệ</p>
                 </div>
             </div>
 
-            <div class="absolute right-4 top-1/2 -translate-y-1/2 flex items-center"
-                x-show="activeChat && activeChat.is_online">
-                <div class="w-2.5 h-2.5 rounded-full bg-green-400 border border-blue-600"></div>
-            </div>
+            {{-- Nút Gợi Ý Tin Nhắn (Chỉ hiện cho Sinh viên khi ĐANG CHAT) --}}
+            @if (auth()->user()->hasRole('STUDENT'))
+                <div class="relative" x-show="activeChat" style="display: none;">
+                    <button @click="showSuggestions = !showSuggestions" @click.outside="showSuggestions = false"
+                        class="w-8 h-8 rounded-full hover:bg-white/20 flex items-center justify-center transition-colors"
+                        title="Gợi ý câu hỏi">
+                        <span class="material-symbols-outlined !text-[20px]">help_outline</span>
+                    </button>
+
+                    {{-- Menu xổ xuống các gợi ý --}}
+                    <div x-show="showSuggestions" x-transition x-cloak
+                        class="absolute top-10 right-0 w-64 bg-white rounded-md shadow-[0_4px_20px_rgba(0,0,0,0.15)] border border-slate-200 overflow-hidden z-50">
+                        <div
+                            class="bg-slate-50 border-b border-slate-200 px-3 py-2 text-[12px] font-bold text-slate-600">
+                            Gợi ý câu hỏi nhanh
+                        </div>
+                        <div class="flex flex-col max-h-48 overflow-y-auto custom-scrollbar">
+                            <button type="button"
+                                @click="useSuggestion('Thầy/Cô cho em hỏi về việc đăng ký tín chỉ học kỳ tới ạ?')"
+                                class="text-left px-3 py-2.5 text-[13px] text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors border-b border-slate-100 last:border-0 truncate">
+                                Đăng ký tín chỉ
+                            </button>
+                            <button type="button"
+                                @click="useSuggestion('Dạ Thầy/Cô ơi, em muốn xem lại điểm rèn luyện kỳ trước thì xem ở đâu ạ?')"
+                                class="text-left px-3 py-2.5 text-[13px] text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors border-b border-slate-100 last:border-0 truncate">
+                                Hỏi về điểm rèn luyện
+                            </button>
+                            <button type="button"
+                                @click="useSuggestion('Thầy/Cô cho em hỏi cách nộp minh chứng hoạt động ngoại khóa ạ?')"
+                                class="text-left px-3 py-2.5 text-[13px] text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors border-b border-slate-100 last:border-0 truncate">
+                                Nộp minh chứng ngoại khóa
+                            </button>
+                            <button type="button"
+                                @click="useSuggestion('Dạ em chào Thầy/Cô, em thấy mình bị cảnh báo học vụ, em cần làm gì tiếp theo ạ?')"
+                                class="text-left px-3 py-2.5 text-[13px] text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors border-b border-slate-100 last:border-0 truncate">
+                                Hỏi về Cảnh báo học vụ
+                            </button>
+                            <button type="button"
+                                @click="useSuggestion('Thầy/Cô cho em hỏi điều kiện để được xét học bổng học kỳ này là gì ạ?')"
+                                class="text-left px-3 py-2.5 text-[13px] text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors border-b border-slate-100 last:border-0 truncate">
+                                Điều kiện xét học bổng
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            @endif
         </div>
 
-        {{-- CẢNH 1: DANH BẠ VÀ TÌM KIẾM --}}
+        {{-- CẢNH 1: DANH BẠ VÀ TÌM KIẾM (Giữ nguyên như cũ của bạn) --}}
         <div x-show="!activeChat" x-transition class="flex-1 overflow-y-auto bg-white custom-scrollbar flex flex-col">
             <div class="p-2 border-b border-slate-100 sticky top-0 bg-white/95 backdrop-blur-sm z-10 shrink-0">
                 <div class="relative flex items-center w-full h-9 rounded-sm bg-slate-100 px-3">
                     <span class="material-symbols-outlined !text-[16px] text-slate-400 mr-2">search</span>
-                    {{-- SỬA Ở ĐÂY: Thêm x-model cho tìm kiếm --}}
                     <input type="text" x-model="searchQuery" placeholder="Tìm người liên hệ..."
                         class="w-full bg-transparent border-none focus:ring-0 text-[12px] text-slate-700 placeholder:text-slate-400 p-0">
                 </div>
@@ -55,12 +112,10 @@
                 <p class="text-[12px] text-slate-500">Không tìm thấy liên hệ.</p>
             </div>
 
-            {{-- SỬA Ở ĐÂY: Lặp qua filteredContacts thay vì contacts --}}
             <div class="flex-1 overflow-y-auto custom-scrollbar">
                 <template x-for="contact in filteredContacts" :key="contact.id">
                     <div @click="openChat(contact)"
                         class="flex items-center gap-3 p-3 border-b border-slate-50 hover:bg-slate-50 cursor-pointer transition-colors relative group">
-
                         <div class="relative shrink-0">
                             <div class="w-11 h-11 rounded-full bg-blue-50 flex items-center justify-center font-bold text-[16px] text-blue-600 border border-blue-100 shadow-sm"
                                 x-text="contact.name.charAt(0).toUpperCase()"></div>
@@ -77,7 +132,6 @@
                                     class="shrink-0 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center"
                                     x-text="contact.unread_count"></div>
                             </div>
-
                             <div class="flex justify-between items-center gap-2">
                                 <p class="text-[12px] text-slate-500 truncate"
                                     :class="contact.unread_count > 0 ? 'font-bold text-slate-800' : ''"
@@ -93,7 +147,7 @@
             </div>
         </div>
 
-        {{-- CẢNH 2: KHUNG CHAT --}}
+        {{-- CẢNH 2: KHUNG CHAT (Giữ nguyên như cũ của bạn) --}}
         <div x-show="activeChat" x-transition.opacity.duration.300ms
             class="flex-1 flex flex-col min-h-0 bg-slate-50/50 relative">
 
@@ -127,7 +181,8 @@
                             :class="msg.sender_id == currentUserId ? 'justify-end' : 'justify-start'">
 
                             {{-- Avatar người gửi (người kia) --}}
-                            <div x-show="msg.sender_id != currentUserId" class="w-6 h-6 shrink-0 mr-1.5 flex items-end">
+                            <div x-show="msg.sender_id != currentUserId"
+                                class="w-6 h-6 shrink-0 mr-1.5 flex items-end">
                                 <div x-show="msg.isLastInGroup"
                                     class="w-6 h-6 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-[10px] font-bold border border-white shadow-sm"
                                     x-text="activeChat?.name.charAt(0)"></div>
@@ -643,6 +698,20 @@
                 if (roleId === 1) return 'Quản trị viên';
                 if (roleId === 2) return 'Cố vấn học tập';
                 return 'Sinh viên';
+            },
+
+            // Thêm 2 biến này vào
+            showSuggestions: false,
+
+            // Thêm hàm này vào để đưa gợi ý xuống khung nhập
+            useSuggestion(text) {
+                this.newMessage = text;
+                this.showSuggestions = false;
+                // Focus vào ô nhập và tự động resize cho vừa nội dung
+                setTimeout(() => {
+                    this.$refs.chatInput.focus();
+                    this.resizeTextarea(this.$refs.chatInput);
+                }, 50);
             },
 
             formatDividerDate(dateString) {

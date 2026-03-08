@@ -115,11 +115,14 @@
             </form>
 
             <div class="grid grid-cols-2 sm:flex gap-2 w-full sm:w-auto">
-                <a href="{{ route($routePrefix . 'students.create') }}"
-                    class="col-span-2 sm:col-span-1 flex items-center justify-center gap-2 px-3 py-1.5 bg-primary text-white text-sm font-bold rounded hover:bg-primary/90 transition-colors shadow-sm">
-                    <span class="material-symbols-outlined !text-[15px]">add</span>
-                    Thêm sinh viên mới
-                </a>
+                {{-- CHỈ ADMIN MỚI ĐƯỢC THẤY NÚT THÊM SINH VIÊN Ở DASHBOARD --}}
+                @if (Auth::user()->role_id == 1)
+                    <a href="{{ route('admin.students.create') }}"
+                        class="col-span-2 sm:col-span-1 flex items-center justify-center gap-2 px-3 py-1.5 bg-primary text-white text-sm font-bold rounded hover:bg-primary/90 transition-colors shadow-sm">
+                        <span class="material-symbols-outlined !text-[15px]">add</span>
+                        Thêm sinh viên mới
+                    </a>
+                @endif
             </div>
         </div>
 

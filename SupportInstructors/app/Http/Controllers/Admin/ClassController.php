@@ -19,27 +19,41 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 
 class ClassController extends Controller
 {
     public function index()
     {
-        $classes = Classes::where('department_id', 1)
-            // Thêm 'secretary' vào mảng with
+        $user = Auth::user();
+
+        $query = Classes::where('department_id', 1)
             ->with(['advisor.user', 'monitor', 'secretary'])
-            ->withCount('students')
-            ->orderBy('id', 'desc')
-            ->paginate(9);
+            ->withCount('students');
+
+        if ($user->role_id == 2) {
+            $lecturer = Lecturer::where('user_id', $user->id)->first();
+            if ($lecturer) {
+                $query->where('advisor_id', $lecturer->id);
+            } else {
+                $query->where('id', '<', 0);
+            }
+        }
+
+        $classes = $query->orderBy('id', 'desc')->paginate(9);
 
         return view('admin.classes.index', compact('classes'));
     }
 
     public function create()
     {
-        // CHỈ LẤY GIẢNG VIÊN MÀ USER CHƯA BỊ XÓA MỀM
+        if (Auth::user()->role_id != 1) {
+            abort(403, 'BẠN KHÔNG CÓ QUYỀN TRUY CẬP TRANG NÀY.');
+        }
+
         $lecturers = Lecturer::whereHas('user', function ($query) {
-            $query->whereNull('deleted_at'); // Đảm bảo user chưa bị xóa mềm
+            $query->whereNull('deleted_at');
         })->with('user')->get();
 
         $department = Department::where('code', 'CNTT')->first();
@@ -89,6 +103,10 @@ class ClassController extends Controller
 
     public function store(Request $request)
     {
+        if (Auth::user()->role_id != 1) {
+            return response()->json(['success' => false, 'message' => 'Bạn không có quyền thực hiện chức năng này.'], 403);
+        }
+
         $request->validate([
             'code' => 'required|unique:classes,code',
             'name' => 'required',
@@ -113,13 +131,16 @@ class ClassController extends Controller
             $class->academic_year = $request->academic_year;
             $class->save();
 
-            $newIds = $this->processStudentList($request->students_list, $class->id);
+            $newIds = [];
+            if ($request->filled('students_list')) {
+                $newIds = $this->processStudentList($request->students_list, $class->id);
+            }
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'redirect_url' => route('admin.classes.index'),
+                'redirect_url' => route(Auth::user()->role_id == 1 ? 'admin.classes.index' : 'lecturer.classes.index'),
                 'new_student_ids' => $newIds
             ]);
         } catch (\Exception $e) {
@@ -128,39 +149,116 @@ class ClassController extends Controller
         }
     }
 
+    public function edit(Request $request, string $id)
+    {
+        $class = Classes::findOrFail($id);
+
+        // Bảo mật: Giảng viên chỉ được sửa lớp của mình
+        if (Auth::user()->role_id == 2) {
+            $lecturer = Lecturer::where('user_id', Auth::id())->first();
+            if (!$lecturer || $class->advisor_id != $lecturer->id) {
+                abort(403, 'BẠN KHÔNG CÓ QUYỀN SỬA LỚP NÀY.');
+            }
+        }
+
+        $lecturers = Lecturer::whereHas('user', function ($query) {
+            $query->whereNull('deleted_at');
+        })->with('user')->get();
+
+        $department = Department::where('code', 'CNTT')->first();
+        $studentCandidates = $class->students()->orderBy('fullname', 'asc')->get();
+        $query = $class->students()->with('user')->orderBy('student_code', 'asc');
+
+        if ($request->has('search') && !empty($request->search)) {
+            $keyword = $this->vn_to_str($request->search);
+            $allStudentsForTable = $query->get();
+            $allStudentsForTable = $allStudentsForTable->filter(function ($student) use ($keyword) {
+                $name = $this->vn_to_str($student->fullname);
+                $code = $this->vn_to_str($student->student_code);
+                return str_contains($name, $keyword) || str_contains($code, $keyword);
+            });
+        } else {
+            $allStudentsForTable = $query->get();
+        }
+
+        $currentPage = LengthAwarePaginator::resolveCurrentPage();
+        $perPage = 50;
+        $currentResults = $allStudentsForTable->slice(($currentPage - 1) * $perPage, $perPage)->all();
+
+        $students = new LengthAwarePaginator(
+            $currentResults,
+            $allStudentsForTable->count(),
+            $perPage,
+            $currentPage,
+            ['path' => LengthAwarePaginator::resolveCurrentPath(), 'query' => $request->query()]
+        );
+
+        if ($request->ajax()) {
+            return response()->json([
+                'html' => view('admin.classes.partials.student_rows', compact('students'))->render(),
+                'pagination' => (string) $students->links(),
+                'total' => $students->total()
+            ]);
+        }
+
+        return view('admin.classes.edit', compact('class', 'lecturers', 'department', 'students', 'studentCandidates'));
+    }
+
     public function update(Request $request, $id)
     {
-        $request->validate([
-            'code' => 'required|unique:classes,code,' . $id,
-            'name' => 'required',
-            'advisor_id' => 'required|exists:lecturers,id',
-            'academic_year' => 'required',
-            'monitor_id' => 'nullable|exists:students,id',
-            'secretary_id' => 'nullable|exists:students,id',
-        ], [
-            'code.required' => 'Vui lòng nhập Mã lớp.',
-            'code.unique' => 'Mã lớp này đã tồn tại.',
-            'name.required' => 'Vui lòng nhập Tên lớp.',
-            'advisor_id.required' => 'Vui lòng chọn Cố vấn học tập.',
-            'academic_year.required' => 'Vui lòng nhập Niên khóa.',
-        ]);
+        $class = Classes::findOrFail($id);
+
+        // Bảo mật: Giảng viên chỉ được sửa lớp của mình
+        if (Auth::user()->role_id == 2) {
+            $lecturer = Lecturer::where('user_id', Auth::id())->first();
+            if (!$lecturer || $class->advisor_id != $lecturer->id) {
+                return response()->json(['success' => false, 'message' => 'Bạn không có quyền sửa lớp này.'], 403);
+            }
+        }
+
+        // Tùy theo Role mà validate khác nhau
+        if (Auth::user()->role_id == 1) {
+            $request->validate([
+                'code' => 'required|unique:classes,code,' . $id,
+                'name' => 'required',
+                'advisor_id' => 'required|exists:lecturers,id',
+                'academic_year' => 'required',
+                'monitor_id' => 'nullable|exists:students,id',
+                'secretary_id' => 'nullable|exists:students,id',
+            ], [
+                'code.required' => 'Vui lòng nhập Mã lớp.',
+                'code.unique' => 'Mã lớp này đã tồn tại.',
+                'name.required' => 'Vui lòng nhập Tên lớp.',
+                'advisor_id.required' => 'Vui lòng chọn Cố vấn học tập.',
+                'academic_year.required' => 'Vui lòng nhập Niên khóa.',
+            ]);
+        } else {
+            // Giảng viên chỉ validate Lớp trưởng và Bí thư
+            $request->validate([
+                'monitor_id' => 'nullable|exists:students,id',
+                'secretary_id' => 'nullable|exists:students,id',
+            ]);
+        }
 
         DB::beginTransaction();
 
         try {
-            $class = Classes::findOrFail($id);
-            $class->code = $request->code;
-            $class->name = $request->name;
-            $class->advisor_id = $request->advisor_id;
-            $class->academic_year = $request->academic_year;
+            // Chỉ Admin mới được lưu thông tin chính của lớp
+            if (Auth::user()->role_id == 1) {
+                $class->code = $request->code;
+                $class->name = $request->name;
+                $class->advisor_id = $request->advisor_id;
+                $class->academic_year = $request->academic_year;
+            }
 
-            // Cập nhật cán bộ lớp
+            // Cả Admin và Giảng viên đều được lưu cán bộ lớp
             $class->monitor_id = $request->monitor_id;
             $class->secretary_id = $request->secretary_id;
 
             $class->save();
 
             $newIds = [];
+            // Cả Admin và Giảng viên đều được thêm sinh viên mới
             if ($request->filled('students_list')) {
                 $newIds = $this->processStudentList($request->students_list, $class->id);
             }
@@ -171,12 +269,12 @@ class ClassController extends Controller
                 return response()->json([
                     'success' => true,
                     'message' => 'Cập nhật lớp học thành công!',
-                    'redirect_url' => route('admin.classes.index'), // Đổi thành link danh sách lớp
+                    'redirect_url' => route(Auth::user()->role_id == 1 ? 'admin.classes.index' : 'lecturer.classes.index'),
                     'new_student_ids' => $newIds
                 ]);
             }
 
-            return redirect()->route('admin.classes.index')->with('success', 'Cập nhật thành công!');
+            return redirect()->route(Auth::user()->role_id == 1 ? 'admin.classes.index' : 'lecturer.classes.index')->with('success', 'Cập nhật thành công!');
         } catch (\Exception $e) {
             DB::rollBack();
             if ($request->ajax()) {
@@ -244,13 +342,19 @@ class ClassController extends Controller
             ->withCount('students')
             ->findOrFail($id);
 
+        if (Auth::user()->role_id == 2) {
+            $lecturer = Lecturer::where('user_id', Auth::id())->first();
+            if (!$lecturer || $class->advisor_id != $lecturer->id) {
+                abort(403, 'BẠN KHÔNG CÓ QUYỀN XEM THÔNG TIN LỚP NÀY.');
+            }
+        }
+
         $lecturers = Lecturer::with('user')->get();
 
-        // SỬA Ở ĐÂY: Thêm withTrashed() để lấy cả sinh viên đã xóa
         $allStudents = $class->students()
             ->withTrashed()
             ->with(['user' => function ($q) {
-                $q->withTrashed(); // Lấy cả User đã xóa
+                $q->withTrashed();
             }])
             ->orderBy('student_code', 'asc')
             ->get();
@@ -264,7 +368,6 @@ class ClassController extends Controller
             });
         }
 
-        // ... phần phân trang và trả về JSON giữ nguyên ...
         $currentPage = LengthAwarePaginator::resolveCurrentPage();
         $perPage = 20;
         $currentResults = $allStudents->slice(($currentPage - 1) * $perPage, $perPage)->all();
@@ -289,60 +392,6 @@ class ClassController extends Controller
         return view('admin.classes.show', compact('class', 'students', 'lecturers'));
     }
 
-    public function edit(Request $request, string $id)
-    {
-        $class = Classes::findOrFail($id);
-
-        $lecturers = Lecturer::whereHas('user', function ($query) {
-            $query->whereNull('deleted_at');
-        })->with('user')->get();
-
-        $department = Department::where('code', 'CNTT')->first();
-
-        // Lấy danh sách đầy đủ để hiển thị trong Dropdown chọn cán bộ lớp
-        $studentCandidates = $class->students()->orderBy('fullname', 'asc')->get();
-
-        // Query cho bảng danh sách bên dưới (có tìm kiếm & phân trang)
-        $query = $class->students()->with('user')->orderBy('student_code', 'asc');
-
-        if ($request->has('search') && !empty($request->search)) {
-            $keyword = $this->vn_to_str($request->search);
-            // Vì search trên Collection sau khi get() sẽ chậm nếu dữ liệu lớn, 
-            // nhưng ở đây ta search trên Query Builder hoặc Collection tùy logic cũ.
-            // Logic cũ của bạn dùng Collection Filter, ta giữ nguyên logic hiển thị bảng:
-            $allStudentsForTable = $query->get();
-            $allStudentsForTable = $allStudentsForTable->filter(function ($student) use ($keyword) {
-                $name = $this->vn_to_str($student->fullname);
-                $code = $this->vn_to_str($student->student_code);
-                return str_contains($name, $keyword) || str_contains($code, $keyword);
-            });
-        } else {
-            $allStudentsForTable = $query->get();
-        }
-
-        $currentPage = LengthAwarePaginator::resolveCurrentPage();
-        $perPage = 50;
-        $currentResults = $allStudentsForTable->slice(($currentPage - 1) * $perPage, $perPage)->all();
-
-        $students = new LengthAwarePaginator(
-            $currentResults,
-            $allStudentsForTable->count(),
-            $perPage,
-            $currentPage,
-            ['path' => LengthAwarePaginator::resolveCurrentPath(), 'query' => $request->query()]
-        );
-
-        if ($request->ajax()) {
-            return response()->json([
-                'html' => view('admin.classes.partials.student_rows', compact('students'))->render(),
-                'pagination' => (string) $students->links(),
-                'total' => $students->total()
-            ]);
-        }
-
-        return view('admin.classes.edit', compact('class', 'lecturers', 'department', 'students', 'studentCandidates'));
-    }
-
     public function updateStudent(Request $request, $id)
     {
         $request->validate([
@@ -359,6 +408,15 @@ class ClassController extends Controller
         DB::beginTransaction();
         try {
             $student = Student::findOrFail($id);
+
+            // Chặn giảng viên sửa sinh viên của lớp khác
+            if (Auth::user()->role_id == 2) {
+                $lecturer = Lecturer::where('user_id', Auth::id())->first();
+                $class = Classes::find($student->class_id);
+                if (!$lecturer || !$class || $class->advisor_id != $lecturer->id) {
+                    throw new \Exception("Bạn không có quyền sửa sinh viên này.");
+                }
+            }
 
             $student->update([
                 'fullname' => $request->fullname,
@@ -445,11 +503,21 @@ class ClassController extends Controller
     public function exportStudents($id)
     {
         $class = Classes::findOrFail($id);
+        if (Auth::user()->role_id == 2) {
+            $lecturer = Lecturer::where('user_id', Auth::id())->first();
+            if (!$lecturer || $class->advisor_id != $lecturer->id) {
+                abort(403, 'BẠN KHÔNG CÓ QUYỀN XUẤT DỮ LIỆU LỚP NÀY.');
+            }
+        }
         return Excel::download(new ClassStudentsExport($id), 'Danh_sach_lop_' . $class->code . '.xlsx');
     }
 
     public function destroy(string $id)
     {
+        if (Auth::user()->role_id != 1) {
+            return redirect()->back()->with('error', 'Chỉ Admin mới có quyền xóa lớp học!');
+        }
+
         $class = Classes::findOrFail($id);
         if ($class->students()->count() > 0) {
             return redirect()->back()->with('error', 'Không thể xóa lớp này vì đang có sinh viên!');

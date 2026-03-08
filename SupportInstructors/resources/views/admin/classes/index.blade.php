@@ -41,7 +41,7 @@
                                 </a>
                             </div>
 
-                            {{-- CHỈ ADMIN MỚI THẤY MENU SỬA/XÓA --}}
+                            {{-- CHỈ ADMIN MỚI THẤY MENU SỬA/XÓA LỚP HỌC --}}
                             @if (Auth::user()->role_id == 1)
                                 <div class="relative group/menu -mr-2 -mt-2">
                                     <button

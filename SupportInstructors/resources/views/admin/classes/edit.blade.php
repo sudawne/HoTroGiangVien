@@ -40,7 +40,8 @@
                             Mã lớp <span class="text-red-500">*</span>
                         </label>
                         <input type="text" name="code" value="{{ old('code', $class->code) }}" required
-                            class="w-full pl-3 pr-3 py-2.5 border border-slate-300 rounded-sm focus:ring-1 transition-colors font-mono uppercase text-sm">
+                            {{ Auth::user()->role_id == 2 ? 'readonly' : '' }}
+                            class="w-full pl-3 pr-3 py-2.5 border border-slate-300 rounded-sm focus:ring-1 transition-colors font-mono uppercase text-sm {{ Auth::user()->role_id == 2 ? 'bg-slate-100 cursor-not-allowed text-slate-500' : '' }}">
                         <p class="text-red-500 text-xs mt-1 error-msg" data-field="code"></p>
                     </div>
 
@@ -49,8 +50,8 @@
                             Niên khóa <span class="text-red-500">*</span>
                         </label>
                         <input type="text" name="academic_year" value="{{ old('academic_year', $class->academic_year) }}"
-                            required
-                            class="w-full px-3 py-2.5 border border-slate-300 rounded-sm focus:ring-1 transition-colors text-sm">
+                            required {{ Auth::user()->role_id == 2 ? 'readonly' : '' }}
+                            class="w-full px-3 py-2.5 border border-slate-300 rounded-sm focus:ring-1 transition-colors text-sm {{ Auth::user()->role_id == 2 ? 'bg-slate-100 cursor-not-allowed text-slate-500' : '' }}">
                         <p class="text-red-500 text-xs mt-1 error-msg" data-field="academic_year"></p>
                     </div>
 
@@ -59,7 +60,8 @@
                             Tên lớp đầy đủ <span class="text-red-500">*</span>
                         </label>
                         <input type="text" name="name" value="{{ old('name', $class->name) }}" required
-                            class="w-full px-3 py-2.5 border border-slate-300 rounded-sm focus:ring-1 transition-colors text-sm">
+                            {{ Auth::user()->role_id == 2 ? 'readonly' : '' }}
+                            class="w-full px-3 py-2.5 border border-slate-300 rounded-sm focus:ring-1 transition-colors text-sm {{ Auth::user()->role_id == 2 ? 'bg-slate-100 cursor-not-allowed text-slate-500' : '' }}">
                         <p class="text-red-500 text-xs mt-1 error-msg" data-field="name"></p>
                     </div>
 
@@ -69,7 +71,7 @@
                         <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Đơn vị quản
                             lý</label>
                         <div
-                            class="w-full px-3 py-2.5 bg-slate-100 border border-slate-200 rounded-sm text-slate-600 text-sm font-medium cursor-not-allowed">
+                            class="w-full px-3 py-2.5 bg-slate-100 border border-slate-200 rounded-sm text-slate-500 text-sm font-medium cursor-not-allowed">
                             {{ $department->name ?? 'Khoa CNTT' }}
                         </div>
                     </div>
@@ -78,19 +80,30 @@
                         <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">
                             Cố vấn học tập <span class="text-red-500">*</span>
                         </label>
-                        <select name="advisor_id" id="select-advisor" required
-                            class="w-full px-3 py-2.5 border border-slate-300 rounded-sm focus:ring-1 transition-colors text-sm">
-                            <option value="">-- Chọn Giảng viên --</option>
-                            @foreach ($lecturers as $lec)
-                                <option value="{{ $lec->id }}"
-                                    {{ old('advisor_id', $class->advisor_id) == $lec->id ? 'selected' : '' }}>
-                                    {{ $lec->lecturer_code }} - {{ $lec->user->name }}
-                                </option>
-                            @endforeach
-                        </select>
+
+                        @if (Auth::user()->role_id == 1)
+                            <select name="advisor_id" id="select-advisor" required
+                                class="w-full px-3 py-2.5 border border-slate-300 rounded-sm focus:ring-1 transition-colors text-sm">
+                                <option value="">-- Chọn Giảng viên --</option>
+                                @foreach ($lecturers as $lec)
+                                    <option value="{{ $lec->id }}"
+                                        {{ old('advisor_id', $class->advisor_id) == $lec->id ? 'selected' : '' }}>
+                                        {{ $lec->lecturer_code }} - {{ $lec->user->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        @else
+                            {{-- Giảng viên chỉ được xem tên, không được đổi --}}
+                            <div
+                                class="w-full px-3 py-2.5 bg-slate-100 border border-slate-200 rounded-sm text-slate-500 text-sm font-medium cursor-not-allowed">
+                                {{ $class->advisor->user->name ?? 'Chưa xác định' }}
+                            </div>
+                            <input type="hidden" name="advisor_id" value="{{ $class->advisor_id }}">
+                        @endif
                         <p class="text-red-500 text-xs mt-1 error-msg" data-field="advisor_id"></p>
                     </div>
 
+                    {{-- Cán bộ lớp (Ai cũng được sửa) --}}
                     <div>
                         <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">
                             Lớp trưởng
@@ -123,6 +136,7 @@
                         </select>
                     </div>
 
+                    {{-- Thêm Sinh Viên --}}
                     <div class="md:col-span-2 mt-2">
                         <div class="p-4 bg-blue-50 border border-blue-100 rounded-sm">
                             <label class="block text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
@@ -283,8 +297,7 @@
                             </h3>
                             <div class="space-y-4">
                                 <div>
-                                    <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Họ
-                                        và
+                                    <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Họ và
                                         Tên <span class="text-red-500">*</span></label>
                                     <input type="text" name="fullname" id="edit_fullname" required
                                         class="w-full px-3 py-2 border border-slate-300 rounded-sm text-sm focus:ring-1 focus:ring-primary">
@@ -686,7 +699,6 @@
                     if (hasError) return;
 
                     if (newStudentsList.length > 0) {
-                        // CHUẨN HÓA LẠI THAM SỐ GỌI MODAL
                         showConfirm(
                             'Lưu và Gửi Email',
                             'Có sinh viên mới được thêm. Cập nhật và tự động gửi email tài khoản cho họ?',
@@ -697,7 +709,6 @@
                             'primary'
                         );
                     } else {
-                        // CHUẨN HÓA LẠI THAM SỐ GỌI MODAL
                         showConfirm(
                             'Lưu thay đổi',
                             'Xác nhận cập nhật thông tin lớp học?',
@@ -738,19 +749,16 @@
                 }
                 checkboxes.forEach(cb => cb.addEventListener('change', toggleActionBtns));
 
-                // EVENT DELEGATION cho tbody để tránh mất sự kiện khi filter
                 if (tableBody) {
                     tableBody.addEventListener('click', function(e) {
                         const target = e.target.closest('button');
                         if (!target) return;
 
-                        // NÚT XÓA (ẨN)
                         if (target.classList.contains('btn-delete-student')) {
                             const code = target.getAttribute('data-code');
                             const url = target.closest('form') ? target.closest('form').action :
                                 `/admin/students/${target.getAttribute('data-id')}`;
 
-                            // CHUẨN HÓA LẠI THAM SỐ GỌI MODAL
                             showConfirm(
                                 'Xóa Sinh Viên?',
                                 `Bạn có chắc muốn xóa sinh viên ${code} khỏi hệ thống?`,
@@ -786,7 +794,6 @@
                             );
                         }
 
-                        // NÚT SỬA
                         if (target.classList.contains('btn-edit-student')) {
                             const id = target.getAttribute('data-id');
                             const formEdit = document.getElementById('formEditStudent');
@@ -802,10 +809,8 @@
                             editModal.classList.remove('hidden');
                         }
 
-                        // NÚT GỬI MAIL ĐƠN LẺ
                         if (target.classList.contains('btn-send-single-email')) {
                             const id = target.getAttribute('data-id');
-                            // CHUẨN HÓA LẠI THAM SỐ GỌI MODAL
                             showConfirm(
                                 'Gửi Email',
                                 'Gửi thông tin tài khoản cho sinh viên này?',
@@ -887,7 +892,6 @@
                     const ids = Array.from(document.querySelectorAll('.student-checkbox')).filter(cb => cb
                         .checked).map(cb => cb.value);
                     if (ids.length === 0) return;
-                    // CHUẨN HÓA LẠI THAM SỐ GỌI MODAL
                     showConfirm(
                         'Xóa ' + ids.length + ' Sinh Viên?',
                         'Các sinh viên đã chọn sẽ bị chuyển vào thùng rác.',
@@ -935,7 +939,6 @@
                 btnExportExcel.addEventListener('click', function(e) {
                     e.preventDefault();
                     const url = this.getAttribute('href');
-                    // CHUẨN HÓA LẠI THAM SỐ GỌI MODAL
                     showConfirm(
                         'Xuất Excel',
                         'Tải xuống danh sách sinh viên lớp này?',
@@ -950,7 +953,6 @@
                     const ids = Array.from(document.querySelectorAll('.student-checkbox')).filter(cb => cb
                         .checked).map(cb => cb.value);
                     if (ids.length === 0) return;
-                    // CHUẨN HÓA LẠI THAM SỐ GỌI MODAL
                     showConfirm(
                         'Gửi Email Hàng Loạt',
                         `Gửi cho ${ids.length} sinh viên đã chọn?`,

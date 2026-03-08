@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Classes;
+use App\Models\Lecturer;
 use App\Models\Student;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -16,11 +18,32 @@ class StudentController extends Controller
 {
     public function index(Request $request)
     {
+        $user = Auth::user();
+
         $query = Student::with(['class', 'user' => function ($q) {
             $q->withTrashed();
         }])->withTrashed();
 
-        // 1. Lọc theo lớp
+        // NẾU LÀ GIẢNG VIÊN (role_id = 2) -> Chỉ lấy sinh viên thuộc lớp mà họ làm Cố vấn học tập
+        if ($user->role_id == 2) {
+            $lecturer = Lecturer::where('user_id', $user->id)->first();
+            if ($lecturer) {
+                // Lấy ID các lớp do giảng viên này cố vấn
+                $classIds = Classes::where('advisor_id', $lecturer->id)->pluck('id')->toArray();
+                $query->whereIn('class_id', $classIds);
+
+                // Lọc danh sách lớp ở dropdown cũng chỉ hiện lớp của giảng viên này
+                $classes = Classes::where('advisor_id', $lecturer->id)->get();
+            } else {
+                $query->where('id', '<', 0); // Không có lớp thì không thấy ai
+                $classes = collect();
+            }
+        } else {
+            // ADMIN thấy tất cả các lớp
+            $classes = Classes::all();
+        }
+
+        // 1. Lọc theo lớp (nếu có chọn ở dropdown)
         if ($request->has('class_id') && $request->class_id != '') {
             $query->where('class_id', $request->class_id);
         }
@@ -30,26 +53,21 @@ class StudentController extends Controller
             $search = trim($request->search);
 
             // XỬ LÝ TIẾNG VIỆT: Biến khoảng trắng thành % (VD: 'khánh nguyên' -> 'khánh%nguyên')
-            // Hàm preg_replace này gộp nhiều khoảng trắng thành 1 dấu % duy nhất
             $searchPattern = preg_replace('/\s+/', '%', $search);
 
             $query->where(function ($q) use ($search, $searchPattern) {
-                // Tìm theo tên (Dùng searchPattern chống lỗi khoảng trắng)
                 $q->where('fullname', 'LIKE', "%{$searchPattern}%")
-                    // Tìm theo MSSV (Giữ nguyên search vì mã SV luôn dính liền)
                     ->orWhere('student_code', 'LIKE', "%{$search}%");
             });
         }
 
         $students = $query->orderBy('id', 'desc')->paginate(15)->withQueryString();
-        $classes = Classes::all();
 
         return view('admin.students.index', compact('students', 'classes'));
     }
 
     public function show(string $id)
     {
-        // Lấy sinh viên (kể cả đã ẩn) và eager load các quan hệ cần thiết
         $student = Student::withTrashed()
             ->with([
                 'user' => function ($q) {
@@ -60,16 +78,24 @@ class StudentController extends Controller
                 'debts' => function ($q) {
                     $q->where('status', 'owed');
                 },
-                'academic_warnings.semester', // Cảnh báo học vụ kèm kỳ học
+                'academic_warnings.semester',
                 'academic_results' => function ($q) {
-                    $q->orderBy('semester_id', 'desc')->with('semester'); // Bảng điểm mới nhất lên đầu
+                    $q->orderBy('semester_id', 'desc')->with('semester');
                 },
-                'consultation_logs.advisor.user', // Lịch sử tư vấn kèm người tư vấn
+                'consultation_logs.advisor.user',
                 'consultation_logs.semester'
             ])
             ->findOrFail($id);
 
-        // Lấy kết quả học tập mới nhất để tính toán các chỉ số trên cùng
+        // Bảo mật: Giảng viên chỉ xem được hồ sơ sinh viên lớp mình cố vấn
+        if (Auth::user()->role_id == 2) {
+            $lecturer = Lecturer::where('user_id', Auth::id())->first();
+            $class = Classes::find($student->class_id);
+            if (!$lecturer || !$class || $class->advisor_id != $lecturer->id) {
+                abort(403, 'BẠN KHÔNG CÓ QUYỀN XEM THÔNG TIN SINH VIÊN NÀY.');
+            }
+        }
+
         $latestResult = $student->academic_results->first();
 
         return view('admin.students.show', compact('student', 'latestResult'));
@@ -77,12 +103,19 @@ class StudentController extends Controller
 
     public function create()
     {
+        if (Auth::user()->role_id != 1) {
+            abort(403, 'CHỈ ADMIN MỚI ĐƯỢC THÊM SINH VIÊN MỚI.');
+        }
         $classes = Classes::orderBy('code', 'asc')->get();
         return view('admin.students.create', compact('classes'));
     }
 
     public function store(Request $request)
     {
+        if (Auth::user()->role_id != 1) {
+            return response()->json(['success' => false, 'message' => 'Bạn không có quyền thêm sinh viên.'], 403);
+        }
+
         // 1. Validate
         $request->validate([
             'student_code' => 'required|unique:students,student_code',
@@ -91,21 +124,6 @@ class StudentController extends Controller
             'dob'          => 'nullable|date',
             'status'       => 'required|in:studying,reserved,dropped,graduated',
             'email'        => 'nullable|email|unique:users,email'
-        ], [
-            'required' => ':attribute không được để trống.',
-            'unique'   => ':attribute đã tồn tại trên hệ thống.',
-            'exists'   => ':attribute không hợp lệ.',
-            'date'     => ':attribute không đúng định dạng ngày tháng.',
-            'in'       => ':attribute chọn không đúng danh mục.',
-            'email'    => ':attribute phải là một địa chỉ email hợp lệ.',
-            'max'      => ':attribute không được vượt quá :max ký tự.',
-        ], [
-            'student_code' => 'Mã sinh viên',
-            'fullname'     => 'Họ và tên',
-            'class_id'     => 'Lớp học',
-            'dob'          => 'Ngày sinh',
-            'status'       => 'Trạng thái',
-            'email'        => 'Địa chỉ email',
         ]);
 
         DB::beginTransaction();
@@ -176,6 +194,9 @@ class StudentController extends Controller
 
     public function edit(string $id)
     {
+        if (Auth::user()->role_id != 1) {
+            abort(403, 'CHỈ ADMIN MỚI CÓ QUYỀN SỬA TOÀN BỘ HỒ SƠ SINH VIÊN.');
+        }
         $student = Student::findOrFail($id);
         $classes = Classes::orderBy('code', 'asc')->get();
         return view('admin.students.edit', compact('student', 'classes'));
@@ -183,6 +204,10 @@ class StudentController extends Controller
 
     public function update(Request $request, $id)
     {
+        if (Auth::user()->role_id != 1) {
+            return response()->json(['success' => false, 'message' => 'Bạn không có quyền sửa.'], 403);
+        }
+
         $student = Student::findOrFail($id);
         $userId = $student->user_id;
 
@@ -191,8 +216,6 @@ class StudentController extends Controller
             'email' => 'nullable|email|max:255|unique:users,email,' . $userId,
             'dob' => 'nullable|date',
             'status' => 'required|in:studying,reserved,dropped,graduated',
-        ], [
-            'email.unique' => 'Email này đã tồn tại trong hệ thống. Vui lòng nhập email khác.',
         ]);
 
         DB::beginTransaction();
@@ -217,10 +240,7 @@ class StudentController extends Controller
             DB::commit();
 
             if ($request->ajax()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Cập nhật thông tin sinh viên thành công!'
-                ]);
+                return response()->json(['success' => true, 'message' => 'Cập nhật thông tin thành công!']);
             }
 
             return redirect()->back()->with('success', 'Cập nhật thông tin sinh viên thành công!');
@@ -233,19 +253,18 @@ class StudentController extends Controller
         }
     }
 
-    /**
-     * Xóa mềm (Ẩn) một sinh viên
-     */
     public function destroy($id)
     {
+        if (Auth::user()->role_id != 1) {
+            return response()->json(['success' => false, 'message' => 'Bạn không có quyền Ẩn sinh viên.'], 403);
+        }
+
         try {
             $student = Student::findOrFail($id);
             $userId = $student->user_id;
 
-            // Xóa mềm Student
             $student->delete();
 
-            // Xóa mềm User liên quan (nếu có)
             if ($userId) {
                 User::where('id', $userId)->delete();
             }
@@ -263,21 +282,19 @@ class StudentController extends Controller
         }
     }
 
-    /**
-     * Khôi phục một sinh viên
-     */
     public function restore($id)
     {
+        if (Auth::user()->role_id != 1) {
+            return response()->json(['success' => false, 'message' => 'Bạn không có quyền Khôi phục.'], 403);
+        }
+
         try {
-            // Tìm cả trong thùng rác
             $student = Student::withTrashed()->findOrFail($id);
 
-            // Khôi phục User trước
             if ($student->user_id) {
                 User::withTrashed()->where('id', $student->user_id)->restore();
             }
 
-            // Khôi phục Student
             $student->restore();
 
             if (request()->ajax()) {
@@ -292,18 +309,17 @@ class StudentController extends Controller
         }
     }
 
-    /**
-     * Xóa nhiều (Ẩn nhiều)
-     */
     public function bulkDestroy(Request $request)
     {
+        if (Auth::user()->role_id != 1) {
+            return response()->json(['success' => false, 'message' => 'Bạn không có quyền.'], 403);
+        }
+
         $request->validate(['ids' => 'required|array']);
 
         DB::beginTransaction();
         try {
             $ids = $request->ids;
-
-            // Lấy danh sách user_id để xóa
             $userIds = Student::whereIn('id', $ids)->pluck('user_id')->filter()->toArray();
 
             Student::whereIn('id', $ids)->delete();
@@ -321,18 +337,17 @@ class StudentController extends Controller
         }
     }
 
-    /**
-     * Khôi phục nhiều
-     */
     public function bulkRestore(Request $request)
     {
+        if (Auth::user()->role_id != 1) {
+            return response()->json(['success' => false, 'message' => 'Bạn không có quyền.'], 403);
+        }
+
         $request->validate(['ids' => 'required|array']);
 
         DB::beginTransaction();
         try {
             $ids = $request->ids;
-
-            // Lấy danh sách user_id đã xóa để khôi phục
             $students = Student::withTrashed()->whereIn('id', $ids)->get();
             $userIds = $students->pluck('user_id')->filter()->toArray();
 

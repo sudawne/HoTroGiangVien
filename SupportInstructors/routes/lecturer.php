@@ -10,11 +10,9 @@ use App\Http\Controllers\Admin\MeetingMinuteController;
 use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\AcademicWarningController;
 use App\Http\Controllers\Admin\CourseCancellationController;
-use App\Http\Controllers\Admin\LecturerController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\AcademicResultController;
 use App\Http\Controllers\Admin\TrainingPointController;
-use App\Http\Controllers\Admin\SubjectController;
 use App\Http\Controllers\Admin\SearchController;
 use App\Http\Controllers\Admin\ProfileController;
 
@@ -29,20 +27,17 @@ Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard
 Route::post('/system/check', [DashboardController::class, 'runSystemCheck'])->name('system.check');
 
 // --- QUẢN LÝ LỚP HỌC (CLASSES) ---
+// Đã loại bỏ quyền thêm mới (create, store) và xóa (destroy)
 Route::controller(ClassController::class)->prefix('classes')->name('classes.')->group(function () {
     Route::get('/{id}/export', 'exportStudents')->name('export');
     Route::post('/upload-preview', 'previewUpload')->name('upload.preview');
     Route::post('/send-emails', 'sendEmails')->name('send_emails');
 });
-Route::resource('classes', ClassController::class);
+Route::resource('classes', ClassController::class)->except(['create', 'store', 'destroy']);
 
 // --- QUẢN LÝ SINH VIÊN (STUDENTS) ---
-Route::controller(StudentController::class)->prefix('students')->name('students.')->group(function () {
-    Route::post('/bulk-delete', 'bulkDestroy')->name('bulk_destroy');
-    Route::post('/bulk-restore', 'bulkRestore')->name('bulk_restore');
-    Route::post('/{id}/restore', 'restore')->name('restore');
-});
-Route::resource('students', StudentController::class);
+// Đã loại bỏ quyền thêm mới, ẩn, khôi phục sinh viên
+Route::resource('students', StudentController::class)->except(['create', 'store', 'destroy']);
 
 // --- QUẢN LÝ KẾT QUẢ HỌC TẬP (ACADEMIC RESULTS) ---
 Route::get('academic-results/import', [AcademicResultController::class, 'import'])->name('academic_results.import');
@@ -58,8 +53,6 @@ Route::controller(NotificationController::class)->prefix('notifications')->name(
     Route::post('/{id}/comment', 'storeComment')->name('comment');
 });
 Route::resource('notifications', NotificationController::class);
-
-// Ghi chú: Đã xóa phần resource('lecturers', LecturerController::class) ở đây vì Giảng viên không cần quản lý Giảng viên.
 
 // --- BIÊN BẢN HỌP (MEETING MINUTES) ---
 Route::put('minutes/{id}/approve', [MeetingMinuteController::class, 'approve'])->name('minutes.approve');
@@ -93,10 +86,6 @@ Route::post('course-cancellations/preview', [CourseCancellationController::class
 Route::post('course-cancellations/store-import', [CourseCancellationController::class, 'storeImport'])->name('course_cancellations.store_import');
 Route::get('course-cancellations', [CourseCancellationController::class, 'index'])->name('course_cancellations.index');
 Route::delete('course-cancellations/{id}', [CourseCancellationController::class, 'destroy'])->name('course_cancellations.destroy');
-Route::post('subjects/quick-store', [SubjectController::class, 'quickStore'])->name('subjects.quick_store');
-
-// --- MÔN HỌC ---
-Route::resource('subjects', SubjectController::class)->except(['create', 'show', 'edit']);
 
 // --- HỆ THỐNG IMPORT DỮ LIỆU CHUNG ---
 Route::controller(ImportController::class)->prefix('imports')->name('imports.')->group(function () {

@@ -12,26 +12,29 @@
             </div>
 
             <div class="flex gap-2">
-                {{-- CÁC NÚT HÀNG LOẠT (Mặc định ẩn) --}}
-                <button type="button" id="btn-restore-selected"
-                    class="hidden flex items-center gap-2 px-3 py-2 bg-blue-600 text-white text-sm font-semibold rounded-sm hover:bg-blue-700 transition-colors shadow-sm">
-                    <span class="material-symbols-outlined !text-[18px]">history</span> Khôi phục
-                </button>
+                {{-- CHỈ ADMIN MỚI THẤY CÁC NÚT NÀY --}}
+                @if (Auth::user()->role_id == 1)
+                    {{-- CÁC NÚT HÀNG LOẠT (Mặc định ẩn) --}}
+                    <button type="button" id="btn-restore-selected"
+                        class="hidden flex items-center gap-2 px-3 py-2 bg-blue-600 text-white text-sm font-semibold rounded-sm hover:bg-blue-700 transition-colors shadow-sm">
+                        <span class="material-symbols-outlined !text-[18px]">history</span> Khôi phục
+                    </button>
 
-                <button type="button" id="btn-delete-selected"
-                    class="hidden flex items-center gap-2 px-3 py-2 bg-red-600 text-white text-sm font-semibold rounded-sm hover:bg-red-700 transition-colors shadow-sm">
-                    <span class="material-symbols-outlined !text-[18px]">visibility_off</span> Ẩn đã chọn
-                </button>
+                    <button type="button" id="btn-delete-selected"
+                        class="hidden flex items-center gap-2 px-3 py-2 bg-red-600 text-white text-sm font-semibold rounded-sm hover:bg-red-700 transition-colors shadow-sm">
+                        <span class="material-symbols-outlined !text-[18px]">visibility_off</span> Ẩn đã chọn
+                    </button>
 
-                {{-- CÁC NÚT CHỨC NĂNG --}}
-                <button @click="showImportModal = true"
-                    class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-sm hover:bg-green-700 transition-colors shadow-sm">
-                    <span class="material-symbols-outlined !text-[18px]">upload_file</span> Import Excel
-                </button>
-                <button @click="showCreateModal = true"
-                    class="flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-semibold rounded-sm hover:bg-primary/90 transition-colors shadow-sm">
-                    <span class="material-symbols-outlined !text-[18px]">add</span> Thêm mới
-                </button>
+                    {{-- CÁC NÚT CHỨC NĂNG --}}
+                    <button @click="showImportModal = true"
+                        class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-sm hover:bg-green-700 transition-colors shadow-sm">
+                        <span class="material-symbols-outlined !text-[18px]">upload_file</span> Import Excel
+                    </button>
+                    <button @click="showCreateModal = true"
+                        class="flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-semibold rounded-sm hover:bg-primary/90 transition-colors shadow-sm">
+                        <span class="material-symbols-outlined !text-[18px]">add</span> Thêm mới
+                    </button>
+                @endif
             </div>
         </div>
 
@@ -80,10 +83,12 @@
                     <thead
                         class="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-slate-500 uppercase font-semibold text-xs">
                         <tr>
-                            <th class="px-6 py-3 w-10 text-center">
-                                <input type="checkbox" id="select-all"
-                                    class="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4 cursor-pointer">
-                            </th>
+                            @if (Auth::user()->role_id == 1)
+                                <th class="px-6 py-3 w-10 text-center">
+                                    <input type="checkbox" id="select-all"
+                                        class="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4 cursor-pointer">
+                                </th>
+                            @endif
                             <th class="px-6 py-3">MSSV</th>
                             <th class="px-6 py-3">Họ và Tên</th>
                             <th class="px-6 py-3">Lớp</th>
@@ -97,11 +102,13 @@
                             @php $isTrashed = $st->trashed(); @endphp
                             <tr
                                 class="transition-colors group {{ $isTrashed ? 'bg-slate-100/70 dark:bg-slate-900/50 opacity-75' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50' }}">
-                                <td class="px-6 py-3 text-center">
-                                    <input type="checkbox" value="{{ $st->id }}"
-                                        data-trashed="{{ $isTrashed ? 'true' : 'false' }}"
-                                        class="student-checkbox select-item rounded border-gray-300 text-primary cursor-pointer">
-                                </td>
+                                @if (Auth::user()->role_id == 1)
+                                    <td class="px-6 py-3 text-center">
+                                        <input type="checkbox" value="{{ $st->id }}"
+                                            data-trashed="{{ $isTrashed ? 'true' : 'false' }}"
+                                            class="student-checkbox select-item rounded border-gray-300 text-primary cursor-pointer">
+                                    </td>
+                                @endif
                                 <td
                                     class="px-6 py-3 font-mono font-medium {{ $isTrashed ? 'text-slate-400 decoration-slate-400' : 'text-primary' }}">
                                     {{ $st->student_code }}
@@ -136,7 +143,7 @@
                                                 'dropped' => 'Thôi học',
                                                 'reserved' => 'Bảo lưu',
                                                 'graduated' => 'Tốt nghiệp',
-                                                default => Str::upper($st->status),
+                                                default => strtoupper($st->status),
                                             };
                                         @endphp
                                         <span
@@ -148,33 +155,39 @@
                                 <td class="px-6 py-3 text-right">
                                     <div class="flex items-center justify-end gap-2">
                                         @if ($isTrashed)
-                                            {{-- NÚT KHÔI PHỤC --}}
-                                            <button type="button"
-                                                onclick="restoreStudent({{ $st->id }}, '{{ $st->student_code }}')"
-                                                class="text-blue-500 hover:text-blue-700 p-1.5 hover:bg-blue-50 rounded transition-colors"
-                                                title="Khôi phục">
-                                                <span class="material-symbols-outlined !text-[20px]">history</span>
-                                            </button>
+                                            @if (Auth::user()->role_id == 1)
+                                                <button type="button"
+                                                    onclick="restoreStudent({{ $st->id }}, '{{ $st->student_code }}')"
+                                                    class="text-blue-500 hover:text-blue-700 p-1.5 hover:bg-blue-50 rounded transition-colors"
+                                                    title="Khôi phục">
+                                                    <span class="material-symbols-outlined !text-[20px]">history</span>
+                                                </button>
+                                            @endif
                                         @else
                                             <a href="{{ route($routePrefix . 'students.show', $st->id) }}"
                                                 class="text-blue-600 hover:text-blue-800 p-1.5 hover:bg-blue-50 rounded transition-colors"
                                                 title="Xem hồ sơ chi tiết">
                                                 <span class="material-symbols-outlined !text-[20px]">id_card</span>
                                             </a>
-                                            <button type="button"
-                                                onclick="deleteStudent({{ $st->id }}, '{{ $st->student_code }}')"
-                                                class="text-red-500 hover:text-red-700 p-1.5 hover:bg-red-50 rounded transition-colors"
-                                                title="Ẩn sinh viên">
-                                                <span class="material-symbols-outlined !text-[20px]">visibility_off</span>
-                                            </button>
+
+                                            @if (Auth::user()->role_id == 1)
+                                                <button type="button"
+                                                    onclick="deleteStudent({{ $st->id }}, '{{ $st->student_code }}')"
+                                                    class="text-red-500 hover:text-red-700 p-1.5 hover:bg-red-50 rounded transition-colors"
+                                                    title="Ẩn sinh viên">
+                                                    <span
+                                                        class="material-symbols-outlined !text-[20px]">visibility_off</span>
+                                                </button>
+                                            @endif
                                         @endif
                                     </div>
                                 </td>
                             </tr>
                         @empty
+                            @php $colSpan = Auth::user()->role_id == 1 ? 7 : 6; @endphp
                             <tr>
-                                <td colspan="7" class="px-6 py-8 text-center text-slate-500 italic">Không tìm thấy sinh
-                                    viên nào.</td>
+                                <td colspan="{{ $colSpan }}" class="px-6 py-8 text-center text-slate-500 italic">Không
+                                    tìm thấy sinh viên nào.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -185,152 +198,152 @@
             </div>
         </div>
 
-        {{-- MODAL IMPORT (Giữ nguyên) --}}
-        <div x-show="showImportModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" x-cloak>
-            <div class="bg-white dark:bg-[#1e1e2d] w-full max-w-md rounded-lg shadow-xl overflow-hidden"
-                @click.away="showImportModal = false">
-                <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
-                    <h3 class="font-bold text-lg text-slate-800">Import Sinh viên từ Excel</h3>
-                    <button @click="showImportModal = false" class="text-slate-400 hover:text-red-500"><span
-                            class="material-symbols-outlined">close</span></button>
-                </div>
-                <form action="{{ route($routePrefix . 'imports.storeStudent') }}" method="POST"
-                    enctype="multipart/form-data" class="p-6 space-y-4">
-                    @csrf
-                    <div>
-                        <label class="block text-sm font-semibold mb-2">Chọn Lớp cần thêm SV</label>
-                        <select name="class_id" required
-                            class="w-full px-3 py-2 border border-slate-300 rounded-sm focus:ring-1 focus:ring-primary">
-                            @foreach ($classes as $cls)
-                                <option value="{{ $cls->id }}">{{ $cls->code }} - {{ $cls->name }}</option>
-                            @endforeach
-                        </select>
+        {{-- MODAL CHỈ LOAD NẾU LÀ ADMIN --}}
+        @if (Auth::user()->role_id == 1)
+            {{-- MODAL IMPORT --}}
+            <div x-show="showImportModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" x-cloak>
+                <div class="bg-white dark:bg-[#1e1e2d] w-full max-w-md rounded-lg shadow-xl overflow-hidden"
+                    @click.away="showImportModal = false">
+                    <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+                        <h3 class="font-bold text-lg text-slate-800">Import Sinh viên từ Excel</h3>
+                        <button @click="showImportModal = false" class="text-slate-400 hover:text-red-500"><span
+                                class="material-symbols-outlined">close</span></button>
                     </div>
-                    <div>
-                        <label class="block text-sm font-semibold mb-2">File Danh sách (.xlsx, .csv)</label>
-                        <input type="file" name="file" required
-                            class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-sm file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" />
-                        <p class="text-xs text-slate-400 mt-2">File bắt đầu đọc từ dòng số 8 (như mẫu)</p>
-                    </div>
-                    <div class="pt-4 flex justify-end gap-3">
-                        <button type="button" @click="showImportModal = false"
-                            class="px-4 py-2 border rounded-sm text-slate-600 hover:bg-slate-50">Hủy</button>
-                        <button type="submit" class="px-4 py-2 bg-primary text-white rounded-sm hover:bg-primary/90">Tiến
-                            hành Import</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        {{-- MODAL THÊM SINH VIÊN (Giữ nguyên) --}}
-        <div x-show="showCreateModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" x-cloak>
-            <div class="bg-white dark:bg-[#1e1e2d] w-full max-w-2xl rounded-lg shadow-xl overflow-hidden"
-                @click.away="showCreateModal = false">
-                <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
-                    <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2">
-                        <span class="material-symbols-outlined text-primary">person_add</span> Thêm Sinh viên mới
-                    </h3>
-                    <button @click="showCreateModal = false" class="text-slate-400 hover:text-red-500"><span
-                            class="material-symbols-outlined">close</span></button>
-                </div>
-
-                <form id="formCreateStudent" action="{{ route($routePrefix . 'students.store') }}" method="POST"
-                    class="p-6">
-                    @csrf
-
-                    <div id="create-student-error"
-                        class="hidden mb-4 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm"></div>
-
-                    <div class="space-y-4">
+                    <form action="{{ route($routePrefix . 'imports.storeStudent') }}" method="POST"
+                        enctype="multipart/form-data" class="p-6 space-y-4">
+                        @csrf
                         <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-1.5">Thuộc Lớp <span
-                                    class="text-red-500">*</span></label>
+                            <label class="block text-sm font-semibold mb-2">Chọn Lớp cần thêm SV</label>
                             <select name="class_id" required
-                                class="w-full px-3 py-2 border border-slate-300 rounded-sm text-sm focus:ring-1 focus:ring-primary">
-                                <option value="">-- Chọn Lớp --</option>
+                                class="w-full px-3 py-2 border border-slate-300 rounded-sm focus:ring-1 focus:ring-primary">
                                 @foreach ($classes as $cls)
                                     <option value="{{ $cls->id }}">{{ $cls->code }} - {{ $cls->name }}
                                     </option>
                                 @endforeach
                             </select>
                         </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-2">File Danh sách (.xlsx, .csv)</label>
+                            <input type="file" name="file" required
+                                class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-sm file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" />
+                            <p class="text-xs text-slate-400 mt-2">File bắt đầu đọc từ dòng số 8 (như mẫu)</p>
+                        </div>
+                        <div class="pt-4 flex justify-end gap-3">
+                            <button type="button" @click="showImportModal = false"
+                                class="px-4 py-2 border rounded-sm text-slate-600 hover:bg-slate-50">Hủy</button>
+                            <button type="submit"
+                                class="px-4 py-2 bg-primary text-white rounded-sm hover:bg-primary/90">Tiến hành
+                                Import</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
 
-                        <div class="grid grid-cols-2 gap-4">
+            {{-- MODAL THÊM MỚI --}}
+            <div x-show="showCreateModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" x-cloak>
+                <div class="bg-white dark:bg-[#1e1e2d] w-full max-w-2xl rounded-lg shadow-xl overflow-hidden"
+                    @click.away="showCreateModal = false">
+                    <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+                        <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-primary">person_add</span> Thêm Sinh viên mới
+                        </h3>
+                        <button @click="showCreateModal = false" class="text-slate-400 hover:text-red-500"><span
+                                class="material-symbols-outlined">close</span></button>
+                    </div>
+
+                    <form id="formCreateStudent" action="{{ route($routePrefix . 'students.store') }}" method="POST"
+                        class="p-6">
+                        @csrf
+                        <div id="create-student-error"
+                            class="hidden mb-4 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm"></div>
+
+                        <div class="space-y-4">
                             <div>
-                                <label class="block text-sm font-bold text-slate-700 mb-1.5">Mã Sinh Viên <span
+                                <label class="block text-sm font-bold text-slate-700 mb-1.5">Thuộc Lớp <span
                                         class="text-red-500">*</span></label>
-                                <input type="text" name="student_code" id="create_student_code" required
-                                    placeholder="VD: 20110001"
-                                    class="w-full px-3 py-2 border border-slate-300 rounded-sm text-sm font-mono uppercase focus:ring-1 focus:ring-primary">
+                                <select name="class_id" required
+                                    class="w-full px-3 py-2 border border-slate-300 rounded-sm text-sm focus:ring-1 focus:ring-primary">
+                                    <option value="">-- Chọn Lớp --</option>
+                                    @foreach ($classes as $cls)
+                                        <option value="{{ $cls->id }}">{{ $cls->code }} - {{ $cls->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
                             </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-1.5">Mã Sinh Viên <span
+                                            class="text-red-500">*</span></label>
+                                    <input type="text" name="student_code" id="create_student_code" required
+                                        placeholder="VD: 20110001"
+                                        class="w-full px-3 py-2 border border-slate-300 rounded-sm text-sm font-mono uppercase focus:ring-1 focus:ring-primary">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-1.5">Ngày sinh</label>
+                                    <input type="date" name="dob"
+                                        class="w-full px-3 py-2 border border-slate-300 rounded-sm text-sm focus:ring-1 focus:ring-primary">
+                                </div>
+                            </div>
+
                             <div>
-                                <label class="block text-sm font-bold text-slate-700 mb-1.5">Ngày sinh</label>
-                                <input type="date" name="dob"
+                                <label class="block text-sm font-bold text-slate-700 mb-1.5">Họ và Tên <span
+                                        class="text-red-500">*</span></label>
+                                <input type="text" name="fullname" id="create_fullname" required
+                                    placeholder="VD: Nguyễn Văn A"
                                     class="w-full px-3 py-2 border border-slate-300 rounded-sm text-sm focus:ring-1 focus:ring-primary">
                             </div>
-                        </div>
 
-                        <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-1.5">Họ và Tên <span
-                                    class="text-red-500">*</span></label>
-                            <input type="text" name="fullname" id="create_fullname" required
-                                placeholder="VD: Nguyễn Văn A"
-                                class="w-full px-3 py-2 border border-slate-300 rounded-sm text-sm focus:ring-1 focus:ring-primary">
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-1.5">Email Hệ thống</label>
-                            <div class="relative">
-                                <input type="email" name="email" id="create_email"
-                                    placeholder="Tự tạo hoặc nhập thủ công"
-                                    class="w-full px-3 py-2 border border-slate-300 rounded-sm text-sm focus:ring-1 focus:ring-primary pr-10">
-                                <span
-                                    class="absolute right-3 top-2.5 text-slate-400 material-symbols-outlined !text-[16px]">mail</span>
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-1.5">Email Hệ thống</label>
+                                <div class="relative">
+                                    <input type="email" name="email" id="create_email"
+                                        placeholder="Tự tạo hoặc nhập thủ công"
+                                        class="w-full px-3 py-2 border border-slate-300 rounded-sm text-sm focus:ring-1 focus:ring-primary pr-10">
+                                    <span
+                                        class="absolute right-3 top-2.5 text-slate-400 material-symbols-outlined !text-[16px]">mail</span>
+                                </div>
+                                <p class="text-[11px] text-blue-500 mt-1 italic">Hệ thống sẽ tự động tạo email dựa vào tên
+                                    và mã SV (vd: an20110001@vnkgu.edu.vn).</p>
                             </div>
-                            <p class="text-[11px] text-blue-500 mt-1 italic">Hệ thống sẽ tự động tạo email dựa vào tên và
-                                mã SV (vd: an20110001@vnkgu.edu.vn).</p>
+
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-1.5">Trạng thái <span
+                                        class="text-red-500">*</span></label>
+                                <select name="status" required
+                                    class="w-full px-3 py-2 border border-slate-300 rounded-sm text-sm focus:ring-1 focus:ring-primary">
+                                    <option value="studying" selected>Đang học</option>
+                                    <option value="reserved">Bảo lưu</option>
+                                    <option value="dropped">Thôi học</option>
+                                </select>
+                            </div>
                         </div>
 
-                        <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-1.5">Trạng thái <span
-                                    class="text-red-500">*</span></label>
-                            <select name="status" required
-                                class="w-full px-3 py-2 border border-slate-300 rounded-sm text-sm focus:ring-1 focus:ring-primary">
-                                <option value="studying" selected>Đang học</option>
-                                <option value="reserved">Bảo lưu</option>
-                                <option value="dropped">Thôi học</option>
-                            </select>
+                        <div class="mt-6 pt-4 flex justify-end gap-3 border-t border-slate-100">
+                            <button type="button" @click="showCreateModal = false"
+                                class="px-4 py-2 border border-slate-300 rounded-sm text-slate-600 hover:bg-slate-50 transition-colors text-sm font-medium">Hủy
+                                bỏ</button>
+                            <button type="submit" id="btn-submit-create"
+                                class="px-5 py-2 bg-primary text-white rounded-sm hover:bg-primary/90 flex items-center gap-2 text-sm font-medium shadow-sm transition-all active:scale-95">
+                                <span class="material-symbols-outlined !text-[18px]">save</span> Thêm Sinh Viên
+                            </button>
                         </div>
-                    </div>
-
-                    <div class="mt-6 pt-4 flex justify-end gap-3 border-t border-slate-100">
-                        <button type="button" @click="showCreateModal = false"
-                            class="px-4 py-2 border border-slate-300 rounded-sm text-slate-600 hover:bg-slate-50 transition-colors text-sm font-medium">Hủy
-                            bỏ</button>
-                        <button type="submit" id="btn-submit-create"
-                            class="px-5 py-2 bg-primary text-white rounded-sm hover:bg-primary/90 flex items-center gap-2 text-sm font-medium shadow-sm transition-all active:scale-95">
-                            <span class="material-symbols-outlined !text-[18px]">save</span> Thêm Sinh Viên
-                        </button>
-                    </div>
-                </form>
+                    </form>
+                </div>
             </div>
-        </div>
+        @endif
     </div>
 
-    {{-- MODAL UNIVERSAL & LOADING --}}
     @include('admin.classes.partials.universal_confirm_modal')
-    {{-- Đã có loading overlay trong table, có thể bỏ partial loading_modal nếu muốn --}}
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // --- 1. BIẾN ---
             const selectAll = document.getElementById('select-all');
             const btnDeleteSelected = document.getElementById('btn-delete-selected');
             const btnRestoreSelected = document.getElementById('btn-restore-selected');
             const checkboxes = document.querySelectorAll('.student-checkbox');
             const tableLoading = document.getElementById('table-loading');
 
-            // --- 2. XỬ LÝ CHECKBOX HÀNG LOẠT ---
             function toggleActionBtns() {
                 const checkedBoxes = Array.from(checkboxes).filter(cb => cb.checked);
                 const selectedCount = checkedBoxes.length;
@@ -343,20 +356,17 @@
                     else hasActive = true;
                 });
 
-                // Reset ẩn hết nút
-                btnDeleteSelected.classList.add('hidden');
-                btnRestoreSelected.classList.add('hidden');
+                if (btnDeleteSelected) btnDeleteSelected.classList.add('hidden');
+                if (btnRestoreSelected) btnRestoreSelected.classList.add('hidden');
 
                 if (selectedCount > 0) {
                     if (hasActive && hasTrashed) {
-                        // Chọn lẫn lộn -> Không hiện nút nào, có thể hiện Toast cảnh báo nếu muốn
-                    } else if (hasTrashed) {
-                        // Chỉ chọn những dòng đã ẩn -> Hiện nút Khôi phục
+                        // Không làm gì
+                    } else if (hasTrashed && btnRestoreSelected) {
                         btnRestoreSelected.classList.remove('hidden');
                         btnRestoreSelected.innerHTML =
                             `<span class="material-symbols-outlined !text-[18px]">history</span> Khôi phục (${selectedCount})`;
-                    } else {
-                        // Chỉ chọn những dòng đang hoạt động -> Hiện nút Ẩn
+                    } else if (btnDeleteSelected) {
                         btnDeleteSelected.classList.remove('hidden');
                         btnDeleteSelected.innerHTML =
                             `<span class="material-symbols-outlined !text-[18px]">visibility_off</span> Ẩn (${selectedCount})`;
@@ -374,7 +384,6 @@
                 cb.addEventListener('change', toggleActionBtns);
             });
 
-            // --- 3. HÀM GỌI API CHUNG (Dùng fetch + showToast) ---
             async function performAction(url, method, body, successMsg) {
                 if (tableLoading) tableLoading.classList.remove('hidden');
 
@@ -403,39 +412,33 @@
                 }
             }
 
-            // --- 4. GẮN SỰ KIỆN NÚT HÀNG LOẠT ---
-
-            // Ẩn (Xóa) Nhiều - Dùng showConfirm với type 'danger'
             if (btnDeleteSelected) {
                 btnDeleteSelected.addEventListener('click', function() {
                     const ids = Array.from(document.querySelectorAll('.student-checkbox:checked')).map(cb =>
                         cb.value);
-
                     showConfirm(
                         'Ẩn ' + ids.length + ' Sinh Viên?',
                         'Các sinh viên này sẽ bị vô hiệu hóa (không xóa hẳn). Bạn có chắc chắn?',
                         () => {
-                            performAction('{{ route($routePrefix . 'students.bulk_destroy') }}',
+                            performAction("{{ route($routePrefix . 'students.bulk_destroy') }}",
                                 'POST', {
                                     ids: ids
                                 }, 'Đã ẩn thành công!');
                         },
-                        'danger' // Màu đỏ
+                        'danger'
                     );
                 });
             }
 
-            // Khôi phục Nhiều - Dùng showConfirm mặc định (màu xanh)
             if (btnRestoreSelected) {
                 btnRestoreSelected.addEventListener('click', function() {
                     const ids = Array.from(document.querySelectorAll('.student-checkbox:checked')).map(cb =>
                         cb.value);
-
                     showConfirm(
                         'Khôi phục ' + ids.length + ' Sinh Viên?',
                         'Các sinh viên này sẽ hoạt động trở lại.',
                         () => {
-                            performAction('{{ route($routePrefix . 'students.bulk_restore') }}',
+                            performAction("{{ route($routePrefix . 'students.bulk_restore') }}",
                                 'POST', {
                                     ids: ids
                                 }, 'Đã khôi phục thành công!');
@@ -444,14 +447,14 @@
                 });
             }
 
-            // --- 5. GẮN SỰ KIỆN CHO CÁC HÀM TOÀN CỤC (Để gọi từ onclick trong HTML) ---
-
             window.deleteStudent = function(id, code) {
                 showConfirm(
                     'Ẩn Sinh Viên?',
                     `Bạn muốn ẩn sinh viên <b>${code}</b>? <br>Dữ liệu sẽ được chuyển vào mục đã ẩn.`,
                     () => {
-                        performAction(`/admin/students/${id}`, 'POST', {
+                        let url = "{{ route($routePrefix . 'students.destroy', ':id') }}".replace(':id',
+                            id);
+                        performAction(url, 'POST', {
                             _method: 'DELETE'
                         }, 'Đã ẩn sinh viên!');
                     },
@@ -464,13 +467,13 @@
                     'Khôi phục Sinh Viên?',
                     `Bạn muốn khôi phục sinh viên <b>${code}</b>?`,
                     () => {
-                        performAction(`/admin/students/${id}/restore`, 'POST', {},
-                            'Đã khôi phục sinh viên!');
+                        let url = "{{ route($routePrefix . 'students.restore', ':id') }}".replace(':id',
+                            id);
+                        performAction(url, 'POST', {}, 'Đã khôi phục sinh viên!');
                     }
                 );
             };
 
-            // --- 6. AUTO EMAIL GENERATE (Logic cũ cho Modal thêm) ---
             const createFullname = document.getElementById('create_fullname');
             const createCode = document.getElementById('create_student_code');
             const createEmail = document.getElementById('create_email');

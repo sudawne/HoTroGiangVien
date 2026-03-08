@@ -68,3 +68,5 @@ Route::resource('academic-warnings', AcademicWarningController::class);
 Route::post('/ai/ask', [AIController::class, 'askAI'])
     ->middleware(['web', 'auth', 'role:ADMIN,LECTURER'])
     ->name('ai.ask');
+ 
+    Route::resource('subjects', SubjectController::class)->except(['create', 'show', 'edit']);

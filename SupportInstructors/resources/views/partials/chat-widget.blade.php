@@ -1,21 +1,24 @@
 <div x-data="chatWidget()" class="fixed bottom-6 right-6 z-[100] font-sans">
 
-    <button @click="isOpen = !isOpen"
-        class="w-12 h-12 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-all duration-200 flex items-center justify-center relative">
-        <span class="material-symbols-outlined text-[24px] absolute transition-all duration-300"
-            :class="isOpen ? 'opacity-0 rotate-90 scale-50' : 'opacity-100 rotate-0 scale-100'">chat</span>
-        <span class="material-symbols-outlined text-[26px] absolute transition-all duration-300"
-            :class="isOpen ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-90 scale-50'">close</span>
+    {{-- Nút mở Chat --}}
+    <button x-show="!isOpen" @click="isOpen = true" x-transition:leave="transition ease-in duration-150 transform"
+        x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-75"
+        class="absolute bottom-0 right-0 w-14 h-14 bg-blue-600 text-white rounded-full shadow-[0_4px_20px_rgba(37,99,235,0.4)] hover:shadow-[0_6px_25px_rgba(37,99,235,0.6)] hover:-translate-y-1 hover:scale-105 active:scale-95 transition-all duration-300 ease-out flex items-center justify-center origin-center">
+        <span class="material-symbols-outlined text-[28px]">chat</span>
     </button>
 
-    <div x-show="isOpen" x-transition.opacity.duration.300ms x-cloak
-        class="absolute bottom-16 right-0 w-[320px] sm:w-[350px] h-[500px] bg-white rounded-sm shadow-[0_5px_25px_-5px_rgba(0,0,0,0.2)] border border-slate-300 flex flex-col overflow-hidden">
+    {{-- Khung Chat --}}
+    <div x-show="isOpen" @click.outside="isOpen = false"
+        x-transition:enter="transition ease-[cubic-bezier(0.34,1.56,0.64,1)] duration-400 transform origin-bottom-right"
+        x-transition:enter-start="opacity-0 scale-50" x-transition:enter-end="opacity-100 scale-100"
+        x-transition:leave="transition ease-in duration-200 transform origin-bottom-right"
+        x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-50" x-cloak
+        class="absolute bottom-0 right-0 w-[320px] sm:w-[350px] h-[500px] bg-white rounded-xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.3)] border border-slate-200 flex flex-col overflow-hidden origin-bottom-right">
 
         {{-- HEADER --}}
-        {{-- HEADER MỚI NÂNG CẤP --}}
-        <div class="bg-blue-600 text-white px-4 py-3 flex justify-between items-center z-20 shrink-0 shadow-md relative">
+        <div
+            class="bg-blue-600 text-white px-4 py-3 flex justify-between items-center z-20 shrink-0 shadow-md relative">
             <div class="flex items-center gap-3 w-full">
-                {{-- Nút Quay lại --}}
                 <button x-show="activeChat" @click="goBack()"
                     class="w-8 h-8 -ml-2 rounded-full hover:bg-white/20 flex items-center justify-center transition-colors">
                     <span class="material-symbols-outlined !text-[20px]">arrow_back</span>
@@ -44,55 +47,55 @@
                 </div>
             </div>
 
-            {{-- Nút Gợi Ý Tin Nhắn (Chỉ hiện cho Sinh viên khi ĐANG CHAT) --}}
-            @if (auth()->user()->hasRole('STUDENT'))
-                <div class="relative" x-show="activeChat" style="display: none;">
-                    <button @click="showSuggestions = !showSuggestions" @click.outside="showSuggestions = false"
-                        class="w-8 h-8 rounded-full hover:bg-white/20 flex items-center justify-center transition-colors"
-                        title="Gợi ý câu hỏi">
-                        <span class="material-symbols-outlined !text-[20px]">help_outline</span>
-                    </button>
+            <div class="flex items-center gap-1">
+                {{-- Nút Gợi Ý Tin Nhắn (Chỉ hiện cho Sinh viên) --}}
+                @if (auth()->user()->hasRole('STUDENT'))
+                    <div class="relative" x-show="activeChat" style="display: none;">
+                        <button @click="showSuggestions = !showSuggestions" @click.outside="showSuggestions = false"
+                            class="w-8 h-8 rounded-full hover:bg-white/20 flex items-center justify-center transition-colors">
+                            <span class="material-symbols-outlined !text-[20px]">help_outline</span>
+                        </button>
 
-                    {{-- Menu xổ xuống các gợi ý --}}
-                    <div x-show="showSuggestions" x-transition x-cloak
-                        class="absolute top-10 right-0 w-64 bg-white rounded-md shadow-[0_4px_20px_rgba(0,0,0,0.15)] border border-slate-200 overflow-hidden z-50">
-                        <div
-                            class="bg-slate-50 border-b border-slate-200 px-3 py-2 text-[12px] font-bold text-slate-600">
-                            Gợi ý câu hỏi nhanh
-                        </div>
-                        <div class="flex flex-col max-h-48 overflow-y-auto custom-scrollbar">
-                            <button type="button"
-                                @click="useSuggestion('Thầy/Cô cho em hỏi về việc đăng ký tín chỉ học kỳ tới ạ?')"
-                                class="text-left px-3 py-2.5 text-[13px] text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors border-b border-slate-100 last:border-0 truncate">
-                                Đăng ký tín chỉ
-                            </button>
-                            <button type="button"
-                                @click="useSuggestion('Dạ Thầy/Cô ơi, em muốn xem lại điểm rèn luyện kỳ trước thì xem ở đâu ạ?')"
-                                class="text-left px-3 py-2.5 text-[13px] text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors border-b border-slate-100 last:border-0 truncate">
-                                Hỏi về điểm rèn luyện
-                            </button>
-                            <button type="button"
-                                @click="useSuggestion('Thầy/Cô cho em hỏi cách nộp minh chứng hoạt động ngoại khóa ạ?')"
-                                class="text-left px-3 py-2.5 text-[13px] text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors border-b border-slate-100 last:border-0 truncate">
-                                Nộp minh chứng ngoại khóa
-                            </button>
-                            <button type="button"
-                                @click="useSuggestion('Dạ em chào Thầy/Cô, em thấy mình bị cảnh báo học vụ, em cần làm gì tiếp theo ạ?')"
-                                class="text-left px-3 py-2.5 text-[13px] text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors border-b border-slate-100 last:border-0 truncate">
-                                Hỏi về Cảnh báo học vụ
-                            </button>
-                            <button type="button"
-                                @click="useSuggestion('Thầy/Cô cho em hỏi điều kiện để được xét học bổng học kỳ này là gì ạ?')"
-                                class="text-left px-3 py-2.5 text-[13px] text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors border-b border-slate-100 last:border-0 truncate">
-                                Điều kiện xét học bổng
-                            </button>
+                        <div x-show="showSuggestions" x-transition x-cloak
+                            class="absolute top-10 right-0 w-64 bg-white rounded-md shadow-[0_4px_20px_rgba(0,0,0,0.15)] border border-slate-200 overflow-hidden z-50">
+                            <div
+                                class="bg-slate-50 border-b border-slate-200 px-3 py-2 text-[12px] font-bold text-slate-600">
+                                Gợi ý câu hỏi nhanh
+                            </div>
+                            <div class="flex flex-col max-h-48 overflow-y-auto custom-scrollbar">
+                                <button type="button"
+                                    @click="useSuggestion('Thầy/Cô cho em hỏi về việc đăng ký tín chỉ học kỳ tới ạ?')"
+                                    class="text-left px-3 py-2.5 text-[13px] text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors border-b border-slate-100 last:border-0 truncate">Đăng
+                                    ký tín chỉ</button>
+                                <button type="button"
+                                    @click="useSuggestion('Dạ Thầy/Cô ơi, em muốn xem lại điểm rèn luyện kỳ trước thì xem ở đâu ạ?')"
+                                    class="text-left px-3 py-2.5 text-[13px] text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors border-b border-slate-100 last:border-0 truncate">Hỏi
+                                    về điểm rèn luyện</button>
+                                <button type="button"
+                                    @click="useSuggestion('Thầy/Cô cho em hỏi cách nộp minh chứng hoạt động ngoại khóa ạ?')"
+                                    class="text-left px-3 py-2.5 text-[13px] text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors border-b border-slate-100 last:border-0 truncate">Nộp
+                                    minh chứng ngoại khóa</button>
+                                <button type="button"
+                                    @click="useSuggestion('Dạ em chào Thầy/Cô, em thấy mình bị cảnh báo học vụ, em cần làm gì tiếp theo ạ?')"
+                                    class="text-left px-3 py-2.5 text-[13px] text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors border-b border-slate-100 last:border-0 truncate">Hỏi
+                                    về Cảnh báo học vụ</button>
+                                <button type="button"
+                                    @click="useSuggestion('Thầy/Cô cho em hỏi điều kiện để được xét học bổng học kỳ này là gì ạ?')"
+                                    class="text-left px-3 py-2.5 text-[13px] text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors border-b border-slate-100 last:border-0 truncate">Điều
+                                    kiện xét học bổng</button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            @endif
+                @endif
+                {{-- Nút Đóng Khung Chat --}}
+                <button @click="isOpen = false"
+                    class="w-8 h-8 rounded-full hover:bg-white/20 flex items-center justify-center transition-colors shrink-0">
+                    <span class="material-symbols-outlined !text-[22px]">close</span>
+                </button>
+            </div>
         </div>
 
-        {{-- CẢNH 1: DANH BẠ VÀ TÌM KIẾM (Giữ nguyên như cũ của bạn) --}}
+        {{-- CẢNH 1: DANH BẠ VÀ TÌM KIẾM --}}
         <div x-show="!activeChat" x-transition class="flex-1 overflow-y-auto bg-white custom-scrollbar flex flex-col">
             <div class="p-2 border-b border-slate-100 sticky top-0 bg-white/95 backdrop-blur-sm z-10 shrink-0">
                 <div class="relative flex items-center w-full h-9 rounded-sm bg-slate-100 px-3">
@@ -147,10 +150,9 @@
             </div>
         </div>
 
-        {{-- CẢNH 2: KHUNG CHAT (Giữ nguyên như cũ của bạn) --}}
+        {{-- CẢNH 2: KHUNG CHAT --}}
         <div x-show="activeChat" x-transition.opacity.duration.300ms
             class="flex-1 flex flex-col min-h-0 bg-slate-50/50 relative">
-
             <div x-show="isLoadingMessages"
                 class="absolute inset-0 bg-white/80 backdrop-blur-sm z-20 flex flex-col items-center justify-center">
                 <span
@@ -160,18 +162,15 @@
             <div class="flex-1 min-h-0 overflow-y-auto p-3 space-y-1 custom-scrollbar flex flex-col relative"
                 id="chat-messages-container" @scroll="checkScroll()">
 
-                {{-- Nút Cuộn Xuống Dưới (Chỉ hiện khi đang xem tin cũ có tin mới) --}}
                 <button x-show="showScrollButton" @click="scrollToBottom(true)"
                     class="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 w-8 h-8 rounded-full border border-blue-500 text-blue-500 bg-white/90 backdrop-blur-sm shadow-sm flex items-center justify-center hover:bg-blue-50 transition-colors">
                     <span class="material-symbols-outlined !text-[20px]">expand_more</span>
-
-                    {{-- Chấm đỏ báo có tin mới (Tùy chọn cho sinh động) --}}
                     <span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
                 </button>
+
                 <template x-for="(msg, index) in groupedMessages" :key="msg.id">
                     <div class="w-full flex flex-col"
                         :class="msg.sender_id == currentUserId ? 'items-end' : 'items-start'">
-
                         <div x-show="msg.showDateDivider" class="w-full flex justify-center my-4">
                             <span class="text-[10px] font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-sm"
                                 x-text="formatDividerDate(msg.created_at)"></span>
@@ -180,7 +179,6 @@
                         <div class="flex items-center w-full relative group"
                             :class="msg.sender_id == currentUserId ? 'justify-end' : 'justify-start'">
 
-                            {{-- Avatar người gửi (người kia) --}}
                             <div x-show="msg.sender_id != currentUserId"
                                 class="w-6 h-6 shrink-0 mr-1.5 flex items-end">
                                 <div x-show="msg.isLastInGroup"
@@ -188,7 +186,6 @@
                                     x-text="activeChat?.name.charAt(0)"></div>
                             </div>
 
-                            {{-- Nút Tùy chọn (Tin người kia gửi - Bên phải tin nhắn) --}}
                             <button x-show="msg.sender_id != currentUserId && activeMenuId !== msg.id"
                                 @click="activeMenuId = msg.id"
                                 class="text-slate-300 hover:text-slate-500 opacity-0 group-hover:opacity-100 p-1 order-last ml-1"
@@ -196,7 +193,6 @@
                                 <span class="material-symbols-outlined !text-[18px]">more_vert</span>
                             </button>
 
-                            {{-- Nút Tùy chọn (Tin mình gửi - Bên trái tin nhắn) --}}
                             <button x-show="msg.sender_id == currentUserId && activeMenuId !== msg.id"
                                 @click="activeMenuId = msg.id"
                                 class="text-slate-300 hover:text-slate-500 opacity-0 group-hover:opacity-100 p-1 order-first mr-1"
@@ -247,50 +243,36 @@
                             </div>
                         </div>
 
-                        {{-- Dòng MENU Tùy chọn (Xóa phía tôi / Thu hồi) --}}
                         <div x-show="activeMenuId === msg.id" x-transition.opacity x-cloak
                             class="flex items-center gap-1.5 mt-1 w-full"
                             :class="msg.sender_id == currentUserId ? 'justify-end pr-1' : 'justify-start pl-8'">
-
                             <button @click="executeDeleteForMe(msg.id)"
                                 class="text-[10px] px-2 py-0.5 bg-slate-100 text-slate-700 border border-slate-200 rounded-sm hover:bg-slate-200 font-medium transition-colors">
                                 Xóa phía tôi
                             </button>
-
-                            {{-- Chỉ hiện Thu hồi nếu là tin mình gửi VÀ chưa quá 60 phút --}}
                             <button x-show="canRecall(msg)" @click="executeRecall(msg.id)"
                                 class="text-[10px] px-2 py-0.5 bg-red-50 text-red-600 border border-red-200 rounded-sm hover:bg-red-500 hover:text-white font-medium transition-colors">
                                 Thu hồi
                             </button>
-
                             <button @click="activeMenuId = null"
                                 class="text-[10px] px-2 py-0.5 text-slate-400 hover:underline">Đóng</button>
                         </div>
 
-                        {{-- 1. Nếu là tin nhắn của NGƯỜI KIA -> Hiện giờ ở cuối cụm --}}
                         <div x-show="msg.isLastInGroup && msg.sender_id != currentUserId && activeMenuId !== msg.id"
                             class="mt-0.5 mb-2 pl-9 flex items-center justify-start">
                             <span class="text-[9px] text-slate-400" x-text="formatTimeOnly(msg.created_at)"></span>
                         </div>
 
-                        {{-- 2. Nếu là tin nhắn CỦA MÌNH -> Hiện giờ ở cuối cụm. Riêng Trạng thái thì chỉ hiện ở tin nhắn cuối cùng nhất --}}
                         <div x-show="msg.isLastInGroup && msg.sender_id == currentUserId && activeMenuId !== msg.id"
                             class="mt-0.5 mb-2 pr-1 flex items-center justify-end gap-1">
-
-                            {{-- Giờ (Lúc nào cũng hiện ở cuối cụm tin nhắn) --}}
                             <span class="text-[9px] text-slate-400" x-text="formatTimeOnly(msg.created_at)"></span>
-
-                            {{-- Trạng thái (Chỉ hiện cho tin nhắn cuối cùng nhất của bạn) --}}
                             <template x-if="msg.isLastOfMe">
                                 <div class="flex items-center">
-                                    {{-- Đã xem --}}
                                     <template x-if="msg.read_at">
                                         <span class="text-[10px] text-blue-500 flex items-center gap-0.5 ml-1">
                                             <span class="material-symbols-outlined !text-[12px]">done_all</span> Đã xem
                                         </span>
                                     </template>
-
-                                    {{-- Chưa xem (Đã gửi / Đã nhận) --}}
                                     <template x-if="!msg.read_at">
                                         <span class="text-[10px] text-slate-400 flex items-center gap-0.5 ml-1">
                                             <template x-if="activeChat?.is_online">
@@ -307,15 +289,11 @@
                                 </div>
                             </template>
                         </div>
-
                     </div>
                 </template>
             </div>
 
-            {{-- Vùng nhập liệu (Đã khóa ô nhập khi chọn tệp & Sửa lỗi hiện 2 tệp) --}}
             <div class="p-2 bg-white border-t border-slate-200 shrink-0">
-
-                {{-- Hiển thị file chuẩn bị gửi --}}
                 <div x-show="selectedFile" x-cloak
                     class="mb-2 px-3 py-2 bg-blue-50 border border-blue-100 rounded-sm flex items-center justify-between text-[11px] text-blue-700 animate-fade-in-up">
                     <span class="truncate max-w-[220px] flex items-center gap-2">
@@ -332,14 +310,10 @@
                 <form @submit.prevent="sendMessage()" class="flex items-center gap-2 relative">
                     <input type="file" x-ref="fileInput" class="hidden"
                         @change="selectedFile = $refs.fileInput.files[0]; $refs.chatInput.focus()">
-
-                    {{-- Nút Đính kèm --}}
                     <button type="button" @click="$refs.fileInput.click()"
                         class="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-sm transition-all shrink-0">
                         <span class="material-symbols-outlined !text-[22px]">attach_file</span>
                     </button>
-
-                    {{-- Ô nhập tin nhắn: Tự động khóa (:disabled) và đổi màu nền khi chọn tệp --}}
                     <div class="flex-1">
                         <textarea x-ref="chatInput" x-model="newMessage" @keydown.enter.prevent="if(!event.shiftKey) sendMessage()"
                             :disabled="selectedFile" :placeholder="selectedFile ? 'Đã chọn tệp...' : 'Aa...'"
@@ -348,8 +322,6 @@
                             class="w-full border rounded-sm pl-3 pr-3 py-[9px] text-[13px] text-slate-700 focus:ring-0 focus:border-blue-400 focus:bg-white resize-none overflow-hidden max-h-[100px] min-h-[40px] custom-scrollbar block transition-all shadow-inner leading-normal"
                             rows="1" @input="resizeTextarea($event.target)"></textarea>
                     </div>
-
-                    {{-- Nút Gửi --}}
                     <button type="submit"
                         class="w-10 h-10 bg-blue-600 text-white rounded-sm flex items-center justify-center shadow-sm transition-all shrink-0"
                         :class="(!newMessage.trim() && !selectedFile) ? 'opacity-40 cursor-not-allowed grayscale' :
@@ -361,39 +333,37 @@
         </div>
     </div>
 </div>
+
 <style>
-    /* Ẩn scrollbar cho Chrome, Safari và Opera */
     .custom-scrollbar::-webkit-scrollbar {
         display: none;
     }
 
-    /* Ẩn scrollbar cho IE, Edge và Firefox */
     .custom-scrollbar {
         -ms-overflow-style: none;
-        /* IE and Edge */
         scrollbar-width: none;
-        /* Firefox */
     }
 </style>
+
 <script>
     function chatWidget() {
         return {
             isOpen: false,
             activeChat: null,
             contacts: [],
-            searchQuery: '', // Biến tìm kiếm
+            searchQuery: '',
             messages: [],
             newMessage: '',
             selectedFile: null,
             currentConversationId: null,
             isLoadingContacts: true,
             isLoadingMessages: false,
-            activeMenuId: null, // Dùng để mở Menu Hành động (Xóa/Thu hồi)
+            activeMenuId: null,
             pollInterval: null,
             isUserScrollingUp: false,
             showScrollButton: false,
-
             currentUserId: {{ auth()->id() }},
+            showSuggestions: false,
 
             init() {
                 this.startPollingContacts();
@@ -407,28 +377,19 @@
                 });
             },
 
-            // LỌC DANH BẠ THEO TỪ KHÓA
             get filteredContacts() {
                 if (this.searchQuery.trim() === '') return this.contacts;
-
-                // Chuyển từ khóa tìm kiếm về chữ thường và xóa dấu
                 let query = this.removeAccents(this.searchQuery.toLowerCase());
-
                 return this.contacts.filter(c => {
-                    // Chuyển tên người dùng về chữ thường và xóa dấu để so sánh
                     let normalizedName = this.removeAccents(c.name.toLowerCase());
                     return normalizedName.includes(query);
                 });
             },
 
-            // Hàm chuyển đổi Tiếng Việt có dấu thành không dấu
             removeAccents(str) {
-                return str.normalize('NFD')
-                    .replace(/[\u0300-\u036f]/g, '')
-                    .replace(/đ/g, 'd').replace(/Đ/g, 'D');
+                return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D');
             },
 
-            // === GOM NHÓM VÀ TÍNH TOÁN TRẠNG THÁI ===
             get groupedMessages() {
                 let grouped = [];
                 let myLastMsgIndex = -1;
@@ -443,22 +404,17 @@
                     let msgDate = new Date(msg.created_at);
                     let prevDate = prevMsg ? new Date(prevMsg.created_at) : null;
 
-                    // Cắt ngang ngày (hoặc cách nhau > 10 phút = 600,000 ms)
                     msg.showDateDivider = !prevDate || (msgDate - prevDate) > 600000;
 
-                    // Nhóm tin nhắn (Điều kiện: cùng người gửi, cách nhau < 1 phút, và không bị chia cắt bởi dải thời gian)
                     let isSameSenderAsPrev = prevMsg && prevMsg.sender_id == msg.sender_id;
                     let isCloseToPrev = prevDate && (msgDate - prevDate) < 60000 && !msg.showDateDivider;
                     msg.isFirstInGroup = !(isSameSenderAsPrev && isCloseToPrev);
 
                     let isSameSenderAsNext = nextMsg && nextMsg.sender_id == msg.sender_id;
                     let isCloseToNext = nextMsg && (new Date(nextMsg.created_at) - msgDate) < 60000;
-
-                    // Kiểm tra xem tin nhắn tiếp theo có bị cắt bởi dải thời gian không (cũng là 10 phút)
                     let nextMsgHasDivider = nextMsg && (new Date(nextMsg.created_at) - msgDate) > 600000;
                     msg.isLastInGroup = !(isSameSenderAsNext && isCloseToNext && !nextMsgHasDivider);
 
-                    // Lấy vị trí tin nhắn cuối cùng của mình
                     if (msg.sender_id == this.currentUserId) myLastMsgIndex = i;
 
                     grouped.push(msg);
@@ -522,7 +478,6 @@
                     .then(data => {
                         let oldLength = this.messages.length;
                         this.messages = data.messages;
-
                         if (data.messages.length > oldLength) {
                             if (this.isUserScrollingUp) {
                                 this.showScrollButton = true;
@@ -549,7 +504,7 @@
                 this.activeChat = contact;
                 this.messages = [];
                 this.activeMenuId = null;
-                this.searchQuery = ''; // Xóa chữ tìm kiếm khi mở chat
+                this.searchQuery = '';
                 this.isUserScrollingUp = false;
                 this.showScrollButton = false;
                 this.isLoadingMessages = true;
@@ -618,12 +573,11 @@
                     });
             },
 
-            // Kiểm tra xem tin nhắn có đủ điều kiện thu hồi không
             canRecall(msg) {
                 if (msg.sender_id != this.currentUserId) return false;
                 if (msg.is_recalled) return false;
                 const diffMins = (new Date() - new Date(msg.created_at)) / 60000;
-                return diffMins <= 60; // Chỉ cho phép thu hồi trong vòng 60 phút
+                return diffMins <= 60;
             },
 
             executeRecall(id) {
@@ -639,7 +593,7 @@
                             let msg = this.messages.find(m => m.id === id);
                             if (msg) msg.is_recalled = true;
                         } else if (data.message) {
-                            alert(data.message); // Báo lỗi nếu quá hạn 60p
+                            alert(data.message);
                         }
                         this.activeMenuId = null;
                     }).catch(() => {
@@ -657,7 +611,6 @@
                     }).then(res => res.json())
                     .then(data => {
                         if (data.success) {
-                            // Ẩn tin nhắn khỏi giao diện lập tức
                             this.messages = this.messages.filter(m => m.id !== id);
                         }
                         this.activeMenuId = null;
@@ -700,14 +653,9 @@
                 return 'Sinh viên';
             },
 
-            // Thêm 2 biến này vào
-            showSuggestions: false,
-
-            // Thêm hàm này vào để đưa gợi ý xuống khung nhập
             useSuggestion(text) {
                 this.newMessage = text;
                 this.showSuggestions = false;
-                // Focus vào ô nhập và tự động resize cho vừa nội dung
                 setTimeout(() => {
                     this.$refs.chatInput.focus();
                     this.resizeTextarea(this.$refs.chatInput);
@@ -717,7 +665,6 @@
             formatDividerDate(dateString) {
                 const date = new Date(dateString);
                 const now = new Date();
-
                 const timeStr = date.toLocaleTimeString('vi-VN', {
                     hour: '2-digit',
                     minute: '2-digit'
@@ -728,15 +675,13 @@
                 }
 
                 const yesterday = new Date(now);
-                yesterday.setDate(now.getDate() - 1);
+                yesterfully.setDate(now.getDate() - 1);
                 if (date.toDateString() === yesterday.toDateString()) {
                     return 'Hôm qua ' + timeStr;
                 }
 
-                // Lấy Thứ (T2, T3...)
                 const days = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
                 const dayName = days[date.getDay()];
-
                 return dayName + ', ' + date.toLocaleDateString('vi-VN', {
                     day: '2-digit',
                     month: '2-digit',

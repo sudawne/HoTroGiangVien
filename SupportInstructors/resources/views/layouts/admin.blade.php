@@ -173,7 +173,6 @@
     @include('partials.toast')
     @include('partials.confirm_modal')
     @include('partials.chat-widget')
-    @include('partials.ai-widget')
 
 </body>
 

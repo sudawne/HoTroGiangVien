@@ -47,7 +47,7 @@
                     <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Mật khẩu mới</label>
                     <input type="password" name="password" required
                         class="w-full mt-1 border-slate-300 dark:bg-slate-800 dark:text-white rounded-lg focus:ring-primary">
-                    <p class="text-[10px] text-slate-500 mt-1">Ít nhất 6 ký tự, 1 chữ hoa, 1 chữ thường, 1 ký tự đặc biệt.
+                        <p class="text-[10px] text-slate-500 mt-1">Ít nhất 6 ký tự, 1 chữ hoa, 1 chữ thường, 1 ký tự đặc biệt.
                     </p>
                     @error('password')
                         <p class="text-red-500 text-xs mt-1">{{ $message }}</p>

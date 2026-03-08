@@ -52,7 +52,7 @@
 
                 <div class="flex items-center justify-between pt-3">
                     <a class="text-sm font-medium text-primary hover:text-primary-hover dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
-                        href="#">
+                    href="{{ route('auth.forgot_password') }}"> 
                         Quên mật khẩu
                     </a>
 

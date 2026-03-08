@@ -3,7 +3,7 @@
 
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Danh sách Hủy Học Phần</title>
+    <title>Danh sách Điểm Rèn Luyện Sinh Viên</title>
     <style>
         body {
             font-family: 'DejaVu Serif', serif;
@@ -25,6 +25,10 @@
             font-weight: bold;
         }
 
+        .uppercase {
+            text-transform: uppercase;
+        }
+
         .main-title {
             text-align: center;
             font-size: 16pt;
@@ -33,6 +37,7 @@
             text-transform: uppercase;
         }
 
+        /* Bảng dữ liệu chính */
         .data-table {
             width: 100%;
             border-collapse: collapse;
@@ -79,7 +84,7 @@
         </tr>
     </table>
 
-    <div class="main-title">DANH SÁCH SINH VIÊN BỊ HỦY HỌC PHẦN</div>
+    <div class="main-title">DANH SÁCH ĐIỂM RÈN LUYỆN SINH VIÊN</div>
 
     <div style="text-align: center; margin-bottom: 20px; font-style: italic;">
         (Ngày xuất báo cáo: {{ date('d/m/Y') }})
@@ -91,11 +96,12 @@
             <tr>
                 <th width="5%">STT</th>
                 <th width="15%">MSSV</th>
-                <th width="20%">Họ và Tên</th>
+                <th width="25%">Họ và Tên</th>
                 <th width="10%">Lớp</th>
-                <th width="15%">Mã học phần</th>
-                <th width="25%">Tên học phần</th>
-                <th width="10%">Lý do</th>
+                <th width="10%">SV tự ĐG</th>
+                <th width="10%">Lớp ĐG</th>
+                <th width="10%">Khoa duyệt</th>
+                <th width="15%">Xếp loại</th>
             </tr>
         </thead>
         <tbody>
@@ -105,9 +111,26 @@
                     <td class="text-center">{{ $item->student->student_code ?? 'N/A' }}</td>
                     <td>{{ $item->student->fullname ?? 'N/A' }}</td>
                     <td class="text-center">{{ $item->student->studentClass->code ?? 'N/A' }}</td>
-                    <td class="text-center">{{ $item->subject->code ?? 'N/A' }}</td>
-                    <td>{{ $item->subject->name ?? 'N/A' }}</td>
-                    <td class="text-center font-bold text-danger">{{ $item->reason ?? 'Nợ học phí' }}</td>
+                    <td class="text-center">{{ $item->self_score ?? '-' }}</td>
+                    <td class="text-center">{{ $item->class_score ?? '-' }}</td>
+                    <td class="text-center font-bold">{{ $item->final_score ?? '-' }}</td>
+                    <td
+                        class="text-center font-bold 
+                        {{ $item->final_score >= 90 ? 'text-blue-600' : ($item->final_score < 50 ? 'text-danger' : '') }}">
+                        @if (is_null($item->final_score))
+                            Chưa xét
+                        @elseif($item->final_score >= 90)
+                            Xuất sắc
+                        @elseif($item->final_score >= 80)
+                            Tốt
+                        @elseif($item->final_score >= 65)
+                            Khá
+                        @elseif($item->final_score >= 50)
+                            Trung bình
+                        @else
+                            Yếu/Kém
+                        @endif
+                    </td>
                 </tr>
             @endforeach
         </tbody>

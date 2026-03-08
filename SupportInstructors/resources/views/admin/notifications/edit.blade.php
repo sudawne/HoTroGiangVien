@@ -20,7 +20,7 @@
 
     <div class="w-full px-4 md:px-8 py-6">
         <div class="mb-6 flex items-center justify-between">
-            <a href="{{ route('admin.notifications.index') }}"
+            <a href="{{ route($routePrefix . 'notifications.index') }}"
                 class="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-100 py-1.5 px-3 rounded-lg transition-colors -ml-3">
                 <span class="material-symbols-outlined !text-[20px]">arrow_back</span>
                 Quay lại danh sách
@@ -37,7 +37,7 @@
         </div>
 
         <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-            <form id="notification-form" action="{{ route('admin.notifications.update', $notification->id) }}"
+            <form id="notification-form" action="{{ route($routePrefix . 'notifications.update', $notification->id) }}"
                 method="POST" enctype="multipart/form-data" class="p-6 md:p-8 space-y-8">
                 @csrf
                 @method('PUT')

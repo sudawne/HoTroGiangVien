@@ -7,7 +7,7 @@
         {{-- 1. HEADER --}}
         <div class="flex items-center justify-between mb-6">
             <div class="flex items-center gap-4">
-                <a href="{{ route('admin.classes.index') }}"
+                <a href="{{ route($routePrefix . 'classes.index') }}"
                     class="p-2 bg-white border border-slate-300 rounded-sm text-slate-600 hover:bg-slate-50 shadow-sm transition-colors">
                     <span class="material-symbols-outlined !text-[16px] block">arrow_back</span>
                 </a>
@@ -35,7 +35,7 @@
             </div>
 
             <div class="flex gap-2">
-                <a href="{{ route('admin.classes.edit', $class->id) }}"
+                <a href="{{ route($routePrefix . 'classes.edit', $class->id) }}"
                     class="flex items-center gap-2 px-3 py-2 bg-white border border-slate-300 rounded-sm text-slate-700 hover:bg-slate-50 transition-colors text-sm font-medium shadow-sm">
                     <span class="material-symbols-outlined !text-[15px]">handyman</span> Chỉnh sửa lớp
                 </a>
@@ -80,7 +80,7 @@
                         <span class="material-symbols-outlined !text-[18px]">add</span> Thêm SV
                     </button>
 
-                    <a href="{{ route('admin.classes.export', $class->id) }}" id="btn-export-excel"
+                    <a href="{{ route($routePrefix . 'classes.export', $class->id) }}" id="btn-export-excel"
                         class="flex items-center gap-2 px-3 py-2 bg-green-600 text-white text-sm font-medium rounded-sm hover:bg-green-700 transition-colors shadow-sm">
                         <span class="material-symbols-outlined !text-[18px]">docs</span> Excel
                     </a>
@@ -141,7 +141,8 @@
                             class="material-symbols-outlined">close</span></button>
                 </div>
 
-                <form id="formCreateStudent" action="{{ route('admin.students.store') }}" method="POST" class="p-6">
+                <form id="formCreateStudent" action="{{ route($routePrefix . 'students.store') }}" method="POST"
+                    class="p-6">
                     @csrf
                     <input type="hidden" name="class_id" value="{{ $class->id }}">
                     <div id="create-student-error"
@@ -723,7 +724,7 @@
                             if (loadingTitle) loadingTitle.innerText = "Đang xử lý...";
                             try {
                                 const response = await fetch(
-                                    '{{ route('admin.students.bulk_destroy') }}', {
+                                    '{{ route($routePrefix . 'students.bulk_destroy') }}', {
                                         method: 'POST',
                                         headers: {
                                             'Content-Type': 'application/json',
@@ -770,7 +771,7 @@
 
                             try {
                                 const response = await fetch(
-                                    '{{ route('admin.students.bulk_restore') }}', {
+                                    '{{ route($routePrefix . 'students.bulk_restore') }}', {
                                         method: 'POST',
                                         headers: {
                                             'Content-Type': 'application/json',
@@ -885,7 +886,7 @@
 
                 for (const batch of batches) {
                     try {
-                        await fetch('{{ route('admin.classes.send_emails') }}', {
+                        await fetch('{{ route($routePrefix . 'classes.send_emails') }}', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',

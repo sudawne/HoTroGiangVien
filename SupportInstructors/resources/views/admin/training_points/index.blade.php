@@ -11,7 +11,8 @@
             <div>
                 <nav aria-label="Breadcrumb" class="flex text-sm text-slate-500 dark:text-slate-400 mb-1">
                     <ol class="flex items-center space-x-2">
-                        <li><a class="hover:text-primary transition-colors" href="{{ route('admin.dashboard') }}">Trang
+                        <li><a class="hover:text-primary transition-colors"
+                                href="{{ route($routePrefix . 'dashboard') }}">Trang
                                 chủ</a></li>
                         <li><span class="material-symbols-outlined !text-[12px]">chevron_right</span></li>
                         <li><span class="font-medium text-slate-900 dark:text-slate-200">Điểm rèn luyện</span></li>
@@ -116,7 +117,7 @@
                             <span class="material-symbols-outlined !text-[16px]">filter_list</span> Bộ lọc
                         </button>
 
-                        <a href="{{ route('admin.training_points.import') }}"
+                        <a href="{{ route($routePrefix . 'training_points.import') }}"
                             class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium py-2 px-3 rounded-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-2">
                             <span class="material-symbols-outlined !text-[16px] text-blue-600">upload_file</span>
                             <span class="hidden sm:inline">Nhập Excel</span>
@@ -240,7 +241,7 @@
                     </button>
                 </div>
 
-                <form action="{{ route('admin.training_points.export') }}" method="GET" class="p-6">
+                <form action="{{ route($routePrefix . 'training_points.export') }}" method="GET" class="p-6">
                     <div class="space-y-4 mb-6">
                         <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">1. Phạm vi dữ liệu</p>
                         <div class="grid grid-cols-2 gap-4">
@@ -352,7 +353,7 @@
                 if (!url) {
                     const formData = new FormData(filterForm);
                     const params = new URLSearchParams(formData).toString();
-                    url = "{{ route('admin.training_points.index') }}?" + params;
+                    url = "{{ route($routePrefix . 'training_points.index') }}?" + params;
                 }
 
                 window.history.pushState(null, '', url);

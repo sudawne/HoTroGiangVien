@@ -53,12 +53,13 @@
             <div class="flex justify-end gap-1">
                 @if ($isTrashed)
                     {{-- NÚT KHÔI PHỤC --}}
-                    <form action="{{ route('admin.students.restore', $student->id) }}" method="POST"
+                    <form action="{{ route($routePrefix . 'students.restore', $student->id) }}" method="POST"
                         class="inline-block">
                         @csrf
                         <button type="button"
                             class="btn-restore-student p-1.5 text-blue-600 hover:bg-blue-100 rounded transition-all"
-                            data-url="{{ route('admin.students.restore', $student->id) }}" title="Khôi phục hoạt động">
+                            data-url="{{ route($routePrefix . 'students.restore', $student->id) }}"
+                            title="Khôi phục hoạt động">
                             <span class="material-symbols-outlined !text-[18px]">restore</span>
                         </button>
                     </form>
@@ -79,7 +80,7 @@
                         <span class="material-symbols-outlined !text-[18px]">send</span>
                     </button>
 
-                    <form action="{{ route('admin.students.destroy', $student->id) }}" method="POST"
+                    <form action="{{ route($routePrefix . 'students.destroy', $student->id) }}" method="POST"
                         class="inline-block form-delete-student">
                         @csrf @method('DELETE')
                         <button type="button"

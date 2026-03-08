@@ -5,7 +5,7 @@
     <div class="w-full px-4 py-6">
         <div class="flex items-center justify-between mb-6">
             <div class="flex items-center gap-3">
-                <a href="{{ route('admin.classes.index') }}"
+                <a href="{{ route($routePrefix . 'classes.index') }}"
                     class="p-2 bg-white border border-slate-300 rounded-sm text-slate-600 hover:bg-slate-50 transition-colors shadow-sm">
                     <span class="material-symbols-outlined !text-[16px] block">arrow_back</span>
                 </a>
@@ -23,8 +23,8 @@
                 </h3>
             </div>
 
-            <form action="{{ route('admin.classes.store') }}" method="POST" enctype="multipart/form-data" class="p-6"
-                id="createClassForm" novalidate>
+            <form action="{{ route($routePrefix . 'classes.store') }}" method="POST" enctype="multipart/form-data"
+                class="p-6" id="createClassForm" novalidate>
                 @csrf
                 <input type="hidden" name="send_email" id="send_email_input" value="0">
 
@@ -168,7 +168,7 @@
                 </div>
 
                 <div class="flex items-center justify-end gap-3 mt-8 pt-6 border-t border-slate-100">
-                    <a href="{{ route('admin.classes.index') }}"
+                    <a href="{{ route($routePrefix . 'classes.index') }}"
                         class="px-5 py-2.5 bg-white border border-slate-300 text-slate-700 font-semibold rounded-sm hover:bg-slate-50 text-sm">Hủy
                         bỏ</a>
                     <button type="button" id="btn-pre-submit"
@@ -393,7 +393,7 @@
                         `<div class="mt-4 text-center text-slate-500 text-sm py-4">Đang đọc dữ liệu...</div>`;
                     errorArea.classList.add('hidden');
 
-                    fetch('{{ route('admin.classes.upload.preview') }}', {
+                    fetch('{{ route($routePrefix . 'classes.upload.preview') }}', {
                         method: 'POST',
                         headers: {
                             'X-CSRF-TOKEN': '{{ csrf_token() }}'
@@ -504,7 +504,7 @@
 
                 for (const batch of batches) {
                     try {
-                        await fetch('{{ route('admin.classes.send_emails') }}', {
+                        await fetch('{{ route($routePrefix . 'classes.send_emails') }}', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',

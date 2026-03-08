@@ -13,12 +13,13 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__ . '/../routes/console.php',
         health: '/up',
         then: function () {
-            // Cho phép cả ADMIN và LECTURER truy cập vào group admin
-            Route::middleware(['web', 'auth', 'role:ADMIN,LECTURER'])
+            // [SỬA Ở ĐÂY]: Chỉ cho phép ADMIN truy cập group này
+            Route::middleware(['web', 'auth', 'role:ADMIN'])
                 ->prefix('admin')
                 ->name('admin.')
                 ->group(base_path('routes/admin.php'));
 
+            // [SỬA Ở ĐÂY]: Chỉ cho phép LECTURER truy cập group này
             Route::middleware(['web', 'auth', 'role:LECTURER'])
                 ->prefix('lecturer')
                 ->name('lecturer.')

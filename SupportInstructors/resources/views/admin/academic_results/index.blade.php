@@ -11,7 +11,8 @@
             <div>
                 <nav aria-label="Breadcrumb" class="flex text-sm text-slate-500 dark:text-slate-400 mb-1">
                     <ol class="flex items-center space-x-2">
-                        <li><a class="hover:text-primary transition-colors" href="{{ route('admin.dashboard') }}">Trang
+                        <li><a class="hover:text-primary transition-colors"
+                                href="{{ route($routePrefix . 'dashboard') }}">Trang
                                 chủ</a></li>
                         <li><span class="material-symbols-outlined !text-[12px]">chevron_right</span></li>
                         <li><span class="font-medium text-slate-900 dark:text-slate-200">Kết quả học tập</span></li>
@@ -114,7 +115,7 @@
                             class="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-sm font-medium py-2 px-3 rounded-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-all flex items-center gap-2">
                             <span class="material-symbols-outlined !text-[16px]">filter_list</span> Bộ lọc
                         </button>
-                        <a href="{{ route('admin.academic_results.import') }}"
+                        <a href="{{ route($routePrefix . 'academic_results.import') }}"
                             class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium py-2 px-3 rounded-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-2">
                             <span class="material-symbols-outlined !text-[16px] text-blue-600">upload_file</span>
                             <span class="hidden sm:inline">Nhập Excel</span>
@@ -249,7 +250,7 @@
                 </div>
 
                 {{-- Form Xuất Báo Cáo --}}
-                <form action="{{ route('admin.academic_results.export') }}" method="GET" class="p-6">
+                <form action="{{ route($routePrefix . 'academic_results.export') }}" method="GET" class="p-6">
 
                     {{-- 1. Các tiêu chí lọc --}}
                     <div class="space-y-4 mb-6">
@@ -378,7 +379,7 @@
                 if (!url) {
                     const formData = new FormData(filterForm);
                     const params = new URLSearchParams(formData).toString();
-                    url = "{{ route('admin.academic-results.index') }}?" + params;
+                    url = "{{ route($routePrefix . 'academic-results.index') }}?" + params;
                 }
 
                 // Push state URL

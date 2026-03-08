@@ -52,15 +52,16 @@
         <main class="mx-auto flex w-full max-w-none flex-col px-6 md:px-10 py-8">
 
             <div class="flex items-center justify-between mb-6 font-lexend">
-                <a href="{{ route('admin.notifications.index') }}"
+                <a href="{{ route($routePrefix . 'notifications.index') }}"
                     class="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-100 py-1.5 px-3 rounded-lg transition-colors -ml-3">
                     <span class="material-symbols-outlined !text-[20px]">arrow_back</span>
                     Quay lại danh sách
                 </a>
 
                 @if ($notification->status == 'pending' && Auth::user()->role_id == 1)
-                    <form id="approve-form-show" action="{{ route('admin.notifications.approve', $notification->id) }}"
-                        method="POST" class="hidden">@csrf</form>
+                    <form id="approve-form-show"
+                        action="{{ route($routePrefix . 'notifications.approve', $notification->id) }}" method="POST"
+                        class="hidden">@csrf</form>
                     <button type="button"
                         onclick="showConfirm('Xác nhận Duyệt','Xuất bản thông báo và tự động gửi Email đến sinh viên. Hành động này không thể hoàn tác.', () => document.getElementById('approve-form-show').submit(), 'primary')"
                         class="flex items-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-bold text-white hover:bg-primary/90 transition-all shadow-sm">
@@ -151,8 +152,8 @@
                 </div>
 
                 <div class="flex items-center gap-2 pt-2 border-b border-slate-200 pb-2">
-                    <form id="like-form" action="{{ route('admin.notifications.like', $notification->id) }}" method="POST"
-                        class="flex-1">@csrf
+                    <form id="like-form" action="{{ route($routePrefix . 'notifications.like', $notification->id) }}"
+                        method="POST" class="flex-1">@csrf
                         <button id="like-button" type="submit"
                             class="w-full flex items-center justify-center gap-2 py-2 rounded-lg hover:bg-slate-100 text-[14px] font-semibold transition-colors {{ $notification->isLikedBy(Auth::id()) ? 'text-blue-600' : 'text-slate-600' }}">
                             <span id="like-icon" class="material-symbols-outlined !text-[20px]"
@@ -180,7 +181,8 @@
                         </div>
                         <div class="flex-1">
                             <form id="main-comment-form"
-                                action="{{ route('admin.notifications.comment', $notification->id) }}" method="POST"
+                                action="{{ route($routePrefix . 'notifications.comment', $notification->id) }}"
+                                method="POST"
                                 class="relative group bg-slate-100 rounded-lg px-3 py-2.5 border border-slate-200 focus-within:border-slate-400 focus-within:bg-white transition-all duration-200 min-h-[44px] focus-within:min-h-[85px] focus-within:pb-10">
                                 @csrf
                                 <textarea id="main-comment-input" name="content" required placeholder="Viết bình luận..." rows="1"
@@ -307,7 +309,8 @@
 
                                         {{-- Reply form --}}
                                         <div x-show="openReply" x-transition class="mt-3 ml-10" style="display:none;">
-                                            <form action="{{ route('admin.notifications.comment', $notification->id) }}"
+                                            <form
+                                                action="{{ route($routePrefix . 'notifications.comment', $notification->id) }}"
                                                 method="POST" class="reply-form flex gap-2 items-start">
                                                 @csrf
                                                 <input type="hidden" name="parent_id" value="{{ $comment->id }}">

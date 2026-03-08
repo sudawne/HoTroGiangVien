@@ -11,14 +11,14 @@
                     <p class="text-sm text-slate-500 mt-1">Quản lý, xét duyệt thông báo của Khoa và Giảng viên</p>
                 </div>
             </div>
-            <a href="{{ route('admin.notifications.create') }}"
+            <a href="{{ route($routePrefix . 'notifications.create') }}"
                 class="px-5 py-2.5 bg-primary text-white font-bold rounded-sm hover:bg-primary/90 flex items-center gap-2 shadow-sm transition-colors">
                 <span class="material-symbols-outlined !text-[20px]">add_circle</span> Đăng bài mới
             </a>
         </div>
 
         <div class="bg-white border border-slate-200 rounded-sm shadow-sm mb-6">
-            <form id="filterForm" action="{{ route('admin.notifications.index') }}" method="GET">
+            <form id="filterForm" action="{{ route($routePrefix . 'notifications.index') }}" method="GET">
                 <input type="hidden" name="role_filter" id="role_filter" value="{{ $roleFilter }}">
                 <input type="hidden" name="status_filter" id="status_filter" value="{{ $statusFilter }}">
 
@@ -90,7 +90,7 @@
                         @forelse($notifications as $notify)
                             <tr class="hover:bg-slate-50 transition-colors">
                                 <td class="px-6 py-4">
-                                    <a href="{{ route('admin.notifications.show', $notify->id) }}"
+                                    <a href="{{ route($routePrefix . 'notifications.show', $notify->id) }}"
                                         class="font-bold text-slate-800 text-base hover:text-primary mb-1 block leading-tight">
                                         {{ $notify->title }}
                                     </a>
@@ -159,7 +159,7 @@
                                 <td class="px-6 py-4 align-middle">
                                     <div class="flex items-center justify-end gap-2">
                                         @if (in_array($notify->status, ['draft', 'pending']))
-                                            <a href="{{ route('admin.notifications.edit', $notify->id) }}"
+                                            <a href="{{ route($routePrefix . 'notifications.edit', $notify->id) }}"
                                                 class="px-2 py-1.5 bg-blue-50 text-blue-600 border border-blue-200 rounded text-xs font-bold hover:bg-blue-600 hover:text-white transition-colors"
                                                 title="Chỉnh sửa">
                                                 Sửa
@@ -168,7 +168,7 @@
 
                                         @if ($notify->status == 'pending' && Auth::user()->role_id == 1)
                                             <form id="approve-form-{{ $notify->id }}"
-                                                action="{{ route('admin.notifications.approve', $notify->id) }}"
+                                                action="{{ route($routePrefix . 'notifications.approve', $notify->id) }}"
                                                 method="POST" class="hidden">
                                                 @csrf
                                             </form>
@@ -181,7 +181,7 @@
                                         @endif
 
                                         <form id="delete-form-{{ $notify->id }}"
-                                            action="{{ route('admin.notifications.destroy', $notify->id) }}"
+                                            action="{{ route($routePrefix . 'notifications.destroy', $notify->id) }}"
                                             method="POST" class="hidden">
                                             @csrf @method('DELETE')
                                         </form>

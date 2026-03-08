@@ -6,7 +6,7 @@
         {{-- Header --}}
         <div class="flex items-center justify-between mb-8">
             <div class="flex items-center gap-3">
-                <a href="{{ route('admin.lecturers.index') }}"
+                <a href="{{ route($routePrefix . 'lecturers.index') }}"
                     class="p-2 bg-white border border-slate-300 rounded-sm text-slate-600 hover:bg-slate-50 transition-colors shadow-sm">
                     <span class="material-symbols-outlined !text-[18px] block">arrow_back</span>
                 </a>
@@ -37,7 +37,8 @@
             </div>
         @endif
 
-        <form action="{{ route('admin.lecturers.store') }}" method="POST" enctype="multipart/form-data" novalidate>
+        <form action="{{ route($routePrefix . 'lecturers.store') }}" method="POST" enctype="multipart/form-data"
+            novalidate>
             @csrf
             <div class="flex flex-col lg:flex-row gap-6">
 
@@ -201,7 +202,7 @@
                             </div>
 
                             <div class="mt-10 flex items-center justify-end gap-3">
-                                <a href="{{ route('admin.lecturers.index') }}"
+                                <a href="{{ route($routePrefix . 'lecturers.index') }}"
                                     class="px-5 py-2.5 bg-white border border-slate-300 text-slate-700 font-semibold rounded-sm hover:bg-slate-50 transition-colors text-sm">Hủy
                                     bỏ</a>
                                 <button type="submit"

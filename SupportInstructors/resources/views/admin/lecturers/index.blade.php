@@ -32,8 +32,8 @@
     
             // Chọn route dựa trên actionType
             let url = (this.actionType === 'delete') ?
-                '{{ route('admin.lecturers.bulk_delete') }}' :
-                '{{ route('admin.lecturers.bulk_restore') }}';
+                '{{ route($routePrefix . 'lecturers.bulk_delete') }}' :
+                '{{ route($routePrefix . 'lecturers.bulk_restore') }}';
     
             fetch(url, {
                     method: 'POST',
@@ -84,7 +84,7 @@
                 </div>
 
                 {{-- Nút Thêm mới --}}
-                <a href="{{ route('admin.lecturers.create') }}"
+                <a href="{{ route($routePrefix . 'lecturers.create') }}"
                     class="h-10 px-4 bg-primary text-white rounded-sm font-medium hover:bg-primary/90 flex items-center gap-2 shadow-sm transition-colors">
                     <span class="material-symbols-outlined !text-[20px]">add</span>
                     <span class="hidden sm:inline">Thêm mới</span>
@@ -173,7 +173,8 @@
                                     <div class="flex items-center justify-end gap-2">
                                         @if ($isTrashed)
                                             {{-- Form Khôi phục --}}
-                                            <form action="{{ route('admin.lecturers.restore', $lec->id) }}" method="POST">
+                                            <form action="{{ route($routePrefix . 'lecturers.restore', $lec->id) }}"
+                                                method="POST">
                                                 @csrf
                                                 <button type="submit"
                                                     class="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
@@ -183,11 +184,12 @@
                                             </form>
                                         @else
                                             {{-- Nút Sửa --}}
-                                            <a href="{{ route('admin.lecturers.edit', $lec->id) }}"
+                                            <a href="{{ route($routePrefix . 'lecturers.edit', $lec->id) }}"
                                                 class="p-1.5 text-slate-500 hover:text-primary hover:bg-slate-100 rounded transition-colors"><span
                                                     class="material-symbols-outlined !text-[18px]">edit</span></a>
                                             {{-- Form Ẩn --}}
-                                            <form action="{{ route('admin.lecturers.destroy', $lec->id) }}" method="POST"
+                                            <form action="{{ route($routePrefix . 'lecturers.destroy', $lec->id) }}"
+                                                method="POST"
                                                 onsubmit="return confirm('Bạn có chắc muốn ẩn giảng viên này?');">
                                                 @csrf @method('DELETE')
                                                 <button type="submit"

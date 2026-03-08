@@ -12,12 +12,15 @@
                 <p class="text-xs text-slate-500 mt-1 pl-4">Quản lý hồ sơ và sinh viên trực thuộc</p>
             </div>
 
-            <div class="flex gap-2">
-                <a href="{{ route('admin.classes.create') }}"
-                    class="bg-slate-800 hover:bg-slate-700 dark:bg-white dark:hover:bg-slate-200 text-white dark:text-slate-900 px-4 py-1.5 rounded-sm text-xs font-bold uppercase tracking-wider shadow-sm transition-all flex items-center gap-2">
-                    <span class="material-symbols-outlined !text-[16px]">add</span> Tạo mới
-                </a>
-            </div>
+            {{-- CHỈ ADMIN MỚI THẤY NÚT TẠO MỚI --}}
+            @if (Auth::user()->role_id == 1)
+                <div class="flex gap-2">
+                    <a href="{{ route($routePrefix . 'classes.create') }}"
+                        class="bg-slate-800 hover:bg-slate-700 dark:bg-white dark:hover:bg-slate-200 text-white dark:text-slate-900 px-4 py-1.5 rounded-sm text-xs font-bold uppercase tracking-wider shadow-sm transition-all flex items-center gap-2">
+                        <span class="material-symbols-outlined !text-[16px]">add</span> Tạo mới
+                    </a>
+                </div>
+            @endif
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
@@ -31,38 +34,42 @@
                                 <span class="font-mono text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                                     Mã Lớp: {{ $class->code }}
                                 </span>
-                                <a href="{{ route('admin.classes.show', $class->id) }}"
+                                <a href="{{ route($routePrefix . 'classes.show', $class->id) }}"
                                     class="text-base font-bold text-slate-800 dark:text-white hover:text-primary transition-colors line-clamp-1"
                                     title="{{ $class->name }}">
                                     {{ Str::upper($class->name) }}
                                 </a>
                             </div>
 
-                            {{-- Dropdown Menu --}}
-                            <div class="relative group/menu -mr-2 -mt-2">
-                                <button
-                                    class="p-2 text-slate-300 hover:text-slate-600 dark:text-slate-600 dark:hover:text-slate-300 transition-colors">
-                                    <span class="material-symbols-outlined !text-[20px]">more_vert</span>
-                                </button>
-                                <div class="hidden group-hover/menu:block absolute right-0 top-8 w-44 z-20">
-                                    <div
-                                        class="bg-white dark:bg-[#1e1e2d] border border-slate-200 dark:border-slate-600 rounded-sm shadow-xl py-1">
-                                        <a href="{{ route('admin.classes.edit', $class->id) }}"
-                                            class="flex items-center gap-3 px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700">
-                                            <span class="material-symbols-outlined !text-[14px]">edit</span> Sửa thông tin
-                                        </a>
-                                        <div class="border-t border-slate-100 dark:border-slate-700 my-1"></div>
-                                        <form action="{{ route('admin.classes.destroy', $class->id) }}" method="POST"
-                                            onsubmit="return confirm('Xóa lớp này?');">
-                                            @csrf @method('DELETE')
-                                            <button
-                                                class="w-full flex items-center gap-3 px-4 py-2 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">
-                                                <span class="material-symbols-outlined !text-[14px]">delete</span> Xóa lớp
-                                            </button>
-                                        </form>
+                            {{-- CHỈ ADMIN MỚI THẤY MENU SỬA/XÓA --}}
+                            @if (Auth::user()->role_id == 1)
+                                <div class="relative group/menu -mr-2 -mt-2">
+                                    <button
+                                        class="p-2 text-slate-300 hover:text-slate-600 dark:text-slate-600 dark:hover:text-slate-300 transition-colors">
+                                        <span class="material-symbols-outlined !text-[20px]">more_vert</span>
+                                    </button>
+                                    <div class="hidden group-hover/menu:block absolute right-0 top-8 w-44 z-20">
+                                        <div
+                                            class="bg-white dark:bg-[#1e1e2d] border border-slate-200 dark:border-slate-600 rounded-sm shadow-xl py-1">
+                                            <a href="{{ route($routePrefix . 'classes.edit', $class->id) }}"
+                                                class="flex items-center gap-3 px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700">
+                                                <span class="material-symbols-outlined !text-[14px]">edit</span> Sửa thông
+                                                tin
+                                            </a>
+                                            <div class="border-t border-slate-100 dark:border-slate-700 my-1"></div>
+                                            <form action="{{ route($routePrefix . 'classes.destroy', $class->id) }}"
+                                                method="POST" onsubmit="return confirm('Xóa lớp này?');">
+                                                @csrf @method('DELETE')
+                                                <button
+                                                    class="w-full flex items-center gap-3 px-4 py-2 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">
+                                                    <span class="material-symbols-outlined !text-[14px]">delete</span> Xóa
+                                                    lớp
+                                                </button>
+                                            </form>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            @endif
                         </div>
 
                         {{-- Thông tin Cán bộ lớp & Cố vấn --}}
@@ -124,11 +131,11 @@
                             <div class="flex flex-col">
                                 <span class="text-[9px] text-slate-400 uppercase font-bold">Sĩ số</span>
                                 <span
-                                    class="font-mono font-medium text-slate-600 dark:text-slate-300">{{ $class->students_count }}</span>
+                                    class="font-mono font-medium text-slate-600 dark:text-slate-300">{{ $class->students_count ?? 0 }}</span>
                             </div>
                         </div>
 
-                        <a href="{{ route('admin.classes.show', $class->id) }}"
+                        <a href="{{ route($routePrefix . 'classes.show', $class->id) }}"
                             class="group/btn flex items-center gap-1 text-slate-500 hover:text-primary transition-colors font-medium">
                             Chi tiết <span
                                 class="material-symbols-outlined !text-[14px] group-hover/btn:translate-x-1 transition-transform">arrow_right_alt</span>
@@ -141,11 +148,14 @@
                     <span class="material-symbols-outlined !text-[40px] text-slate-300 mb-3">grid_off</span>
                     <h3 class="text-sm font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wide">Không có dữ
                         liệu</h3>
-                    <p class="text-xs text-slate-400 mt-1 mb-5">Hệ thống chưa ghi nhận lớp học nào.</p>
-                    <a href="{{ route('admin.classes.create') }}"
-                        class="px-5 py-2 bg-slate-800 text-white text-xs font-bold uppercase tracking-wider hover:bg-slate-700 rounded-sm transition-colors">
-                        Khởi tạo lớp mới
-                    </a>
+                    <p class="text-xs text-slate-400 mt-1 mb-5">Hệ thống chưa ghi nhận lớp học nào của bạn.</p>
+
+                    @if (Auth::user()->role_id == 1)
+                        <a href="{{ route($routePrefix . 'classes.create') }}"
+                            class="px-5 py-2 bg-slate-800 text-white text-xs font-bold uppercase tracking-wider hover:bg-slate-700 rounded-sm transition-colors">
+                            Khởi tạo lớp mới
+                        </a>
+                    @endif
                 </div>
             @endforelse
         </div>

@@ -20,10 +20,6 @@ use App\Http\Controllers\Admin\ProfileController;
 |--------------------------------------------------------------------------
 | Admin Routes (Auto prefixed with 'admin' and named 'admin.')
 |--------------------------------------------------------------------------
-| Tất cả route trong file này đã được tự động thêm:
-| - prefix: '/admin/'
-| - name: 'admin.'
-| - middleware: ['web', 'auth', 'role:ADMIN,LECTURER'] (từ bootstrap/app.php)
 */
 
 // --- DASHBOARD ---
@@ -96,12 +92,13 @@ Route::resource('training_points', TrainingPointController::class);
 
 // --- HỦY HỌC PHẦN (COURSE CANCELLATIONS) ---
 Route::get('course-cancellations/export', [CourseCancellationController::class, 'export'])->name('course_cancellations.export');
-Route::get('course-cancellations/import', [CourseCancellationController::class, 'showImportForm'])->name('course_cancellations.import'); // Trang upload
-Route::post('course-cancellations/preview', [CourseCancellationController::class, 'preview'])->name('course_cancellations.preview'); // Xử lý xem trước
-Route::post('course-cancellations/store-import', [CourseCancellationController::class, 'storeImport'])->name('course_cancellations.store_import'); // Lưu chính thức
+Route::get('course-cancellations/import', [CourseCancellationController::class, 'showImportForm'])->name('course_cancellations.import');
+Route::post('course-cancellations/preview', [CourseCancellationController::class, 'preview'])->name('course_cancellations.preview');
+Route::post('course-cancellations/store-import', [CourseCancellationController::class, 'storeImport'])->name('course_cancellations.store_import');
 Route::get('course-cancellations', [CourseCancellationController::class, 'index'])->name('course_cancellations.index');
 Route::delete('course-cancellations/{id}', [CourseCancellationController::class, 'destroy'])->name('course_cancellations.destroy');
 Route::post('subjects/quick-store', [SubjectController::class, 'quickStore'])->name('subjects.quick_store');
+
 // --- MÔN HỌC ---
 Route::resource('subjects', SubjectController::class)->except(['create', 'show', 'edit']);
 
@@ -118,7 +115,7 @@ Route::controller(ImportController::class)->prefix('imports')->name('imports.')-
     });
 });
 
-// --- CHUÔNG THÔNG BÁO HEADER ---
+// --- TÍNH NĂNG KHÁC ---
 Route::post('/alerts/mark-read', [NotificationController::class, 'markRead'])->name('alerts.mark_read');
 Route::post('/alerts/mark-read-all', [NotificationController::class, 'markReadAll'])->name('alerts.mark_read_all');
 Route::get('/global-search', [SearchController::class, 'globalSearch'])->name('global.search');

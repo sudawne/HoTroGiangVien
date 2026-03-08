@@ -25,7 +25,8 @@
             </span>
         </td>
         <td class="px-6 py-4 text-right">
-            <form action="{{ route('admin.course_cancellations.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Xóa bản ghi này?')">
+            <form action="{{ route($routePrefix . 'course_cancellations.destroy', $item->id) }}" method="POST"
+                onsubmit="return confirm('Xóa bản ghi này?')">
                 @csrf @method('DELETE')
                 <button class="p-1.5 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded transition-colors">
                     <span class="material-symbols-outlined !text-[18px]">delete</span>

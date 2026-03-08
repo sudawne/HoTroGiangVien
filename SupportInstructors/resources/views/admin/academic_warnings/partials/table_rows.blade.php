@@ -7,7 +7,8 @@
         </td>
         <td class="px-6 py-4">
             <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-sm bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-300">
+                <div
+                    class="w-8 h-8 rounded-sm bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-300">
                     {{ substr(strtoupper($warning->student->fullname), 0, 1) }}
                 </div>
                 <div class="text-sm font-medium dark:text-slate-200">
@@ -24,14 +25,15 @@
             </span>
             <p class="text-[10px] text-slate-400 mt-0.5">{{ $warning->semester->academic_year }}</p>
         </td>
-        <td class="px-6 py-4 text-sm text-center font-bold {{ $warning->gpa_term < 2.0 ? 'text-red-500' : 'text-slate-700' }}">
+        <td
+            class="px-6 py-4 text-sm text-center font-bold {{ $warning->gpa_term < 2.0 ? 'text-red-500' : 'text-slate-700' }}">
             {{ $warning->gpa_term }}
         </td>
         <td class="px-6 py-4 text-sm text-center text-slate-600">
             {{ $warning->credits_owed }}
         </td>
         <td class="px-6 py-4">
-            @if($warning->warning_level == 1)
+            @if ($warning->warning_level == 1)
                 <span class="px-2.5 py-0.5 rounded-sm text-xs font-semibold bg-yellow-100 text-yellow-700">Mức 1</span>
             @elseif($warning->warning_level == 2)
                 <span class="px-2.5 py-0.5 rounded-sm text-xs font-semibold bg-orange-100 text-orange-700">Mức 2</span>
@@ -46,8 +48,8 @@
         </td>
         <td class="px-6 py-4 text-right">
             <div class="flex items-center justify-end gap-2">
-                <a href="{{ route('admin.students.show', $warning->student_id) }}" 
-                class="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:text-indigo-700 transition-colors">
+                <a href="{{ route($routePrefix . 'students.show', $warning->student_id) }}"
+                    class="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:text-indigo-700 transition-colors">
                     <span class="material-symbols-outlined !text-[16px]">visibility</span>
                 </a>
             </div>

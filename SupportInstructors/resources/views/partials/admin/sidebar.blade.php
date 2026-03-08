@@ -25,7 +25,7 @@
         {{-- TỔNG QUAN --}}
         <a class="flex items-center gap-3 px-3 py-2 rounded transition-colors group
             {{ request()->routeIs('admin.dashboard') ? 'bg-primary/10 text-primary' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white' }}"
-            href="{{ route('admin.dashboard') }}">
+            href="{{ route($routePrefix . 'dashboard') }}">
             {{-- Icon Menu: 16px --}}
             <span class="material-symbols-outlined !text-[16px] font-medium"
                 data-weight="{{ request()->routeIs('admin.dashboard') ? 'fill' : 'regular' }}">dashboard</span>
@@ -37,41 +37,43 @@
 
         <a class="flex items-center gap-3 px-3 py-2 rounded transition-colors
             {{ request()->routeIs('admin.classes.*') ? 'bg-primary/10 text-primary' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white' }}"
-            href="{{ route('admin.classes.index') }}">
+            href="{{ route($routePrefix . 'classes.index') }}">
             <span class="material-symbols-outlined !text-[16px]">groups</span>
             <span class="font-medium text-sm">Quản lý Lớp học</span>
         </a>
 
-
-        <a class="flex items-center gap-3 px-3 py-2 rounded transition-colors
+        {{-- CHỈ HIỂN THỊ QUẢN LÝ GIẢNG VIÊN NẾU LÀ ADMIN (role_id = 1) --}}
+        @if (Auth::user()->role_id == 1)
+            <a class="flex items-center gap-3 px-3 py-2 rounded transition-colors
             {{ request()->routeIs('admin.lecturers.*') ? 'bg-primary/10 text-primary' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white' }}"
-            href="{{ route('admin.lecturers.index') }}">
-            <span class="material-symbols-outlined !text-[16px]">supervisor_account</span>
-            <span class="font-medium text-sm">Quản lý Giảng viên</span>
-        </a>
+                href="{{ route($routePrefix . 'lecturers.index') }}">
+                <span class="material-symbols-outlined !text-[16px]">supervisor_account</span>
+                <span class="font-medium text-sm">Quản lý Giảng viên</span>
+            </a>
+        @endif
 
         <a class="flex items-center gap-3 px-3 py-2 rounded transition-colors
             {{ request()->routeIs('admin.students.*') ? 'bg-primary/10 text-primary' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white' }}"
-            href="{{ route('admin.students.index') }}">
+            href="{{ route($routePrefix . 'students.index') }}">
             <span class="material-symbols-outlined !text-[16px]">badge</span>
             <span class="font-medium text-sm">Hồ sơ Sinh viên</span>
         </a>
         <a class="flex items-center gap-3 px-3 py-2 rounded transition-colors
             {{ request()->routeIs('admin.subjects.*') ? 'bg-primary/10 text-primary font-medium' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white' }}"
-            href="{{ route('admin.subjects.index') }}">
+            href="{{ route($routePrefix . 'subjects.index') }}">
             <span class="material-symbols-outlined !text-[16px]">menu_book</span>
             <span class="font-medium text-sm">Học phần & Môn học</span>
         </a>
         <a class="flex items-center gap-3 px-3 py-2 rounded transition-colors
          {{ request()->routeIs('admin.academic-results.*') ? 'bg-primary/10 text-primary' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white' }}"
-            href="{{ route('admin.academic-results.index') }}">
+            href="{{ route($routePrefix . 'academic-results.index') }}">
             <span class="material-symbols-outlined !text-[16px]">analytics</span>
             <span class="font-medium text-sm">Kết quả học tập</span>
         </a>
 
         <a class="flex items-center gap-3 px-3 py-2 rounded transition-colors
          {{ request()->routeIs('admin.training_points.*') ? 'bg-primary/10 text-primary' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white' }}"
-            href="{{ route('admin.training_points.index') }}">
+            href="{{ route($routePrefix . 'training_points.index') }}">
             <span class="material-symbols-outlined !text-[16px]">star</span>
             <span class="font-medium text-sm">Điểm rèn luyện</span>
         </a>
@@ -81,27 +83,27 @@
 
         <a class="flex items-center gap-3 px-3 py-2 rounded transition-colors
             {{ request()->routeIs('admin.academic_warnings.*') ? 'bg-primary/10 text-primary' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white' }}"
-            href="{{ route('admin.academic_warnings.index') }}">
+            href="{{ route($routePrefix . 'academic_warnings.index') }}">
             <span class="material-symbols-outlined !text-[16px]"
                 data-weight="{{ request()->routeIs('admin.academic_warnings.*') ? 'fill' : 'regular' }}">warning</span>
             <span class="font-medium text-sm">Cảnh cáo học tập</span>
         </a>
         <a class="flex items-center gap-3 px-3 py-2 rounded transition-colors
             {{ request()->routeIs('admin.course_cancellations.*') ? 'bg-primary/10 text-primary' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white' }}"
-            href="{{ route('admin.course_cancellations.index') }}">
+            href="{{ route($routePrefix . 'course_cancellations.index') }}">
             <span class="material-symbols-outlined !text-[16px]">remove_circle_outline</span>
             <span class="font-medium text-sm">Xóa học phần</span>
         </a>
         <a class="flex items-center gap-3 px-3 py-2 rounded transition-colors
             {{ request()->routeIs('admin.notifications.*') ? 'bg-primary/10 text-primary' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white' }}"
-            href="{{ route('admin.notifications.index') }}">
+            href="{{ route($routePrefix . 'notifications.index') }}">
             <span class="material-symbols-outlined !text-[16px]">campaign</span>
             <span class="font-medium text-sm">Thông báo & Tin tức</span>
         </a>
 
         <a class="flex items-center gap-3 px-3 py-2 rounded transition-colors
             {{ request()->routeIs('admin.minutes.*') ? 'bg-primary/10 text-primary' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white' }}"
-            href="{{ route('admin.minutes.index') }}">
+            href="{{ route($routePrefix . 'minutes.index') }}">
             <span class="material-symbols-outlined !text-[16px]">description</span>
             <span class="font-medium text-sm">Biên bản họp</span>
         </a>
@@ -111,7 +113,7 @@
 
             <div
                 class="absolute bottom-full left-0 w-full mb-2 bg-white dark:bg-[#1e1e2d] border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg overflow-hidden invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200">
-                <a href="{{ route('admin.profile.change_password') }}"
+                <a href="{{ route($routePrefix . 'profile.change_password') }}"
                     class="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors">
                     <span class="material-symbols-outlined !text-[16px]">settings</span>
                     <span class="text-sm font-medium">Đổi mật khẩu</span>

@@ -37,7 +37,8 @@
 
         {{-- Filter Bar --}}
         <div class="bg-white dark:bg-[#1e1e2d] border border-slate-200 dark:border-slate-700 p-4 rounded-sm shadow-sm mb-6">
-            <form action="{{ route('admin.students.index') }}" method="GET" class="flex flex-col md:flex-row gap-4">
+            <form action="{{ route($routePrefix . 'students.index') }}" method="GET"
+                class="flex flex-col md:flex-row gap-4">
                 <div class="flex-1">
                     <input type="text" name="search" value="{{ request('search') }}"
                         placeholder="Tìm kiếm theo Tên hoặc MSSV..."
@@ -155,7 +156,7 @@
                                                 <span class="material-symbols-outlined !text-[20px]">history</span>
                                             </button>
                                         @else
-                                            <a href="{{ route('admin.students.show', $st->id) }}"
+                                            <a href="{{ route($routePrefix . 'students.show', $st->id) }}"
                                                 class="text-blue-600 hover:text-blue-800 p-1.5 hover:bg-blue-50 rounded transition-colors"
                                                 title="Xem hồ sơ chi tiết">
                                                 <span class="material-symbols-outlined !text-[20px]">id_card</span>
@@ -193,8 +194,8 @@
                     <button @click="showImportModal = false" class="text-slate-400 hover:text-red-500"><span
                             class="material-symbols-outlined">close</span></button>
                 </div>
-                <form action="{{ route('admin.imports.storeStudent') }}" method="POST" enctype="multipart/form-data"
-                    class="p-6 space-y-4">
+                <form action="{{ route($routePrefix . 'imports.storeStudent') }}" method="POST"
+                    enctype="multipart/form-data" class="p-6 space-y-4">
                     @csrf
                     <div>
                         <label class="block text-sm font-semibold mb-2">Chọn Lớp cần thêm SV</label>
@@ -233,7 +234,7 @@
                             class="material-symbols-outlined">close</span></button>
                 </div>
 
-                <form id="formCreateStudent" action="{{ route('admin.students.store') }}" method="POST"
+                <form id="formCreateStudent" action="{{ route($routePrefix . 'students.store') }}" method="POST"
                     class="p-6">
                     @csrf
 
@@ -414,9 +415,10 @@
                         'Ẩn ' + ids.length + ' Sinh Viên?',
                         'Các sinh viên này sẽ bị vô hiệu hóa (không xóa hẳn). Bạn có chắc chắn?',
                         () => {
-                            performAction('{{ route('admin.students.bulk_destroy') }}', 'POST', {
-                                ids: ids
-                            }, 'Đã ẩn thành công!');
+                            performAction('{{ route($routePrefix . 'students.bulk_destroy') }}',
+                                'POST', {
+                                    ids: ids
+                                }, 'Đã ẩn thành công!');
                         },
                         'danger' // Màu đỏ
                     );
@@ -433,9 +435,10 @@
                         'Khôi phục ' + ids.length + ' Sinh Viên?',
                         'Các sinh viên này sẽ hoạt động trở lại.',
                         () => {
-                            performAction('{{ route('admin.students.bulk_restore') }}', 'POST', {
-                                ids: ids
-                            }, 'Đã khôi phục thành công!');
+                            performAction('{{ route($routePrefix . 'students.bulk_restore') }}',
+                                'POST', {
+                                    ids: ids
+                                }, 'Đã khôi phục thành công!');
                         }
                     );
                 });

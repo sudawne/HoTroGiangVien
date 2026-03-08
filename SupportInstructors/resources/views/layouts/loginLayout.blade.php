@@ -9,7 +9,7 @@
     {{-- Tailwind + plugins --}}
     <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
 
-    {{-- Fonts & Icons --}}
+    {{-- Fonts & Icons (GIỮ LẠI MATERIAL ICONS CŨ CỦA BẠN ĐỂ KHÔNG BỊ LỖI TRANG ĐĂNG NHẬP) --}}
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -49,40 +49,29 @@
     {{-- Header --}}
     <header class="bg-primary w-full shadow-md z-10">
         <div class="container mx-auto px-1 py-3 flex items-center">
-
             <div class="flex items-center space-x-4 relative">
-
                 {{-- Glow trắng phía sau logo --}}
                 <div
-                    class="absolute -left-6 top-1/2 -translate-y-1/2 w-32 h-32
-                        bg-[radial-gradient(circle,rgba(255,255,255,0.85)_0%,rgba(255,255,255,0.4)_85%,transparent_70%)]
-                        blur-xl">
+                    class="absolute -left-6 top-1/2 -translate-y-1/2 w-32 h-32 bg-[radial-gradient(circle,rgba(255,255,255,0.85)_0%,rgba(255,255,255,0.4)_85%,transparent_70%)] blur-xl">
                 </div>
-
                 {{-- Logo --}}
                 <div class="relative w-16 h-16 flex items-center justify-center">
                     <img src="{{ asset('images/defaults/Logo.png') }}" alt="Logo Trường Đại học Kiên Giang"
                         class="w-full h-full object-contain">
                 </div>
-
                 {{-- Text --}}
                 <div class="text-white relative">
-                    <h1 class="text-2xl font-bold uppercase tracking-wide leading-tight">
-                        Trường Đại Học Kiên Giang
-                    </h1>
-                    <h2 class="text-lg font-light opacity-90 tracking-wider">
-                        HỆ THỐNG HỔ TRỢ GIẢNG VIÊN
-                    </h2>
+                    <h1 class="text-2xl font-bold uppercase tracking-wide leading-tight">Trường Đại Học Kiên Giang</h1>
+                    <h2 class="text-lg font-light opacity-90 tracking-wider">HỆ THỐNG HỖ TRỢ GIẢNG VIÊN</h2>
                 </div>
-
             </div>
-
         </div>
     </header>
 
-
     {{-- Content --}}
-    <main class="flex-grow container mx-auto px-20 py-12 flex flex-col md:flex-row justify-center items-start gap-8">
+    {{-- Đổi items-center thành items-start để dính sát lên trên, thêm mt-8 để cách Header 1 chút cho đỡ sát viền --}}
+    <main
+        class="flex-grow w-full container mx-auto px-4 mt-8 py-4 flex flex-col md:flex-row justify-center items-start gap-8">
         @yield('content')
     </main>
 
@@ -92,7 +81,7 @@
             <div class="space-y-1 text-sm text-gray-600 dark:text-gray-400">
                 <p class="font-bold text-gray-800 dark:text-gray-200">Trường Đại Học Kiên Giang (Kien Giang University)
                 </p>
-                <p>Địa chỉ: Số 320 A - Quốc lộ 61 - Châu Thành - An Giang</p>
+                <p>Địa chỉ: Số 320 A - Quốc lộ 61 - Châu Thành - Kiên Giang</p>
                 <p>Điện thoại: 0297.3.926714 - Fax: 0297.3.926714</p>
             </div>
         </div>

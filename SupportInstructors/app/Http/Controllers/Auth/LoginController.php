@@ -6,15 +6,28 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Student;
 use App\Models\Lecturer;
+use App\Models\Notification; // Thêm dòng này
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB; // Thêm dòng này nếu query bằng DB facade
 
 class LoginController extends Controller
 {
     public function showLoginForm()
     {
-        return view('auth.login');
+        // Lấy 5 thông báo mới nhất từ ADMIN, trạng thái approved
+        $notifications = Notification::select('notifications.*')
+            ->join('users', 'notifications.sender_id', '=', 'users.id')
+            ->join('roles', 'users.role_id', '=', 'roles.id')
+            ->where('roles.name', 'ADMIN')
+            ->where('notifications.status', 'approved')
+            ->orderBy('notifications.created_at', 'desc')
+            ->limit(5)
+            ->get();
+
+        // Truyền biến $notifications ra view
+        return view('auth.login', compact('notifications'));
     }
 
     public function login(Request $request)

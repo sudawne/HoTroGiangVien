@@ -52,7 +52,7 @@
 
                 <div class="flex items-center justify-between pt-3">
                     <a class="text-sm font-medium text-primary hover:text-primary-hover dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
-                    href="{{ route('auth.forgot_password') }}"> 
+                        href="{{ route('auth.forgot_password') }}">
                         Quên mật khẩu
                     </a>
 
@@ -69,16 +69,58 @@
     </div>
 
     <div
-        class="w-full md:flex-1 bg-surface-light dark:bg-surface-dark rounded-lg shadow-card border border-gray-200 dark:border-gray-700 min-h-[260px] relative mt-6 md:mt-0 px-4 md:px-6">
+        class="w-full md:flex-1 bg-surface-light dark:bg-surface-dark rounded-lg shadow-card border border-gray-200 dark:border-gray-700 min-h-[260px] relative mt-6 md:mt-0 px-4 md:px-6 flex flex-col">
         <div
             class="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-gray-50 dark:bg-gray-800 px-6 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm z-10">
             <h3 class="text-accent-red font-bold uppercase text-xs tracking-wide">Thông báo mới nhất</h3>
         </div>
-        <div class="p-6 mt-4 h-full flex items-center justify-center text-gray-400 dark:text-gray-500">
-            <div class="text-center">
-                <span class="material-icons text-5xl opacity-20 mb-2">notifications_off</span>
-                <p class="text-sm">Hiện chưa có thông báo mới.</p>
-            </div>
+
+        <div class="mt-8 mb-4 flex-1 overflow-y-auto pr-1 custom-scrollbar">
+            @if (isset($notifications) && $notifications->count() > 0)
+                <div class="space-y-3">
+                    @foreach ($notifications as $notification)
+                        @php
+                            // Đặt icon và màu sắc tương ứng với type của thông báo
+                            $icon = 'info';
+                            $color = 'text-blue-500';
+
+                            if ($notification->type == 'warning') {
+                                $icon = 'warning';
+                                $color = 'text-yellow-500';
+                            } elseif ($notification->type == 'urgent') {
+                                $icon = 'error_outline';
+                                $color = 'text-red-500';
+                            } elseif ($notification->type == 'batch_alert') {
+                                $icon = 'notification_important';
+                                $color = 'text-purple-500';
+                            }
+                        @endphp
+
+                        <div onclick="showToast('warning', 'Vui lòng đăng nhập hệ thống để xem chi tiết thông báo này!');"
+                            class="block p-3 border border-gray-100 dark:border-gray-700 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer relative group">
+
+                            <div class="flex items-start gap-3">
+                                <span class="material-icons mt-0.5 {{ $color }} text-xl">{{ $icon }}</span>
+                                <div class="flex-1">
+                                    <h4
+                                        class="text-sm font-semibold text-gray-800 dark:text-gray-200 line-clamp-2 group-hover:text-primary transition-colors">
+                                        {{ $notification->title }}
+                                    </h4>
+                                    <p class="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                                        <span class="material-icons text-[12px]">schedule</span>
+                                        {{ \Carbon\Carbon::parse($notification->created_at)->format('d/m/Y H:i') }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <div class="h-full flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 py-10">
+                    <span class="material-icons text-5xl opacity-20 mb-2">notifications_off</span>
+                    <p class="text-sm">Hiện chưa có thông báo mới.</p>
+                </div>
+            @endif
         </div>
     </div>
 @endsection

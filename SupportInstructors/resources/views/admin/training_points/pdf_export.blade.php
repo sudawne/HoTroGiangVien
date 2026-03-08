@@ -75,7 +75,7 @@
         <tr>
             <td width="40%">
                 <div style="font-size: 10pt;">TRƯỜNG ĐẠI HỌC KIÊN GIANG</div>
-                <div class="font-bold" style="font-size: 10pt;">KHOA CÔNG NGHỆ THÔNG TIN</div>
+                <div class="font-bold" style="font-size: 10pt;">KHOA THÔNG TIN VÀ TRUYỀN THÔNG</div>
             </td>
             <td width="60%">
                 <div class="font-bold" style="font-size: 10pt;">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>

@@ -48,6 +48,7 @@ Route::resource('students', StudentController::class);
 
 // --- QUẢN LÝ KẾT QUẢ HỌC TẬP (ACADEMIC RESULTS) ---
 Route::get('academic-results/import', [AcademicResultController::class, 'import'])->name('academic_results.import');
+Route::get('academic-results/export', [AcademicResultController::class, 'export'])->name('academic_results.export');
 Route::post('academic-results/preview', [AcademicResultController::class, 'preview'])->name('academic_results.preview');
 Route::post('academic-results/store-import', [AcademicResultController::class, 'storeImport'])->name('academic_results.store_import');
 Route::resource('academic-results', AcademicResultController::class);
@@ -88,6 +89,7 @@ Route::resource('academic_warnings', AcademicWarningController::class);
 
 // --- ĐIỂM RÈN LUYỆN (TRAINING POINTS) ---
 Route::get('training-points/import', [TrainingPointController::class, 'import'])->name('training_points.import');
+Route::get('training-points/export', [TrainingPointController::class, 'export'])->name('training_points.export');
 Route::post('training-points/preview', [TrainingPointController::class, 'preview'])->name('training_points.preview');
 Route::post('training-points/store-import', [TrainingPointController::class, 'storeImport'])->name('training_points.store_import');
 Route::resource('training_points', TrainingPointController::class);

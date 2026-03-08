@@ -3,7 +3,7 @@
 
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Danh sách Hủy Học Phần</title>
+    <title>Danh sách Kết quả Học tập Sinh viên</title>
     <style>
         body {
             font-family: 'DejaVu Serif', serif;
@@ -60,6 +60,10 @@
         .text-danger {
             color: #dc2626;
         }
+
+        .text-blue {
+            color: #2563eb;
+        }
     </style>
 </head>
 
@@ -70,7 +74,7 @@
         <tr>
             <td width="40%">
                 <div style="font-size: 10pt;">TRƯỜNG ĐẠI HỌC KIÊN GIANG</div>
-                <div class="font-bold" style="font-size: 10pt;">KHOA CÔNG NGHỆ THÔNG TIN</div>
+                <div class="font-bold" style="font-size: 10pt;">KHOA THONG TIN VÀ TRUYỀN THÔNG</div>
             </td>
             <td width="60%">
                 <div class="font-bold" style="font-size: 10pt;">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
@@ -79,7 +83,7 @@
         </tr>
     </table>
 
-    <div class="main-title">DANH SÁCH SINH VIÊN BỊ HỦY HỌC PHẦN</div>
+    <div class="main-title">DANH SÁCH KẾT QUẢ HỌC TẬP SINH VIÊN</div>
 
     <div style="text-align: center; margin-bottom: 20px; font-style: italic;">
         (Ngày xuất báo cáo: {{ date('d/m/Y') }})
@@ -91,11 +95,11 @@
             <tr>
                 <th width="5%">STT</th>
                 <th width="15%">MSSV</th>
-                <th width="20%">Họ và Tên</th>
-                <th width="10%">Lớp</th>
-                <th width="15%">Mã học phần</th>
-                <th width="25%">Tên học phần</th>
-                <th width="10%">Lý do</th>
+                <th width="25%">Họ và Tên</th>
+                <th width="15%">Lớp</th>
+                <th width="12%">GPA (10)</th>
+                <th width="12%">GPA (4)</th>
+                <th width="16%">Xếp loại</th>
             </tr>
         </thead>
         <tbody>
@@ -105,9 +109,13 @@
                     <td class="text-center">{{ $item->student->student_code ?? 'N/A' }}</td>
                     <td>{{ $item->student->fullname ?? 'N/A' }}</td>
                     <td class="text-center">{{ $item->student->studentClass->code ?? 'N/A' }}</td>
-                    <td class="text-center">{{ $item->subject->code ?? 'N/A' }}</td>
-                    <td>{{ $item->subject->name ?? 'N/A' }}</td>
-                    <td class="text-center font-bold text-danger">{{ $item->reason ?? 'Nợ học phí' }}</td>
+                    <td class="text-center">{{ $item->gpa_10 ?? '-' }}</td>
+                    <td class="text-center">{{ $item->gpa_4 ?? '-' }}</td>
+                    <td
+                        class="text-center font-bold 
+                        {{ in_array($item->classification, ['Yếu', 'Kém']) ? 'text-danger' : (in_array($item->classification, ['Xuất sắc', 'Giỏi']) ? 'text-blue' : '') }}">
+                        {{ $item->classification ?? 'Chưa xét' }}
+                    </td>
                 </tr>
             @endforeach
         </tbody>

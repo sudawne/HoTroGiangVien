@@ -3,7 +3,8 @@
 @section('title', 'Quản lý Kết quả học tập')
 
 @section('content')
-    <div class="max-w-[1400px] mx-auto">
+    {{-- THÊM x-data ĐỂ QUẢN LÝ MODAL BẰNG ALPINE.JS --}}
+    <div class="max-w-[1400px] mx-auto" x-data="{ showExportModal: false }">
 
         {{-- HEADER --}}
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
@@ -21,7 +22,8 @@
                     của sinh viên.</p>
             </div>
             <div class="flex items-center gap-2">
-                <button
+                {{-- THÊM SỰ KIỆN MỞ MODAL VÀO NÚT NÀY --}}
+                <button @click="showExportModal = true"
                     class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-sm font-medium transition-all shadow-sm text-sm">
                     <span class="material-symbols-outlined !text-[18px]">download</span> Xuất Báo cáo
                 </button>
@@ -180,9 +182,9 @@
                         <div class="flex items-end">
                             <button type="button" onclick="resetFilters()"
                                 class="h-[28.6px] px-4 py-2 text-sm font-medium rounded-sm transition-all flex items-center gap-2
-                                    bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400
-                                    hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200
-                                    w-full md:w-auto justify-center md:justify-start">
+                                        bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400
+                                        hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200
+                                        w-full md:w-auto justify-center md:justify-start">
                                 <span class="material-symbols-outlined !text-[18px]">filter_alt_off</span>
                                 <span>Xóa lọc</span>
                             </button>
@@ -221,6 +223,140 @@
         <div class="mt-4">
             {{ $results->links() }}
         </div>
+
+        {{-- MODAL XUẤT BÁO CÁO (ĐƯỢC CHÈN VÀO ĐÂY) --}}
+        <div x-show="showExportModal"
+            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+            x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-100"
+            x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" style="display: none;" x-cloak>
+
+            <div class="bg-white dark:bg-[#1e1e2d] rounded-lg shadow-xl w-full max-w-lg overflow-hidden"
+                @click.away="showExportModal = false" x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100">
+
+                {{-- Header Modal --}}
+                <div
+                    class="bg-slate-50 dark:bg-slate-800/50 px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
+                    <h3 class="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                        <span class="material-symbols-outlined text-blue-600">print_connect</span>
+                        Tùy chọn Xuất báo cáo (Kết quả HT)
+                    </h3>
+                    <button @click="showExportModal = false" class="text-slate-400 hover:text-red-500 transition-colors">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+
+                {{-- Form Xuất Báo Cáo --}}
+                <form action="{{ route('admin.academic_results.export') }}" method="GET" class="p-6">
+
+                    {{-- 1. Các tiêu chí lọc --}}
+                    <div class="space-y-4 mb-6">
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">1. Phạm vi dữ liệu</p>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            {{-- Chọn Học kỳ --}}
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Học
+                                    kỳ</label>
+                                <select name="semester_id"
+                                    class="w-full bg-slate-50 dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded-sm text-sm focus:ring-primary focus:border-primary">
+                                    <option value="">-- Tất cả --</option>
+                                    @foreach ($semesters as $sem)
+                                        <option value="{{ $sem->id }}"
+                                            {{ request('semester_id') == $sem->id ? 'selected' : '' }}>
+                                            {{ $sem->name }} ({{ $sem->academic_year }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            {{-- Chọn Xếp loại --}}
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Xếp
+                                    loại</label>
+                                <select name="classification"
+                                    class="w-full bg-slate-50 dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded-sm text-sm focus:ring-primary focus:border-primary">
+                                    <option value="">-- Tất cả --</option>
+                                    <option value="Xuất sắc">Xuất sắc</option>
+                                    <option value="Giỏi">Giỏi</option>
+                                    <option value="Khá">Khá</option>
+                                    <option value="Trung bình">Trung bình</option>
+                                    <option value="Yếu">Yếu</option>
+                                    <option value="Kém">Kém</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        {{-- Chọn Lớp --}}
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Lớp sinh
+                                hoạt</label>
+                            <select name="class_id"
+                                class="w-full bg-slate-50 dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded-sm text-sm focus:ring-primary focus:border-primary">
+                                <option value="">-- Tất cả các lớp --</option>
+                                @foreach ($classes as $class)
+                                    <option value="{{ $class->id }}">{{ $class->code }} - {{ $class->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+
+                    {{-- 2. Chọn định dạng File --}}
+                    <div class="mb-6">
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">2. Định dạng file</p>
+                        <div class="grid grid-cols-2 gap-4">
+                            {{-- Option Excel --}}
+                            <label class="cursor-pointer relative">
+                                <input type="radio" name="format" value="excel" class="peer sr-only" checked>
+                                <div
+                                    class="p-4 rounded-lg border-2 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 peer-checked:border-green-500 peer-checked:bg-green-50/50 dark:peer-checked:bg-green-900/10 transition-all flex flex-col items-center gap-2 text-center group">
+                                    <span
+                                        class="material-symbols-outlined text-3xl text-slate-400 group-hover:text-green-600 peer-checked:text-green-600 transition-colors">table_view</span>
+                                    <span
+                                        class="text-sm font-bold text-slate-600 dark:text-slate-300 peer-checked:text-green-700">Xuất
+                                        Excel</span>
+                                </div>
+                                <div
+                                    class="absolute top-2 right-2 w-4 h-4 rounded-full border border-slate-300 bg-white peer-checked:bg-green-500 peer-checked:border-green-500 transition-colors">
+                                </div>
+                            </label>
+
+                            {{-- Option PDF --}}
+                            <label class="cursor-pointer relative">
+                                <input type="radio" name="format" value="pdf" class="peer sr-only">
+                                <div
+                                    class="p-4 rounded-lg border-2 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 peer-checked:border-red-500 peer-checked:bg-red-50/50 dark:peer-checked:bg-red-900/10 transition-all flex flex-col items-center gap-2 text-center group">
+                                    <span
+                                        class="material-symbols-outlined text-3xl text-slate-400 group-hover:text-red-600 peer-checked:text-red-600 transition-colors">picture_as_pdf</span>
+                                    <span
+                                        class="text-sm font-bold text-slate-600 dark:text-slate-300 peer-checked:text-red-700">Xuất
+                                        PDF</span>
+                                </div>
+                                <div
+                                    class="absolute top-2 right-2 w-4 h-4 rounded-full border border-slate-300 bg-white peer-checked:bg-red-500 peer-checked:border-red-500 transition-colors">
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    {{-- Footer Buttons --}}
+                    <div class="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-700">
+                        <button type="button" @click="showExportModal = false"
+                            class="px-4 py-2 bg-white border border-slate-300 rounded-sm text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+                            Hủy bỏ
+                        </button>
+                        <button type="submit"
+                            class="px-6 py-2 bg-blue-600 text-white rounded-sm text-sm font-bold hover:bg-blue-700 shadow-lg shadow-blue-600/20 flex items-center gap-2 transition-all transform active:scale-95">
+                            <span class="material-symbols-outlined !text-[18px]">download</span> Tải xuống
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
     </div>
 
     {{-- SCRIPTS (AJAX SEARCH) --}}

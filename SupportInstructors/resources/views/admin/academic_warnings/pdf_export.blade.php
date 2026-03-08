@@ -1,47 +1,73 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>Danh sách Cảnh báo Học tập</title>
     <style>
-        body { 
-            font-family: 'DejaVu Serif', serif; 
-            font-size: 11pt; 
+        body {
+            font-family: 'DejaVu Serif', serif;
+            font-size: 11pt;
         }
-        .header-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        .header-table td { text-align: center; vertical-align: top; }
-        .font-bold { font-weight: bold; }
-        .uppercase { text-transform: uppercase; }
-        
-        .main-title { 
-            text-align: center; 
-            font-size: 16pt; 
-            font-weight: bold; 
-            margin-bottom: 20px; 
-            text-transform: uppercase; 
+
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .header-table td {
+            text-align: center;
+            vertical-align: top;
+        }
+
+        .font-bold {
+            font-weight: bold;
+        }
+
+        .uppercase {
+            text-transform: uppercase;
+        }
+
+        .main-title {
+            text-align: center;
+            font-size: 16pt;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-transform: uppercase;
         }
 
         /* Bảng dữ liệu chính */
-        .data-table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin-bottom: 20px; 
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
         }
-        .data-table th, .data-table td { 
-            border: 1px solid black; 
-            padding: 6px; 
-            text-align: left; 
-            font-size: 10pt; 
+
+        .data-table th,
+        .data-table td {
+            border: 1px solid black;
+            padding: 6px;
+            text-align: left;
+            font-size: 10pt;
         }
-        .data-table th { 
-            background-color: #f0f0f0; 
-            text-align: center; 
-            font-weight: bold; 
+
+        .data-table th {
+            background-color: #f0f0f0;
+            text-align: center;
+            font-weight: bold;
         }
-        .text-center { text-align: center !important; }
-        .text-danger { color: #dc2626; }
+
+        .text-center {
+            text-align: center !important;
+        }
+
+        .text-danger {
+            color: #dc2626;
+        }
     </style>
 </head>
+
 <body>
 
     {{-- HEADER --}}
@@ -49,7 +75,7 @@
         <tr>
             <td width="40%">
                 <div style="font-size: 10pt;">TRƯỜNG ĐẠI HỌC KIÊN GIANG</div>
-                <div class="font-bold" style="font-size: 10pt;">KHOA CÔNG NGHỆ THÔNG TIN</div>
+                <div class="font-bold" style="font-size: 10pt;">KHOA THÔNG TIN VÀ TRUYỀN THÔNG</div>
             </td>
             <td width="60%">
                 <div class="font-bold" style="font-size: 10pt;">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
@@ -78,23 +104,23 @@
             </tr>
         </thead>
         <tbody>
-            @foreach($data as $index => $warning)
+            @foreach ($data as $index => $warning)
                 <tr>
                     <td class="text-center">{{ $index + 1 }}</td>
                     <td class="text-center">{{ $warning->student->student_code }}</td>
                     <td>{{ $warning->student->fullname }}</td>
                     <td class="text-center">{{ $warning->student->class->code ?? '' }}</td>
-                    
+
                     <td class="text-center font-bold {{ $warning->warning_level >= 3 ? 'text-danger' : '' }}">
-                        @if($warning->warning_level >= 3)
+                        @if ($warning->warning_level >= 3)
                             Buộc thôi học
                         @else
                             Mức {{ $warning->warning_level }}
                         @endif
                     </td>
-                    
+
                     <td class="text-center">
-                        {{ isset($warning->gpa_term) && (float)$warning->gpa_term > 0 ? number_format($warning->gpa_term, 2) : '-' }}
+                        {{ isset($warning->gpa_term) && (float) $warning->gpa_term > 0 ? number_format($warning->gpa_term, 2) : '-' }}
                     </td>
                     <td>{{ $warning->reason }}</td>
                 </tr>
@@ -116,4 +142,5 @@
     </table>
 
 </body>
+
 </html>

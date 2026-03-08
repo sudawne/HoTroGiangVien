@@ -6,7 +6,7 @@ use Illuminate\Contracts\View\View;
 use Maatwebsite\Excel\Concerns\FromView;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 
-class WarningsExport implements FromView, ShouldAutoSize
+class CourseCancellationsExport implements FromView, ShouldAutoSize
 {
     protected $data;
 
@@ -17,8 +17,7 @@ class WarningsExport implements FromView, ShouldAutoSize
 
     public function view(): View
     {
-        // Trỏ tới file Blade để xuất giao diện Excel
-        return view('admin.academic_warnings.excel_export', [
+        return view('admin.course_cancellations.excel_export', [
             'data' => $this->data
         ]);
     }

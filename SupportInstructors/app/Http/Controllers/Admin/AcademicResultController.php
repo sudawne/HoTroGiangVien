@@ -32,9 +32,9 @@ class AcademicResultController extends Controller
         }
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->whereHas('student', function($q) use ($search) {
+            $query->whereHas('student', function ($q) use ($search) {
                 $q->where('fullname', 'like', "%{$search}%")
-                ->orWhere('student_code', 'like', "%{$search}%");
+                    ->orWhere('student_code', 'like', "%{$search}%");
             });
         }
 
@@ -93,14 +93,14 @@ class AcademicResultController extends Controller
         $rows = isset($array[0]) ? array_slice($array[0], 4) : []; // Data từ dòng 4
 
         $previewData = [];
-        $selectedClassId = $request->class_id; 
+        $selectedClassId = $request->class_id;
 
         foreach ($rows as $row) {
-            $mssv = $row[1] ?? null; 
-            if (!$mssv) continue; 
+            $mssv = $row[1] ?? null;
+            if (!$mssv) continue;
 
             $student = Student::where('student_code', $mssv)->first();
-            
+
             $status = 'valid';
             $message = 'Hợp lệ';
 
@@ -109,7 +109,7 @@ class AcademicResultController extends Controller
                 $message = 'Sinh viên chưa có trong hệ thống';
             } elseif ($selectedClassId && $student->class_id != $selectedClassId) {
                 // Cảnh báo nếu sinh viên trong file không thuộc lớp đã chọn
-                $status = 'warning'; 
+                $status = 'warning';
                 $message = 'Sinh viên thuộc lớp khác (' . ($student->studentClass->code ?? 'N/A') . ')';
             }
 
@@ -117,11 +117,11 @@ class AcademicResultController extends Controller
                 'mssv' => $mssv,
                 'fullname' => ($row[2] ?? '') . ' ' . ($row[3] ?? ''),
                 'class_code' => $row[6] ?? '',
-                
+
                 'gpa_10' => floatval($row[9] ?? 0),
                 'gpa_4' => floatval($row[10] ?? 0),
                 'classification' => $row[11] ?? 'Chưa xét',
-                
+
                 'student_id' => $student ? $student->id : null,
                 'status' => $status, // valid, error, warning
                 'message' => $message,
@@ -164,12 +164,62 @@ class AcademicResultController extends Controller
                 }
             }
             DB::commit();
-            
+
             return redirect()->route('admin.academic_results.index')
-                             ->with('success', "Đã nhập thành công kết quả học tập cho $count sinh viên!");
+                ->with('success', "Đã nhập thành công kết quả học tập cho $count sinh viên!");
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Lỗi khi lưu dữ liệu: ' . $e->getMessage());
         }
+    }
+    /**
+     * Hiển thị chi tiết 1 kết quả học tập
+     */
+    public function show($id)
+    {
+        $result = AcademicResult::with(['student', 'semester'])->findOrFail($id);
+
+        // Bạn có thể return về view chi tiết sau
+        // return view('admin.academic_results.show', compact('result'));
+
+        // Tạm thời nếu chưa có view thì cho quay lại kèm thông báo:
+        return back()->with('info', 'Chức năng xem chi tiết đang được cập nhật!');
+    }
+    public function export(Request $request)
+    {
+        // Khởi tạo query y hệt bộ lọc của hàm index
+        $query = AcademicResult::with(['student.studentClass', 'semester']);
+
+        if ($request->filled('semester_id')) {
+            $query->where('semester_id', $request->semester_id);
+        }
+        if ($request->filled('class_id')) {
+            $query->whereHas('student', fn($q) => $q->where('class_id', $request->class_id));
+        }
+        if ($request->filled('classification')) {
+            $query->where('classification', $request->classification);
+        }
+
+        // Lấy tất cả dữ liệu phù hợp (không phân trang)
+        $data = $query->get();
+
+        if ($data->isEmpty()) {
+            return back()->with('error', 'Không có dữ liệu nào phù hợp với bộ lọc hiện tại để xuất.');
+        }
+
+        // Xử lý xuất Excel
+        if ($request->format === 'excel') {
+            return Excel::download(new \App\Exports\AcademicResultsExport($data), 'ket-qua-hoc-tap-sv.xlsx');
+        }
+        // Xử lý xuất PDF
+        elseif ($request->format === 'pdf') {
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('admin.academic_results.pdf_export', compact('data'));
+            $pdf->setOption('defaultFont', 'DejaVu Sans');
+            $pdf->setPaper('a4', 'portrait');
+
+            return $pdf->download('ket-qua-hoc-tap-sv.pdf');
+        }
+
+        return back();
     }
 }

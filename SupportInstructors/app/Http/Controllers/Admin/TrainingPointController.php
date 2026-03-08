@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
@@ -9,6 +10,8 @@ use App\Models\Classes;
 use App\Models\Semester;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
+use App\Exports\TrainingPointsExport;
 
 class TrainingPointController extends Controller
 {
@@ -20,69 +23,66 @@ class TrainingPointController extends Controller
         if ($request->filled('semester_id')) {
             $query->where('semester_id', $request->semester_id);
         }
-        
+
         if ($request->filled('class_id')) {
-            // Lọc sinh viên thuộc lớp đó
-            $query->whereHas('student', function($q) use ($request) {
+            $query->whereHas('student', function ($q) use ($request) {
                 $q->where('class_id', $request->class_id);
             });
         }
 
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->whereHas('student', function($q) use ($search) {
+            $query->whereHas('student', function ($q) use ($search) {
                 $q->where('fullname', 'like', "%{$search}%")
-                  ->orWhere('student_code', 'like', "%{$search}%");
+                    ->orWhere('student_code', 'like', "%{$search}%");
             });
         }
 
         if ($request->filled('rank')) {
             switch ($request->rank) {
-                case 'xuatsac': // 90 - 100
+                case 'xuatsac':
                     $query->where('final_score', '>=', 90);
                     break;
-                case 'tot': 
+                case 'tot':
                     $query->whereBetween('final_score', [80, 89]);
                     break;
-                case 'kha': 
+                case 'kha':
                     $query->whereBetween('final_score', [65, 79]);
                     break;
-                case 'trungbinh': 
+                case 'trungbinh':
                     $query->whereBetween('final_score', [50, 64]);
                     break;
-                case 'yeu': 
+                case 'yeu':
                     $query->where('final_score', '<', 50)->whereNotNull('final_score');
                     break;
-                case 'chuaxet': 
+                case 'chuaxet':
                     $query->whereNull('final_score');
                     break;
             }
         }
 
         // 3. Thực thi Query & Phân trang
-        // Lưu ý: Đổi 'first_name' thành 'fullname' nếu bảng students chưa tách tên
         $trainingPoints = $query->join('students', 'training_points.student_id', '=', 'students.id')
-                                ->orderBy('students.class_id')
-                                ->orderBy('students.fullname', 'asc')
-                                ->select('training_points.*') 
-                                ->paginate(10)
-                                ->withQueryString();
+            ->orderBy('students.class_id')
+            ->orderBy('students.fullname', 'asc')
+            ->select('training_points.*')
+            ->paginate(10)
+            ->withQueryString();
+
         if ($request->ajax()) {
             return view('admin.training_points.partials.table_rows', compact('trainingPoints'))->render();
         }
+
         // 4. Thống kê (Stats)
         $statsQuery = TrainingPoint::query();
-        
-        // Áp dụng lại các filter cho stats (để thống kê chính xác theo bộ lọc hiện tại)
         if ($request->filled('semester_id')) $statsQuery->where('semester_id', $request->semester_id);
         if ($request->filled('class_id')) {
-            $statsQuery->whereHas('student', function($q) use ($request) {
+            $statsQuery->whereHas('student', function ($q) use ($request) {
                 $q->where('class_id', $request->class_id);
             });
         }
-        // Không cần filter search cho stats, thường stats sẽ tính tổng quát hơn
 
-        $allScores = $statsQuery->get(); 
+        $allScores = $statsQuery->get();
 
         $stats = [
             'total'   => $allScores->count(),
@@ -103,20 +103,18 @@ class TrainingPointController extends Controller
     public function import()
     {
         $semesters = Semester::orderBy('start_date', 'desc')->get();
-        $classes = Classes::all(); // Lấy danh sách lớp để chọn
+        $classes = Classes::all();
         return view('admin.training_points.import', compact('semesters', 'classes'));
     }
 
-    // 2. Xử lý Preview (Đọc file và kiểm tra)
     public function preview(Request $request)
     {
         $request->validate([
             'file' => 'required|mimes:xlsx,xls,csv',
             'semester_id' => 'required',
-            'class_id' => 'required', // Bắt buộc chọn lớp
+            'class_id' => 'required',
         ]);
 
-        // Đọc file Excel
         $data = Excel::toArray([], $request->file('file'));
         $rows = isset($data[0]) ? array_slice($data[0], 5) : [];
 
@@ -124,15 +122,11 @@ class TrainingPointController extends Controller
         $selectedClassId = $request->class_id;
 
         foreach ($rows as $row) {
-            $mssv = $row[1] ?? null; // Cột B là MSSV
-            
-            // Bỏ qua dòng trống hoặc không có MSSV
+            $mssv = $row[1] ?? null;
             if (!$mssv) continue;
 
-            // 1. Tìm sinh viên trong DB
             $student = Student::where('student_code', $mssv)->first();
-            
-            // 2. Logic kiểm tra
+
             $status = 'valid';
             $message = 'Hợp lệ';
             $student_id = null;
@@ -141,26 +135,24 @@ class TrainingPointController extends Controller
                 $status = 'error';
                 $message = 'Sinh viên chưa có trong hệ thống';
             } elseif ($student->class_id != $selectedClassId) {
-                // (Tùy chọn) Cảnh báo nếu sinh viên không thuộc lớp đã chọn
                 $status = 'warning';
                 $message = 'Sinh viên thuộc lớp khác: ' . ($student->studentClass->code ?? 'N/A');
-                $student_id = $student->id; // Vẫn cho phép nhập nhưng cảnh báo
+                $student_id = $student->id;
             } else {
                 $student_id = $student->id;
             }
 
-            // Lấy điểm từ file
-            $selfScore = is_numeric($row[5]) ? $row[5] : 0; // Cột F: SV tự đánh giá
-            $classScore = is_numeric($row[6]) ? $row[6] : 0; // Cột G: Lớp đánh giá
+            $selfScore = is_numeric($row[5]) ? $row[5] : 0;
+            $classScore = is_numeric($row[6]) ? $row[6] : 0;
 
             $previewData[] = [
                 'mssv' => $mssv,
-                'fullname' => $row[2] ?? 'N/A', // Cột C: Tên
-                'dob' => $row[3] ?? '',         // Cột D: Ngày sinh
+                'fullname' => $row[2] ?? 'N/A',
+                'dob' => $row[3] ?? '',
                 'self_score' => $selfScore,
                 'class_score' => $classScore,
                 'student_id' => $student_id,
-                'status' => $status, 
+                'status' => $status,
                 'message' => $message,
             ];
         }
@@ -172,7 +164,6 @@ class TrainingPointController extends Controller
         ]);
     }
 
-    // 3. Lưu dữ liệu chính thức
     public function storeImport(Request $request)
     {
         $data = json_decode($request->data, true);
@@ -191,19 +182,79 @@ class TrainingPointController extends Controller
                         [
                             'self_score' => $row['self_score'],
                             'class_score' => $row['class_score'],
-                            'advisor_score' => $row['class_score'], // Mặc định điểm khoa = điểm lớp
-                            'final_score' => $row['class_score'],   // Chốt điểm luôn
+                            'advisor_score' => $row['class_score'],
+                            'final_score' => $row['class_score'],
                         ]
                     );
                     $count++;
                 }
             }
             DB::commit();
-            return redirect()->route('admin.training_points.index')
-                             ->with('success', "Đã nhập thành công $count bản ghi điểm rèn luyện.");
+            return redirect()->route('admin.training_points.index')->with('success', "Đã nhập thành công $count bản ghi điểm rèn luyện.");
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Lỗi: ' . $e->getMessage());
         }
+    }
+
+    public function export(Request $request)
+    {
+        $query = TrainingPoint::with(['student.studentClass', 'semester']);
+
+        if ($request->filled('semester_id')) {
+            $query->where('semester_id', $request->semester_id);
+        }
+
+        if ($request->filled('class_id')) {
+            $query->whereHas('student', function ($q) use ($request) {
+                $q->where('class_id', $request->class_id);
+            });
+        }
+
+        if ($request->filled('rank')) {
+            switch ($request->rank) {
+                case 'xuatsac':
+                    $query->where('final_score', '>=', 90);
+                    break;
+                case 'tot':
+                    $query->whereBetween('final_score', [80, 89]);
+                    break;
+                case 'kha':
+                    $query->whereBetween('final_score', [65, 79]);
+                    break;
+                case 'trungbinh':
+                    $query->whereBetween('final_score', [50, 64]);
+                    break;
+                case 'yeu':
+                    $query->where('final_score', '<', 50)->whereNotNull('final_score');
+                    break;
+                case 'chuaxet':
+                    $query->whereNull('final_score');
+                    break;
+            }
+        }
+
+        $data = $query->join('students', 'training_points.student_id', '=', 'students.id')
+            ->orderBy('students.class_id')
+            ->orderBy('students.fullname', 'asc')
+            ->select('training_points.*')
+            ->get();
+
+        if ($data->isEmpty()) {
+            return back()->with('error', 'Không có dữ liệu nào phù hợp với bộ lọc hiện tại để xuất.');
+        }
+
+        if ($request->format === 'excel') {
+            return Excel::download(new TrainingPointsExport($data), 'diem-ren-luyen-sv.xlsx');
+        } elseif ($request->format === 'pdf') {
+            // Đã đổi thành file pdf_export
+            $pdf = Pdf::loadView('admin.training_points.pdf_export', compact('data'));
+            $pdf->setOption('defaultFont', 'DejaVu Sans'); // Dùng DejaVu Sans cho mượt font Tiếng Việt
+            $pdf->setPaper('a4', 'portrait');
+
+            return $pdf->download('diem-ren-luyen-sv.pdf');
+        }
+
+        return back();
     }
 }

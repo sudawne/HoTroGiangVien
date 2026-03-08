@@ -7,36 +7,44 @@
 
     $allAlerts = collect();
 
-    if ($user && $user->role_id == 1) {
-        // 1. Bài viết
-        $pendings = \App\Models\Notification::with('sender')
-            ->where('status', 'pending')
-            ->latest()
-            ->take(15)
-            ->get()
-            ->map(function ($item) use ($readAlerts) {
-                $alertId = 'p_' . $item->id;
-                return (object) [
-                    'type' => 'post',
-                    'id' => $alertId,
-                    'notification_id' => $item->id,
-                    'post_title' => 'Duyệt bài đăng mới',
-                    'message' =>
-                        'Giảng viên <b>' . ($item->sender->name ?? 'Ai đó') . '</b> đã gửi một bài đăng cần bạn duyệt.',
-                    'time' => $item->created_at,
-                    'url' => route('admin.notifications.show', $item->id),
-                    'icon' => 'hourglass_empty',
-                    'color' => 'text-amber-600',
-                    'bg' => 'bg-amber-100',
-                    'is_read' => in_array($alertId, $readAlerts),
-                ];
-            });
-        $allAlerts = $allAlerts->merge($pendings);
+    if ($user) {
+        // ========================================================
+        // 1. THÔNG BÁO DUYỆT BÀI (CHỈ DÀNH CHO ADMIN - ROLE 1)
+        // ========================================================
+        if ($user->role_id == 1) {
+            $pendings = \App\Models\Notification::with('sender')
+                ->where('status', 'pending')
+                ->latest()
+                ->take(15)
+                ->get()
+                ->map(function ($item) use ($readAlerts) {
+                    $alertId = 'p_' . $item->id;
+                    return (object) [
+                        'type' => 'post',
+                        'id' => $alertId,
+                        'notification_id' => $item->id,
+                        'post_title' => 'Duyệt bài đăng mới',
+                        'message' =>
+                            'Giảng viên <b>' .
+                            ($item->sender->name ?? 'Ai đó') .
+                            '</b> đã gửi một bài đăng cần bạn duyệt.',
+                        'time' => $item->created_at,
+                        'url' => route('admin.notifications.show', $item->id),
+                        'icon' => 'hourglass_empty',
+                        'color' => 'text-amber-600',
+                        'bg' => 'bg-amber-100',
+                        'is_read' => in_array($alertId, $readAlerts),
+                    ];
+                });
+            $allAlerts = $allAlerts->merge($pendings);
+        }
 
-        // 2. Bình luận
+        // ========================================================
+        // 2. THÔNG BÁO BÌNH LUẬN (DÀNH CHO NGƯỜI ĐĂNG BÀI VIẾT)
+        // ========================================================
         $comments = \App\Models\NotificationComment::with(['user', 'notification'])
             ->whereHas('notification', fn($q) => $q->where('sender_id', $userId))
-            ->where('user_id', '!=', $userId)
+            ->where('user_id', '!=', $userId) // Bỏ qua comment của chính mình
             ->latest()
             ->take(30)
             ->get()
@@ -46,7 +54,7 @@
                     'type' => 'comment',
                     'id' => $alertId,
                     'notification_id' => $item->notification_id,
-                    'post_title' => $item->notification->title,
+                    'post_title' => $item->notification->title ?? 'Bài viết',
                     'message' =>
                         '<b>' .
                         $item->user->name .
@@ -63,10 +71,12 @@
             });
         $allAlerts = $allAlerts->merge($comments);
 
-        // 3. Lượt thích
+        // ========================================================
+        // 3. THÔNG BÁO LƯỢT THÍCH (DÀNH CHO NGƯỜI ĐĂNG BÀI VIẾT)
+        // ========================================================
         $likes = \App\Models\NotificationLike::with(['user', 'notification'])
             ->whereHas('notification', fn($q) => $q->where('sender_id', $userId))
-            ->where('user_id', '!=', $userId)
+            ->where('user_id', '!=', $userId) // Bỏ qua like của chính mình
             ->latest()
             ->take(30)
             ->get()
@@ -76,7 +86,7 @@
                     'type' => 'like',
                     'id' => $alertId,
                     'notification_id' => $item->notification_id,
-                    'post_title' => $item->notification->title,
+                    'post_title' => $item->notification->title ?? 'Bài viết',
                     'message' => '<b>' . $item->user->name . '</b> đã thích bài viết của bạn.',
                     'time' => $item->created_at,
                     'url' => route('admin.notifications.show', $item->notification_id),
@@ -89,10 +99,12 @@
         $allAlerts = $allAlerts->merge($likes);
     }
 
+    // Gộp tất cả lại, sắp xếp theo thời gian mới nhất
     $allAlerts = $allAlerts->sortByDesc('time')->values();
     $unreadCount = $allAlerts->where('is_read', false)->count();
     $allAlertIds = $allAlerts->pluck('id')->values()->toJson();
 
+    // Nhóm theo bài viết cho Tab "Theo bài viết"
     $groupedAlerts = $allAlerts
         ->groupBy('notification_id')
         ->map(function ($group) {

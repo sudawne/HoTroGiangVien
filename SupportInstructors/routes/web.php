@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\MeetingMinuteController;
 use App\Http\Controllers\Admin\TrainingPointController;
 use App\Http\Controllers\Admin\AcademicResultController;
 use App\Http\Controllers\Admin\AcademicWarningController;
+use App\Http\Controllers\Admin\SubjectController;
 use App\Http\Controllers\AIController;
 use App\Http\Controllers\ChatController;
 
@@ -47,6 +48,8 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => 'auth'], fu
 
     Route::get('academic-warnings/export', [AcademicWarningController::class, 'export'])->name('academic_warnings.export');
     Route::resource('academic-warnings', AcademicWarningController::class);
+
+    Route::resource('subjects', SubjectController::class)->except(['create', 'show', 'edit']);
 });
 
 Route::middleware('auth')->group(function () {

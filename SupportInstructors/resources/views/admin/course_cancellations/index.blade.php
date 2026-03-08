@@ -19,6 +19,10 @@
                 <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Danh sách sinh viên bị hủy môn do nợ học phí hoặc vi phạm quy chế.</p>
             </div>
             <div class="flex items-center gap-3">
+                <button class="flex items-center gap-2 bg-primary hover:bg-indigo-700 text-white px-4 py-2 rounded-sm font-medium transition-all shadow-sm text-sm">
+                    <span class="material-symbols-outlined !text-[16px]">send</span>
+                    Gửi thông báo hàng loạt
+                </button>
                 <button @click="showExportModal = true" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-sm font-medium transition-all shadow-sm text-sm">
                     <span class="material-symbols-outlined !text-[18px]">download</span> Xuất Báo cáo
                 </button>

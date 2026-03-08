@@ -23,7 +23,7 @@
             
             {{-- Nhóm bên trái: Quay lại & Bộ lọc --}}
             <div class="flex items-center gap-4 flex-1">
-                <a href="{{ route('admin.academic_results.index') }}" 
+                <a href="{{ route('admin.academic-results.index') }}" 
                    class="flex items-center gap-2 text-slate-500 hover:text-red-600 transition-colors font-medium text-sm">
                     <span class="material-symbols-outlined !text-[20px]">arrow_back</span>
                     Hủy bỏ

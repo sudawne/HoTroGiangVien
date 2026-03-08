@@ -3,29 +3,73 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Student;
-use App\Models\StudentDebt;
-use App\Models\MeetingMinute;
-use App\Models\ImportBatch;
 use Illuminate\Support\Facades\Artisan; 
 use Illuminate\Support\Facades\Log;
+use App\Models\Student;
+use App\Models\AcademicWarning;
+use App\Models\CourseCancellation;
+use App\Models\MeetingMinute;
+use App\Models\Semester;
+use Carbon\Carbon;
+use App\Models\Notification;
+use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        // Tính toán số liệu cho các thẻ Card trên Dashboard
-        $totalStudents = Student::count();
-        $debtsCount = StudentDebt::where('status', 'owed')->distinct('student_id')->count();
-        $minutesCount = MeetingMinute::whereMonth('created_at', now()->month)->count();
+        // 1. Lấy danh sách tất cả học kỳ (Mới nhất lên đầu)
+        $semesters = Semester::orderBy('start_date', 'desc')->get();
 
-        // Demo dữ liệu cảnh báo (vì chưa có bảng Warning model trong list của bạn, tạm thời gán cứng hoặc query)
-        $warningsCount = 3;
+        // 2. Xác định học kỳ đang chọn (Nếu ko chọn thì lấy kỳ hiện tại)
+        // Ưu tiên 1: Lấy từ bộ lọc (?semester_id=...)
+        // Ưu tiên 2: Lấy kỳ đang active (is_current = 1)
+        // Ưu tiên 3: Lấy kỳ mới nhất trong DB
+        $defaultSemester = $semesters->where('is_current', 1)->first() ?? $semesters->first();
+        $selectedId = $request->get('semester_id') ?? ($defaultSemester ? $defaultSemester->id : null);
 
-        // List sinh viên cần theo dõi (Demo 5 người mới nhất)
-        $watchlist = Student::with('class')->latest()->take(5)->get();
+        // Lấy tên để hiển thị ra giao diện
+        $selectedSemester = $semesters->where('id', $selectedId)->first();
+        $semesterLabel = $selectedSemester ? $selectedSemester->name . ' (' . $selectedSemester->academic_year . ')' : 'Chưa chọn';
 
-        return view('admin.dashboard', compact('totalStudents', 'debtsCount', 'minutesCount', 'warningsCount', 'watchlist'));
+        // --- TRUY VẤN DỮ LIỆU THEO KỲ ĐÃ CHỌN ---
+
+        // Card 1: Tổng sinh viên (Luôn đếm tất cả đang học, không theo kỳ)
+        $totalStudents = Student::where('status', 'studying')->count();
+        $newStudentsCount = Student::where('created_at', '>=', Carbon::now()->startOfMonth())->count();
+
+        // Card 2: Cảnh báo (Theo kỳ chọn)
+        $warningCount = AcademicWarning::where('semester_id', $selectedId)->count();
+
+        // Card 3: Xóa học phần (Theo kỳ chọn)
+        $debtCount = CourseCancellation::where('semester_id', $selectedId)->count();
+
+        // Card 4: Biên bản họp (Theo kỳ chọn)
+        $minuteCount = MeetingMinute::where('semester_id', $selectedId)->count();
+
+        // Bảng danh sách sinh viên bị cảnh báo (Theo kỳ chọn)
+        $studentsToWatch = Student::whereHas('academicWarnings', function($q) use ($selectedId) {
+                                $q->where('semester_id', $selectedId);
+                            })
+                            ->with(['studentClass', 'academicWarnings' => function($q) use ($selectedId) {
+                                $q->where('semester_id', $selectedId)->orderBy('warning_level', 'desc');
+                            }])
+                            ->take(5) // Lấy 5 người đầu tiên
+                            ->get();
+
+        // Widget Thông báo & Lịch họp (Lấy chung hoặc theo kỳ)
+        $recentNotifications = Notification::orderBy('created_at', 'desc')->take(3)->get();
+        $upcomingMeetings = MeetingMinute::where('semester_id', $selectedId)
+                                         ->orderBy('created_at', 'desc')
+                                         ->take(4)
+                                         ->get();
+
+        return view('admin.dashboard', compact(
+            'semesters', 'selectedId', 'semesterLabel',
+            'totalStudents', 'newStudentsCount',
+            'warningCount', 'debtCount', 'minuteCount',
+            'studentsToWatch', 'recentNotifications', 'upcomingMeetings'
+        ));
     }
 
     // Cập nhật học kì

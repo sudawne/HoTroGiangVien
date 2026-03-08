@@ -13,10 +13,12 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__ . '/../routes/console.php',
         health: '/up',
         then: function () {
-            Route::middleware(['web', 'auth', 'role:ADMIN'])
+            // Cho phép cả ADMIN và LECTURER truy cập vào group admin
+            Route::middleware(['web', 'auth', 'role:ADMIN,LECTURER'])
                 ->prefix('admin')
                 ->name('admin.')
                 ->group(base_path('routes/admin.php'));
+
             Route::middleware(['web', 'auth', 'role:LECTURER'])
                 ->prefix('lecturer')
                 ->name('lecturer.')
@@ -34,7 +36,6 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->redirectUsersTo(function (Request $request) {
-
             $user = Auth::user();
 
             return match ($user->role->name) {

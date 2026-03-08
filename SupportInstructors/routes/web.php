@@ -2,13 +2,6 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
-use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Admin\MeetingMinuteController;
-use App\Http\Controllers\Admin\TrainingPointController;
-use App\Http\Controllers\Admin\AcademicResultController;
-use App\Http\Controllers\Admin\AcademicWarningController;
-use App\Http\Controllers\Admin\CourseCancellationController;
-use App\Http\Controllers\Admin\SubjectController;
 use App\Http\Controllers\AIController;
 use App\Http\Controllers\ChatController;
 
@@ -23,40 +16,6 @@ Route::post('/logout', [LoginController::class, 'logout'])
     ->middleware('auth')
     ->name('logout');
 
-Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () {
-
-    // Dashboard
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-
-    Route::post('/system/check', [DashboardController::class, 'runSystemCheck'])->name('system.check');
-});
-Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => 'auth'], function () {
-    Route::resource('minutes', MeetingMinuteController::class);
-    Route::put('minutes/{id}/approve', [MeetingMinuteController::class, 'approve'])->name('minutes.approve');
-    Route::put('minutes/{id}/reject', [MeetingMinuteController::class, 'reject'])->name('minutes.reject');
-    Route::get('minutes/{id}/export-word', [MeetingMinuteController::class, 'exportWord'])->name('minutes.export_word');
-    Route::get('minutes/{id}/export-pdf', [MeetingMinuteController::class, 'exportPdf'])->name('minutes.export_pdf');
-
-    Route::get('training-points/import', [TrainingPointController::class, 'import'])->name('training_points.import');
-    Route::post('training-points/preview', [TrainingPointController::class, 'preview'])->name('training_points.preview');
-    Route::post('training-points/store-import', [TrainingPointController::class, 'storeImport'])->name('training_points.store_import');
-    Route::resource('training_points', TrainingPointController::class);
-
-    Route::get('academic-results/import', [AcademicResultController::class, 'import'])->name('academic_results.import');
-    Route::post('academic-results/preview', [AcademicResultController::class, 'preview'])->name('academic_results.preview');
-    Route::post('academic-results/store-import', [AcademicResultController::class, 'storeImport'])->name('academic_results.store_import');
-    Route::resource('academic_results', AcademicResultController::class);
-
-    Route::get('academic-warnings/export', [AcademicWarningController::class, 'export'])->name('academic_warnings.export');
-    Route::resource('academic-warnings', AcademicWarningController::class);
-
-    Route::resource('subjects', SubjectController::class)->except(['create', 'show', 'edit']);
-
-    Route::get('course-cancellations', [CourseCancellationController::class, 'index'])->name('course_cancellations.index');
-    Route::post('course-cancellations/import', [CourseCancellationController::class, 'import'])->name('course_cancellations.import');
-    Route::delete('course-cancellations/{id}', [CourseCancellationController::class, 'destroy'])->name('course_cancellations.destroy');
-});
-
 Route::middleware('auth')->group(function () {
     Route::get('/chat/contacts', [ChatController::class, 'getContacts']);
     Route::get('/chat/messages/{userId}', [ChatController::class, 'getMessages']);
@@ -65,13 +24,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/chat/delete-for-me/{messageId}', [ChatController::class, 'deleteForMe']);
 });
 
-Route::get('minutes/{id}/export-pdf', [MeetingMinuteController::class, 'exportPdf'])->name('minutes.export_pdf');
-
-Route::get('academic-warnings/export', [AcademicWarningController::class, 'export'])->name('academic_warnings.export');
-Route::resource('academic-warnings', AcademicWarningController::class);
-
 Route::post('/ai/ask', [AIController::class, 'askAI'])
     ->middleware(['web', 'auth', 'role:ADMIN,LECTURER'])
     ->name('ai.ask');
- 
-    Route::resource('subjects', SubjectController::class)->except(['create', 'show', 'edit']);

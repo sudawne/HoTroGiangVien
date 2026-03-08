@@ -1,16 +1,16 @@
 @extends('layouts.student')
-@section('title', 'Bảng tin')
+@section('title', 'Bảng tin Sinh viên')
 
 @section('styles')
     <style>
         .target-comment {
             animation: highlightComment 2.5s ease-out forwards;
-            border-radius: 0.5rem;
+            border-radius: 0.125rem;
         }
 
         @keyframes highlightComment {
             0% {
-                background-color: #fff7ed;
+                background-color: #dbeafe;
             }
 
             100% {
@@ -18,10 +18,10 @@
             }
         }
 
-        /* Tweak nhỏ giống style admin, dùng rounded-sm */
         .post-card {
             border-radius: 0.25rem;
-            /* rounded-sm */
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
         }
 
         .post-card .post-header h3,
@@ -29,76 +29,160 @@
             line-height: 1.05;
         }
 
-        /* Giảm độ nổi của shadow cho bảng tin */
-        .post-card.shadow-sm {
-            box-shadow: 0 1px 4px rgba(2, 6, 23, 0.04), 0 1px 2px rgba(2, 6, 23, 0.04);
+        /* Allow notification content to expand horizontally and wrap nicely */
+        .post-card .prose {
+            word-wrap: break-word;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            max-width: 100%;
         }
 
-        /* avatar image fit */
-        .avatar-img {
-            object-fit: cover;
-            display: block;
+        /* If the content contains very long inline elements (tables, code), allow horizontal scroll */
+        .post-card .prose-container {
+            overflow-x: auto;
+        }
+
+        /* Custom scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 2px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background-color: #94a3b8;
+        }
+
+        .hide-scroll::-webkit-scrollbar {
+            display: none;
+        }
+
+        .hide-scroll {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
     </style>
 @endsection
-
 
 @section('content')
     @php
         $student = Auth::user()->student;
         $class = $student ? $student->class : null;
-        $currentFilter = $filter ?? 'all';
+        $currentFilter = request()->get('filter', 'all');
+        $currentTimeFilter = request()->get('time', 'all');
+        $currentSearch = request()->get('search', '');
     @endphp
 
-    <section class="col-span-12 md:col-span-8 lg:col-span-9 flex flex-col gap-4">
+    <!-- Tăng chiều ngang: max-w từ 700 -> 1000 -->
+    <section class="w-full max-w-[1000px] mx-auto pt-6 pb-12 px-4 sm:px-6 flex flex-col gap-6">
 
-        {{-- LỌC --}}
+        {{-- HEADER BẢNG TIN & BỘ LỌC --}}
         <div
-            class="bg-white rounded-sm shadow-sm border border-slate-200 p-3 flex flex-wrap items-center justify-between gap-3 sticky top-[72px] z-40">
-            <h2 class="text-[14px] font-bold text-slate-800 flex items-center gap-1.5 font-display">
-                <span class="material-symbols-outlined !text-[18px] text-primary">feed</span> Bảng tin
-            </h2>
-            <div class="flex gap-1.5">
-                <a href="{{ url('/?filter=all') }}"
-                    class="px-3 py-1.5 text-[11px] font-semibold rounded-sm transition-colors {{ $currentFilter == 'all' ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' }}">Tất
-                    cả</a>
-                <a href="{{ url('/?filter=urgent') }}"
-                    class="px-3 py-1.5 text-[11px] font-semibold rounded-sm transition-colors flex items-center gap-1 {{ $currentFilter == 'urgent' ? 'bg-red-500 text-white' : 'bg-red-50 text-red-600 hover:bg-red-100' }}">
-                    <span class="material-symbols-outlined !text-[12px]">error</span> Khẩn cấp
-                </a>
-                <a href="{{ url('/?filter=warning') }}"
-                    class="px-3 py-1.5 text-[11px] font-semibold rounded-sm transition-colors flex items-center gap-1 {{ $currentFilter == 'warning' ? 'bg-orange-500 text-white' : 'bg-orange-50 text-orange-600 hover:bg-orange-100' }}">
-                    <span class="material-symbols-outlined !text-[12px]">warning</span> Chú ý
-                </a>
+            class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-sm border border-slate-200 shadow-sm">
+            <div class="flex items-center gap-3 shrink-0">
+                <div class="p-2 bg-primary/10 text-primary rounded-sm">
+                    <span class="material-symbols-outlined !text-[28px]">feed</span>
+                </div>
+                <div>
+                    <h1 class="text-xl font-extrabold text-slate-800 tracking-tight leading-none mb-1">Bảng tin</h1>
+                    <p class="text-xs font-medium text-slate-500">Cập nhật thông báo mới nhất</p>
+                </div>
+            </div>
+
+            <div class="w-full sm:w-auto">
+                <form method="GET" action="{{ url('/student') }}" class="flex items-center gap-2 w-full" id="filterFormTop">
+                    @if ($currentSearch)
+                        <input type="hidden" name="search" value="{{ $currentSearch }}">
+                    @endif
+
+                    {{-- Dropdown Thời gian --}}
+                    <div
+                        class="relative flex-1 sm:w-36 bg-slate-50 rounded-sm border border-slate-200 hover:border-primary/50 transition-colors">
+                        <select name="time" onchange="document.getElementById('filterFormTop').submit()"
+                            class="w-full text-[13px] font-bold border-none focus:ring-0 py-2 pl-3 pr-8 text-slate-700 bg-transparent cursor-pointer outline-none appearance-none">
+                            <option value="all" {{ $currentTimeFilter == 'all' ? 'selected' : '' }}>Mọi lúc</option>
+                            <option value="today" {{ $currentTimeFilter == 'today' ? 'selected' : '' }}>Hôm nay</option>
+                            <option value="week" {{ $currentTimeFilter == 'week' ? 'selected' : '' }}>Tuần này</option>
+                            <option value="month" {{ $currentTimeFilter == 'month' ? 'selected' : '' }}>Tháng này</option>
+                        </select>
+                        <span
+                            class="material-symbols-outlined !text-[18px] absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
+                    </div>
+
+                    {{-- Nút Lọc Loại Bảng Tin --}}
+                    <div class="flex gap-1 bg-slate-50 p-1 rounded-sm border border-slate-200">
+                        <button type="submit" name="filter" value="all" title="Tất cả"
+                            class="w-8 h-8 flex items-center justify-center rounded-sm transition-all {{ $currentFilter == 'all' ? 'bg-white text-primary shadow-sm border border-slate-200/60' : 'bg-transparent text-slate-400 hover:text-slate-600 hover:bg-slate-100' }}">
+                            <span class="material-symbols-outlined !text-[18px]">public</span>
+                        </button>
+                        <button type="submit" name="filter" value="urgent" title="Khẩn cấp"
+                            class="w-8 h-8 flex items-center justify-center rounded-sm transition-all {{ $currentFilter == 'urgent' ? 'bg-red-50 text-red-600 shadow-sm border border-red-100' : 'bg-transparent text-slate-400 hover:text-red-500 hover:bg-red-50' }}">
+                            <span class="material-symbols-outlined !text-[18px]">error</span>
+                        </button>
+                        <button type="submit" name="filter" value="warning" title="Chú ý"
+                            class="w-8 h-8 flex items-center justify-center rounded-sm transition-all {{ $currentFilter == 'warning' ? 'bg-orange-50 text-orange-600 shadow-sm border border-orange-100' : 'bg-transparent text-slate-400 hover:text-orange-500 hover:bg-orange-50' }}">
+                            <span class="material-symbols-outlined !text-[18px]">warning</span>
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
 
-        {{-- BÀI VIẾT --}}
+        {{-- KẾT QUẢ TÌM KIẾM --}}
+        @if ($currentSearch)
+            <div
+                class="bg-indigo-50 border border-indigo-200 text-indigo-800 px-5 py-4 rounded-sm flex items-center justify-between text-[14px] font-medium shadow-sm">
+                <span class="flex items-center gap-2.5 min-w-0">
+                    <span class="material-symbols-outlined !text-[22px] shrink-0">search</span>
+                    <span class="truncate">Kết quả tìm kiếm cho: <strong
+                            class="text-indigo-900 text-[15px]">"{{ $currentSearch }}"</strong></span>
+                </span>
+                <a href="{{ url('/student?filter=' . $currentFilter . '&time=' . $currentTimeFilter) }}"
+                    class="text-indigo-500 hover:text-red-500 hover:bg-red-100 transition-colors p-1.5 rounded-full shrink-0"
+                    title="Hủy tìm kiếm">
+                    <span class="material-symbols-outlined !text-[18px] block">close</span>
+                </a>
+            </div>
+        @endif
+
+        {{-- DANH SÁCH BÀI VIẾT --}}
         @forelse($notifications as $notify)
             <article id="notification-{{ $notify->id }}" data-notification-id="{{ $notify->id }}"
-                x-data="{ showComments: false }"
-                class="post-card bg-white rounded-sm shadow-sm border border-slate-200 overflow-hidden">
-                <div class="p-4 sm:p-5">
-                    <div class="flex justify-between items-start mb-3 post-header">
-                        <div class="flex items-center gap-3">
+                x-data="{ showComments: false }" class="post-card bg-white overflow-hidden relative transition-colors duration-500">
+                <div class="p-5 sm:p-6">
+
+                    {{-- Header bài viết --}}
+                    <div class="flex justify-between items-start mb-4 post-header">
+                        <div class="flex items-center gap-3.5">
                             <div
-                                class="h-10 w-10 rounded-sm text-white flex items-center justify-center font-bold text-[14px] shadow-sm {{ ($notify->sender->role_id ?? 0) == 1 ? 'bg-blue-600' : 'bg-emerald-600' }}">
+                                class="h-10 w-10 sm:h-12 sm:w-12 rounded-full text-white flex items-center justify-center font-bold text-[14px] sm:text-[16px] shadow-sm {{ ($notify->sender->role_id ?? 0) == 1 ? 'bg-blue-600' : 'bg-emerald-600' }}">
                                 {{ mb_substr($notify->sender->name ?? 'A', 0, 1) }}
                             </div>
                             <div>
                                 <h3
-                                    class="font-bold text-[14px] text-slate-900 dark:text-slate-100 hover:underline cursor-pointer font-display">
-                                    {{ $notify->sender->name ?? 'Hệ thống' }}</h3>
-                                <p class="text-[12px] text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
+                                    class="font-bold text-[14px] sm:text-[15px] text-slate-900 hover:underline cursor-pointer leading-tight">
+                                    {{ $notify->sender->name ?? 'Hệ thống' }}
+                                </h3>
+                                <p class="text-[12px] sm:text-[12.5px] text-slate-500 mt-1 flex items-center gap-1.5">
                                     {{ $notify->created_at->diffForHumans() }} <span>•</span>
                                     @if ($notify->target_audience == 'all')
-                                        <span class="flex items-center gap-0.5 text-blue-600 font-medium"><span
-                                                class="material-symbols-outlined !text-[12px]">public</span> Toàn
-                                            trường</span>
+                                        <span
+                                            class="flex items-center gap-0.5 text-blue-600 font-semibold bg-blue-50 px-1.5 py-0.5 rounded-sm">
+                                            <span class="material-symbols-outlined !text-[12px]">public</span> Toàn trường
+                                        </span>
                                     @else
-                                        <span class="flex items-center gap-0.5 text-emerald-600 font-medium"><span
-                                                class="material-symbols-outlined !text-[12px]">group</span> Lớp
-                                            {{ $class->code ?? '' }}</span>
+                                        <span
+                                            class="flex items-center gap-0.5 text-emerald-600 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded-sm">
+                                            <span class="material-symbols-outlined !text-[12px]">group</span> Lớp
+                                            {{ $class->code ?? '' }}
+                                        </span>
                                     @endif
                                 </p>
                             </div>
@@ -106,94 +190,134 @@
 
                         @if ($notify->type == 'urgent')
                             <span
-                                class="bg-red-50 text-red-700 border border-red-100 text-[10px] font-bold px-2 py-0.5 rounded-sm uppercase flex items-center gap-1"><span
-                                    class="material-symbols-outlined !text-[12px]">error</span> Khẩn cấp</span>
+                                class="bg-red-50 text-red-700 border border-red-100 text-[10px] sm:text-[11px] font-bold px-2 py-1 rounded-sm uppercase flex items-center gap-1">
+                                <span class="material-symbols-outlined !text-[14px]">error</span> <span
+                                    class="hidden sm:inline">Khẩn cấp</span>
+                            </span>
                         @elseif($notify->type == 'warning')
                             <span
-                                class="bg-orange-50 text-orange-700 border border-orange-100 text-[10px] font-bold px-2 py-0.5 rounded-sm uppercase flex items-center gap-1"><span
-                                    class="material-symbols-outlined !text-[12px]">warning</span> Chú ý</span>
+                                class="bg-orange-50 text-orange-700 border border-orange-100 text-[10px] sm:text-[11px] font-bold px-2 py-1 rounded-sm uppercase flex items-center gap-1">
+                                <span class="material-symbols-outlined !text-[14px]">warning</span> <span
+                                    class="hidden sm:inline">Chú ý</span>
+                            </span>
                         @endif
                     </div>
 
-                    <div class="mb-3">
-                        <h4
-                            class="font-bold text-[15px] mb-1.5 text-slate-900 dark:text-slate-100 font-display leading-snug">
-                            {{ $notify->title }}</h4>
-                        <div class="prose prose-slate max-w-none text-[14px] text-slate-700 dark:text-slate-300 leading-relaxed prose-a:text-blue-600 hover:prose-a:underline"
+                    {{-- Nội dung bài viết --}}
+                    <div class="mb-4 mt-2">
+                        <h4 class="font-bold text-[15px] sm:text-[16px] mb-2 text-slate-900 leading-snug">
+                            {{ $notify->title }}
+                        </h4>
+                        <div class="prose prose-slate max-w-none text-[14px] sm:text-[14.5px] text-slate-800 leading-relaxed prose-a:text-blue-600 hover:prose-a:underline prose-container"
                             style="word-wrap: break-word;">
                             {!! $notify->message !!}
                         </div>
                     </div>
 
+                    {{-- Đính kèm --}}
                     @if ($notify->attachment_url)
                         <a href="{{ asset('storage/' . $notify->attachment_url) }}"
                             download="{{ $notify->attachment_name }}"
-                            class="bg-slate-50 rounded-sm p-3 mb-3 flex items-center gap-3 border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors group">
+                            class="bg-slate-50 rounded-sm p-3 mb-4 flex items-center gap-3 border border-slate-200 cursor-pointer hover:bg-slate-100 hover:border-slate-300 transition-colors group">
                             <div
                                 class="bg-white border border-slate-200 text-primary p-2 rounded-sm shadow-sm shrink-0 group-hover:scale-105 transition-transform">
-                                <span class="material-symbols-outlined !text-[18px]">description</span>
+                                <span class="material-symbols-outlined !text-[20px]">description</span>
                             </div>
                             <div class="flex-1 overflow-hidden">
                                 <p class="text-[13px] font-bold text-slate-800 truncate">{{ $notify->attachment_name }}</p>
-                                <p class="text-[11px] text-slate-500 mt-0.5">Nhấn tải xuống tài liệu</p>
+                                <p class="text-[11px] text-slate-500 mt-0.5">Nhấn để tải xuống</p>
                             </div>
-                            <div class="text-slate-400 group-hover:text-primary p-1"><span
-                                    class="material-symbols-outlined !text-[16px]">download</span></div>
+                            <div class="text-slate-400 group-hover:text-primary p-1">
+                                <span class="material-symbols-outlined !text-[18px]">download</span>
+                            </div>
                         </a>
                     @endif
 
+                    {{-- Thống kê Like/Comment --}}
                     <div
-                        class="flex items-center justify-between text-[12px] font-medium text-slate-500 pb-2 border-b border-slate-100">
-                        <span class="flex items-center gap-2">
+                        class="flex items-center justify-between text-[12.5px] font-medium text-slate-500 pb-3 border-b border-slate-100">
+                        <span class="flex items-center gap-1.5">
                             <span
-                                class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-50 text-blue-600">
-                                <span class="material-symbols-outlined !text-[14px]">thumb_up</span>
+                                class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-50 text-blue-600 ring-2 ring-white">
+                                <span class="material-symbols-outlined !text-[11px]"
+                                    style="font-variation-settings:'FILL' 1">thumb_up</span>
                             </span>
-                            <span class="likes-count-{{ $notify->id }} text-slate-700">{{ $notify->likes_count }}</span>
-                            <span class="text-slate-400 text-[12px]">Lượt thích</span>
+                            <span
+                                class="likes-count-{{ $notify->id }} text-slate-700 font-bold">{{ $notify->likes_count }}</span>
                         </span>
-                        <span class="flex items-center gap-1.5 hover:underline cursor-pointer"
-                            @click="showComments = !showComments">{{ $notify->comments_count }} Bình luận</span>
+                        <span class="flex items-center gap-1 hover:underline cursor-pointer"
+                            @click="showComments = !showComments">
+                            {{ $notify->comments_count }} Bình luận
+                        </span>
                     </div>
 
-                    <div class="flex gap-2 pt-3">
+                    {{-- Nút tương tác --}}
+                    <div class="flex gap-2 pt-2">
                         <form action="{{ url('student/notifications/' . $notify->id . '/like') }}" method="POST"
                             class="flex-1 js-ajax-like">
                             @csrf
                             <button type="submit"
-                                class="w-full flex items-center justify-center gap-2 py-2 text-[13px] font-semibold rounded-sm transition-colors {{ $notify->isLikedBy(Auth::id()) ? 'text-primary bg-primary/5' : 'text-slate-600 hover:bg-slate-50' }}">
-                                <span class="material-symbols-outlined !text-[16px] transition-transform active:scale-125"
-                                    {{ $notify->isLikedBy(Auth::id()) ? 'style=font-variation-settings:"FILL"1' : '' }}>thumb_up</span>
+                                class="w-full flex items-center justify-center gap-2 py-2 text-[13.5px] font-bold rounded-sm transition-colors {{ $notify->isLikedBy(Auth::id()) ? 'text-blue-600 bg-blue-50/50' : 'text-slate-600 hover:bg-slate-50' }}">
+                                <span class="material-symbols-outlined !text-[18px] transition-transform active:scale-125"
+                                    {{ $notify->isLikedBy(Auth::id()) ? 'style=font-variation-settings:\"FILL\"1' : '' }}>thumb_up</span>
                                 Thích
                             </button>
                         </form>
                         <button @click="showComments = !showComments"
-                            class="flex-1 flex items-center justify-center gap-2 py-2 text-[13px] font-semibold text-slate-600 hover:bg-slate-50 rounded-sm transition-colors">
-                            <span class="material-symbols-outlined !text-[16px]">chat_bubble_outline</span> Bình luận
+                            class="flex-1 flex items-center justify-center gap-2 py-2 text-[13.5px] font-bold text-slate-600 hover:bg-slate-50 rounded-sm transition-colors">
+                            <span class="material-symbols-outlined !text-[18px]">chat_bubble_outline</span> Bình luận
                         </button>
                     </div>
                 </div>
 
-                {{-- KHU VỰC BÌNH LUẬN --}}
-                <div x-show="showComments" x-transition class="border-t border-slate-100 bg-slate-50/50 p-3 sm:p-4" x-cloak>
-                    <div class="space-y-4 mb-3 max-h-[350px] overflow-y-auto hide-scroll p-1"
-                        id="comments-list-{{ $notify->id }}">
+                {{-- VÙNG BÌNH LUẬN --}}
+                <div x-show="showComments" x-transition class="border-t border-slate-100 bg-slate-50/50 p-4 sm:p-5"
+                    x-cloak>
+                    @if ($notify->allow_comments)
+                        <form action="{{ url('student/notifications/' . $notify->id . '/comment') }}" method="POST"
+                            class="js-ajax-comment flex gap-3 items-start mb-6">
+                            @csrf
+                            <div
+                                class="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center text-white font-bold text-[13px] shrink-0 shadow-sm mt-0.5">
+                                {{ mb_substr(Auth::user()->name, 0, 1) }}
+                            </div>
+                            <div
+                                class="flex-1 relative group bg-white border border-slate-300 rounded-sm focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20 shadow-sm transition-all overflow-hidden p-1 min-h-[42px]">
+                                <textarea name="content" rows="1" required placeholder="Viết bình luận của bạn..."
+                                    oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
+                                    class="w-full pl-2 pr-10 py-1.5 bg-transparent border-none text-[13.5px] focus:ring-0 resize-none custom-scrollbar"
+                                    style="min-height:30px; max-height:120px;"></textarea>
+                                <button type="submit"
+                                    class="absolute right-1 bottom-1 p-1 text-primary hover:bg-primary/10 rounded-sm transition-colors"
+                                    title="Gửi">
+                                    <span class="material-symbols-outlined !text-[18px]">send</span>
+                                </button>
+                            </div>
+                        </form>
+                    @endif
 
+                    <div class="space-y-4 max-h-[400px] overflow-y-auto custom-scrollbar px-1 pr-2"
+                        id="comments-list-{{ $notify->id }}">
                         @forelse($notify->comments as $comment)
                             @php $replyCount = isset($comment->replies) ? $comment->replies->count() : 0; @endphp
-
-                            <div id="comment-{{ $comment->id }}" class="relative" x-data="{ openReply: false, showAllReplies: false, replyToName: '' }">
-                                <div class="flex gap-2 items-start">
-                                    <div
-                                        class="w-8 h-8 rounded-sm flex items-center justify-center text-white font-bold text-[12px] shrink-0 shadow-sm {{ $comment->user->role_id == 3 ? 'bg-slate-600' : ($comment->user->role_id == 1 ? 'bg-blue-600' : 'bg-emerald-600') }}">
-                                        {{ mb_substr($comment->user->name, 0, 1) }}
+                            <div id="comment-{{ $comment->id }}" class="relative transition-colors duration-500"
+                                x-data="{ openReply: false, showAllReplies: false, replyToName: '' }">
+                                <div class="flex gap-2.5 items-start">
+                                    <div class="relative flex flex-col items-center">
+                                        <div
+                                            class="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-[11px] shrink-0 shadow-sm z-10 {{ $comment->user->role_id == 3 ? 'bg-slate-600' : ($comment->user->role_id == 1 ? 'bg-blue-600' : 'bg-emerald-600') }}">
+                                            {{ mb_substr($comment->user->name, 0, 1) }}
+                                        </div>
+                                        @if ($replyCount > 0)
+                                            <div class="absolute top-8 bottom-[-15px] w-[2px] bg-slate-200 z-0"></div>
+                                        @endif
                                     </div>
+
                                     <div class="flex-1 min-w-0 text-left">
                                         <div
-                                            class="bg-white border border-slate-200/80 px-3 py-2 rounded-sm inline-block max-w-full shadow-sm text-left">
-                                            <div class="flex items-center gap-1.5 mb-0.5">
-                                                <h5
-                                                    class="text-[13px] font-bold text-slate-800 hover:underline cursor-pointer">
+                                            class="bg-white border border-slate-200 px-3 py-2 rounded-sm rounded-tl-none inline-block max-w-full shadow-sm comment-box transition-colors duration-1000">
+                                            <div class="flex items-center gap-1 mb-0.5">
+                                                <h5 class="text-[13px] font-bold text-slate-800">
                                                     {{ $comment->user->name }}</h5>
                                                 @if ($comment->user->role_id == 1)
                                                     <span class="material-symbols-outlined text-blue-500 !text-[13px]"
@@ -203,365 +327,271 @@
                                                         title="Giảng viên/Cố vấn">school</span>
                                                 @endif
                                             </div>
-                                            <div class="text-[13px] text-slate-700 leading-snug w-full break-words">
-                                                {!! nl2br(e(trim($comment->content))) !!}</div>
+                                            <div class="text-[13.5px] text-slate-800 leading-snug break-words">
+                                                {!! nl2br(e(trim($comment->content))) !!}
+                                            </div>
                                         </div>
+
                                         <div
-                                            class="flex items-center gap-3 text-[11px] text-slate-500 mt-1 ml-1.5 font-medium">
-                                            <button
-                                                @click="openReply = !openReply; replyToName='{{ $comment->user->name }}'; $nextTick(()=>{ $refs.replyInput && $refs.replyInput.focus(); })"
-                                                class="hover:underline hover:text-slate-900 transition-colors">Phản
-                                                hồi</button>
-                                            <span>·</span>
-                                            <span>{{ $comment->created_at->diffForHumans() }}</span>
+                                            class="flex items-center gap-3 text-[11px] text-slate-500 mt-1 ml-1 font-bold">
+                                            <button class="hover:text-slate-800 transition-colors">Thích</button>
+                                            @if ($notify->allow_comments)
+                                                <button
+                                                    @click="openReply = true; replyToName='{{ addslashes($comment->user->name) }}'; $nextTick(()=>{ $refs.replyInput && $refs.replyInput.focus(); })"
+                                                    class="hover:text-slate-800 transition-colors">Phản hồi</button>
+                                            @endif
+                                            <span
+                                                class="font-medium text-[10px]">{{ $comment->created_at->diffForHumans() }}</span>
                                         </div>
 
-                                        {{-- Replies --}}
                                         @if ($replyCount > 0)
-                                            <div
-                                                class="replies-wrap ml-6 mt-3 flex flex-col gap-3 relative before:content-[''] before:absolute before:-left-[1rem] before:top-0 before:bottom-0 before:w-[2px] before:bg-slate-200 before:rounded-full">
-
+                                            <div class="replies-wrap ml-2 mt-2.5 flex flex-col gap-3 relative z-10">
                                                 @if ($replyCount > 1)
                                                     <button @click="showAllReplies = !showAllReplies"
-                                                        class="inline-flex items-center gap-1.5 text-slate-500 hover:text-slate-800 font-bold text-[11px] py-1 transition-colors bg-white pr-2 rounded-sm w-max">
-                                                        <span class="material-symbols-outlined !text-[14px] text-slate-400"
+                                                        class="inline-flex items-center gap-1 text-slate-500 hover:text-slate-800 font-bold text-[11.5px] py-0.5 bg-transparent w-max">
+                                                        <span class="material-symbols-outlined !text-[14px]"
                                                             x-text="showAllReplies ? 'subdirectory_arrow_left' : 'subdirectory_arrow_right'"></span>
                                                         <span
-                                                            x-text="showAllReplies ? 'Ẩn bớt phản hồi' : 'Xem {{ $replyCount - 1 }} phản hồi trước'"></span>
+                                                            x-text="showAllReplies ? 'Ẩn bớt' : 'Xem thêm {{ $replyCount - 1 }} phản hồi'"></span>
                                                     </button>
                                                 @endif
 
                                                 @foreach ($comment->replies as $index => $reply)
-                                                    <div id="comment-{{ $reply->id }}"
-                                                        class="bg-white border border-slate-100 p-2 rounded-sm shadow-sm w-full break-words"
+                                                    <div id="reply-{{ $reply->id }}"
+                                                        class="flex items-start gap-2 relative transition-all duration-500"
                                                         @if ($replyCount > 1 && $index < $replyCount - 1) x-show="showAllReplies" x-transition @endif>
-                                                        @if (!empty($reply->parent) && !empty($reply->parent->user))
+                                                        <div
+                                                            class="absolute left-[-20px] top-[-8px] w-4 h-5 border-b-2 border-l-2 border-slate-200 rounded-bl-sm z-0">
+                                                        </div>
+                                                        <div
+                                                            class="w-6 h-6 flex-none flex items-center justify-center rounded-full text-white font-bold text-[9px] shadow-sm relative z-10 {{ $reply->user->role_id == 3 ? 'bg-slate-600' : ($reply->user->role_id == 1 ? 'bg-blue-600' : 'bg-emerald-600') }}">
+                                                            {{ mb_substr($reply->user->name, 0, 1) }}
+                                                        </div>
+                                                        <div class="flex-1 min-w-0">
                                                             <div
-                                                                class="inline-block text-[10px] bg-indigo-50 text-indigo-600 px-1.5 py-[1px] rounded mb-1 font-bold border border-indigo-100">
-                                                                Trả lời: {{ $reply->parent->user->name }}</div>
-                                                        @endif
-                                                        <div class="flex items-start gap-2">
-                                                            <div
-                                                                class="w-6 h-6 flex-none flex items-center justify-center rounded-sm text-white font-bold text-[10px] shadow-sm {{ $reply->user->role_id == 3 ? 'bg-slate-600' : ($reply->user->role_id == 1 ? 'bg-blue-600' : 'bg-emerald-600') }}">
-                                                                {{ mb_substr($reply->user->name, 0, 1) }}
-                                                            </div>
-                                                            <div class="flex-1 min-w-0">
-                                                                <div class="font-bold text-[12px] text-slate-900">
-                                                                    {{ $reply->user->name }}</div>
+                                                                class="bg-white border border-slate-200 px-3 py-1.5 rounded-sm rounded-tl-none shadow-sm comment-box transition-colors duration-1000 inline-block max-w-full">
+                                                                <h5 class="text-[12px] font-bold text-slate-800 mb-0.5">
+                                                                    {{ $reply->user->name }}</h5>
                                                                 <div
-                                                                    class="text-[13px] text-slate-800 mt-0.5 leading-snug break-words w-full">
+                                                                    class="text-[13px] text-slate-800 leading-snug break-words inline">
                                                                     {!! preg_replace(
                                                                         '/(@[^\s:]+:?)/',
-                                                                        '<strong class="text-indigo-600">$1</strong>',
+                                                                        '<strong class="text-blue-600 font-semibold">$1</strong>',
                                                                         nl2br(e(trim($reply->content))),
                                                                     ) !!}
                                                                 </div>
-                                                                <div
-                                                                    class="mt-1 flex items-center gap-3 text-[11px] text-slate-500 font-medium">
-                                                                    <button
-                                                                        @click="openReply = true; showAllReplies = true; replyToName='{{ $reply->user->name }}'; $nextTick(()=>{ $refs.replyInput && $refs.replyInput.focus(); })"
-                                                                        class="hover:underline hover:text-slate-900 transition-colors">Phản
-                                                                        hồi</button>
-                                                                    <span>·</span>
-                                                                    <span>{{ $reply->created_at->diffForHumans() }}</span>
-                                                                </div>
                                                             </div>
+                                                            <div class="text-[9px] text-slate-400 mt-0.5 ml-1 font-medium">
+                                                                {{ $reply->created_at->diffForHumans() }}</div>
                                                         </div>
                                                     </div>
                                                 @endforeach
                                             </div>
                                         @endif
 
-                                        {{-- Khối Replies mồi --}}
-                                        @if ($replyCount == 0)
+                                        <div x-show="openReply" x-transition class="mt-2.5 ml-2 relative z-10"
+                                            style="display:none;">
                                             <div
-                                                class="replies-wrap ml-6 mt-3 flex flex-col gap-3 relative before:content-[''] before:absolute before:-left-[1rem] before:top-0 before:bottom-0 before:w-[2px] before:bg-slate-200 before:rounded-full empty:hidden">
+                                                class="absolute left-[-20px] top-[-5px] w-4 h-6 border-b-2 border-l-2 border-slate-200 rounded-bl-sm z-0">
                                             </div>
-                                        @endif
-
-                                        {{-- Form Phản hồi --}}
-                                        <div x-show="openReply" x-transition class="mt-2 ml-6" style="display:none;">
                                             <form action="{{ url('student/notifications/' . $notify->id . '/comment') }}"
-                                                method="POST" class="js-ajax-comment flex gap-2 items-start">
+                                                method="POST"
+                                                class="js-ajax-comment flex gap-2 items-start relative z-10">
+                                                @csrf
                                                 <input type="hidden" name="parent_id" value="{{ $comment->id }}">
                                                 <input type="hidden" name="content_prefix"
-                                                    :value="replyToName ? '@' + replyToName + ': ' : ''">
+                                                    :value="replyToName ? '@' + replyToName + ' - ' : ''">
 
                                                 <div
-                                                    class="w-6 h-6 rounded-sm bg-slate-800 text-white flex items-center justify-center font-bold text-[10px] mt-1 shadow-sm shrink-0">
+                                                    class="w-6 h-6 flex-none rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-[9px] mt-0.5 shadow-sm">
                                                     {{ mb_substr(Auth::user()->name, 0, 1) }}
                                                 </div>
                                                 <div
-                                                    class="flex-1 bg-slate-50 border border-slate-200/80 p-1.5 rounded-sm focus-within:border-slate-400 focus-within:bg-white transition-colors">
+                                                    class="flex-1 bg-white border border-slate-300 p-0.5 rounded-sm focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20 transition-all shadow-sm">
                                                     <div x-show="replyToName" style="display:none;"
-                                                        class="flex items-center gap-1 text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded w-max mb-1 font-semibold border border-blue-200">
-                                                        <span>Đang trả lời: <span x-text="replyToName"></span></span>
+                                                        class="flex items-center gap-1 text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-sm w-max ml-1 mt-1 font-semibold">
+                                                        <span>Trả lời: <span x-text="replyToName"></span></span>
                                                         <button type="button" @click="openReply=false; replyToName=''"
-                                                            class="ml-1 bg-blue-200 rounded-full w-3.5 h-3.5 flex items-center justify-center hover:bg-blue-300"><span
-                                                                class="material-symbols-outlined !text-[9px]">close</span></button>
+                                                            class="ml-0.5 hover:text-red-500 flex items-center"><span
+                                                                class="material-symbols-outlined !text-[12px]">cancel</span></button>
                                                     </div>
-                                                    <div class="relative">
+                                                    <div class="relative flex items-center">
                                                         <input x-ref="replyInput" type="text" name="content" required
                                                             placeholder="Viết phản hồi..." autocomplete="off"
-                                                            class="w-full pl-2 pr-8 py-1 bg-transparent border-none text-[13px] text-slate-800 focus:outline-none focus:ring-0 h-8">
+                                                            class="w-full pl-2 pr-8 py-1 bg-transparent border-none text-[12.5px] text-slate-800 focus:outline-none focus:ring-0">
                                                         <button type="submit"
-                                                            class="absolute right-0.5 top-0.5 w-8 h-8 flex items-center justify-center bg-primary text-white rounded-sm hover:bg-primary-light transition-colors"><span
-                                                                class="material-symbols-outlined !text-[13px]">send</span></button>
+                                                            class="absolute right-0.5 w-6 h-6 flex items-center justify-center text-primary hover:bg-slate-100 rounded-sm transition-colors"><span
+                                                                class="material-symbols-outlined !text-[14px]">send</span></button>
                                                     </div>
                                                 </div>
                                             </form>
                                         </div>
-
                                     </div>
                                 </div>
                             </div>
                         @empty
-                            <p class="text-center text-slate-500 text-[12px] py-2 italic">Chưa có bình luận nào.</p>
+                            <p class="text-center text-slate-500 text-[12.5px] py-4">Chưa có bình luận nào. Hãy là
+                                người đầu tiên!</p>
                         @endforelse
                     </div>
 
-                    @if ($notify->allow_comments)
-                        <form action="{{ url('student/notifications/' . $notify->id . '/comment') }}" method="POST"
-                            class="js-ajax-comment flex gap-2 items-end pt-2 border-t border-slate-100">
-                            <div
-                                class="w-9 h-9 rounded-sm bg-slate-800 flex items-center justify-center text-white font-bold text-[13px] shrink-0 shadow-sm mb-0.5">
-                                {{ mb_substr(Auth::user()->name, 0, 1) }}
-                            </div>
-                            <div class="flex-1 relative group">
-                                <textarea name="content" rows="1" required placeholder="Viết bình luận cho bài đăng này..."
-                                    oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
-                                    class="w-full pl-3 pr-9 py-2 bg-white border border-slate-300 rounded-sm text-[13px] focus:ring-1 focus:ring-primary focus:border-primary resize-none shadow-sm overflow-hidden"
-                                    style="min-height: 44px; max-height: 120px;"></textarea>
-                                <button type="submit"
-                                    class="absolute right-1.5 bottom-1.5 p-2 text-primary hover:bg-primary/10 rounded-sm transition-colors"
-                                    title="Gửi"><span
-                                        class="material-symbols-outlined !text-[18px]">send</span></button>
-                            </div>
-                        </form>
-                    @else
+                    @if (!$notify->allow_comments)
                         <div
-                            class="text-center text-[12px] text-slate-500 bg-slate-100 py-2 rounded-sm border border-slate-200 mt-2">
-                            <span class="material-symbols-outlined !text-[14px] align-middle">comments_disabled</span> Bình
-                            luận đã bị tắt.
+                            class="text-center text-[12.5px] text-slate-500 bg-slate-100 py-2.5 rounded-sm border border-slate-200 mt-4 font-medium flex items-center justify-center gap-1.5">
+                            <span class="material-symbols-outlined !text-[16px]">comments_disabled</span> Tính năng bình
+                            luận đã tắt.
                         </div>
                     @endif
                 </div>
             </article>
         @empty
-            <div class="bg-white rounded-sm shadow-sm border border-slate-200 p-12 text-center">
-                <span class="material-symbols-outlined text-[40px] text-slate-300 mb-2 block">notifications_paused</span>
-                <h3 class="text-[14px] font-bold text-slate-700 font-display">Chưa có thông báo nào</h3>
+            <div class="bg-white rounded-sm shadow-sm border border-slate-200 p-12 text-center mt-2">
+                <span class="material-symbols-outlined text-[40px] text-slate-300 mb-3 block">
+                    {{ $currentSearch ? 'search_off' : 'notifications_paused' }}
+                </span>
+                <h3 class="text-[15px] font-bold text-slate-700 font-display">
+                    {{ $currentSearch ? 'Không tìm thấy thông báo phù hợp' : 'Chưa có thông báo nào trên hệ thống' }}
+                </h3>
             </div>
         @endforelse
 
-        <div class="mt-1 mb-8 text-[12px]">
-            {{ $notifications->links() }}
+        <div class="mt-2 mb-8 text-[13px]">
+            {{ $notifications->appends(request()->query())->links() }}
         </div>
+
     </section>
 @endsection
 
-
 @section('scripts')
     <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('liveSearch', () => ({
+                query: '',
+                results: [],
+                loading: false,
+                showPopup: false,
+                fetchData() {
+                    let q = this.query.trim();
+                    if (q.length < 2) {
+                        this.results = [];
+                        this.showPopup = false;
+                        return;
+                    }
+                    this.loading = true;
+                    this.showPopup = true;
+                    fetch(`{{ url('/student/search-api') }}?q=${encodeURIComponent(q)}`, {
+                            headers: {
+                                'Accept': 'application/json'
+                            }
+                        })
+                        .then(res => res.json()).then(data => {
+                            this.results = data;
+                            this.loading = false;
+                        }).catch(err => {
+                            console.error(err);
+                            this.loading = false;
+                        });
+                },
+                goToPost(targetUrl) {
+                    this.showPopup = false;
+                    let targetObj = new URL(targetUrl, window.location.origin);
+                    if (window.location.pathname === targetObj.pathname) {
+                        if (window.history.pushState) window.history.pushState(null, null, targetObj
+                            .search + targetObj.hash);
+                        else window.location.hash = targetObj.hash;
+                        if (targetObj.hash && typeof window.highlightCommentBubble === 'function')
+                            window.highlightCommentBubble(targetObj.hash);
+                        else window.location.reload();
+                    } else {
+                        window.location.href = targetUrl;
+                    }
+                }
+            }));
+        });
+
+        window.highlightCommentBubble = function(hash) {
+            let el = document.querySelector(hash);
+            if (!el && hash.startsWith('#notification-')) {
+                let id = hash.replace('#notification-', '');
+                el = document.querySelector(`article[data-notification-id="${id}"]`);
+            }
+            if (!el) return;
+            let art = el.closest('article');
+            if (art) {
+                if (art.__x !== undefined) art.__x.$data.showComments = true;
+                else if (typeof Alpine !== 'undefined') {
+                    let data = Alpine.$data(art);
+                    if (data) data.showComments = true;
+                }
+            }
+            let replyWrap = el.closest('.replies-wrap');
+            if (replyWrap) {
+                let parentComment = replyWrap.closest('[id^="comment-"]');
+                if (parentComment) {
+                    if (parentComment.__x !== undefined) parentComment.__x.$data.showAllReplies = true;
+                    else if (typeof Alpine !== 'undefined') {
+                        let pData = Alpine.$data(parentComment);
+                        if (pData) pData.showAllReplies = true;
+                    }
+                }
+            }
+            setTimeout(() => {
+                el.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+                let bubble = el.tagName === 'ARTICLE' ? el : (el.classList.contains('bg-white') ? el : (el
+                    .querySelector('.bg-white, .bg-slate-50') || el));
+                let originalBg = bubble.style.backgroundColor;
+                let originalTransition = bubble.style.transition;
+                bubble.style.transition = 'none';
+                bubble.style.backgroundColor = '#dbeafe';
+                void bubble.offsetWidth;
+                setTimeout(() => {
+                    bubble.style.transition = 'background-color 2.5s ease-out';
+                    bubble.style.backgroundColor = originalBg || 'transparent';
+                    setTimeout(() => {
+                        bubble.style.transition = originalTransition;
+                        bubble.style.backgroundColor = '';
+                    }, 2500);
+                }, 400);
+            }, 250);
+        };
+
         document.addEventListener('DOMContentLoaded', function() {
             const CSRF_TOKEN = "{{ csrf_token() }}";
+            if (window.location.hash) setTimeout(() => {
+                window.highlightCommentBubble(window.location.hash);
+            }, 400);
+            window.addEventListener('hashchange', function() {
+                if (window.location.hash) window.highlightCommentBubble(window.location.hash);
+            });
 
-            // Helpers
-            function escapeHtml(str) {
-                if (str === null || str === undefined) return '';
-                return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g,
-                    '&quot;').replace(/'/g, '&#039;');
-            }
-
-            function highlightTemp(el) {
-                el.classList.add('target-comment');
-                setTimeout(() => el.classList.remove('target-comment'), 2500);
-            }
-
-            // Build HTML Comment Gốc
-            function buildCommentHTML(d, notifyId) {
-                let avatarBg = d.user_role == 1 ? 'bg-blue-600' : (d.user_role == 2 ? 'bg-emerald-600' :
-                    'bg-slate-600');
-                return `
-                    <div id="comment-${d.id}" class="relative transition-colors duration-500" x-data="{ openReply: false, showAllReplies: false, replyToName: '' }">
-                        <div class="flex gap-2 items-start min-w-0">
-                            <div class="flex-none"><div class="h-8 w-8 rounded-md flex items-center justify-center text-white font-bold text-[12px] shadow-sm ${avatarBg}">${escapeHtml(d.user_initial)}</div></div>
-                            <div class="flex-1 min-w-0 text-left">
-                                <div class="bg-white border border-slate-200/80 px-3 py-2 rounded-md inline-block max-w-full shadow-sm text-left">
-                                    <div class="flex items-center gap-1.5 mb-0.5">
-                                        <h5 class="text-[13px] font-bold text-slate-800 hover:underline cursor-pointer">${escapeHtml(d.user_name)}</h5>
-                                    </div>
-                                    <div class="text-[13px] text-slate-700 leading-snug w-full break-words">${d.content}</div>
-                                </div>
-                                <div class="flex items-center gap-3 text-[11px] text-slate-500 mt-1 ml-1.5 font-medium">
-                                    <button @click="openReply=true; replyToName='${escapeHtml(d.user_name)}'; $nextTick(()=>{ $refs.replyInput && $refs.replyInput.focus(); })" class="hover:underline hover:text-slate-900 transition-colors">Phản hồi</button>
-                                    <span>·</span> <span>Vừa xong</span>
-                                </div>
-                                
-                                <div class="replies-wrap ml-6 mt-3 flex flex-col gap-3 relative before:content-[''] before:absolute before:-left-[1rem] before:top-0 before:bottom-0 before:w-[2px] before:bg-slate-200 before:rounded-full empty:hidden"></div>
-
-                                <div x-show="openReply" x-transition class="mt-2 ml-6" style="display:none;">
-                                    <form action="/student/notifications/${notifyId}/comment" method="POST" class="js-ajax-comment flex gap-2 items-start">
-                                        <input type="hidden" name="parent_id" value="${d.id}">
-                                        <input type="hidden" name="content_prefix" :value="replyToName ? '@' + replyToName + ': ' : ''">
-                                        <div class="w-6 h-6 rounded-md bg-slate-800 text-white flex items-center justify-center font-bold text-[10px] mt-1 shadow-sm shrink-0">{{ mb_substr(Auth::user()->name, 0, 1) }}</div>
-                                        <div class="flex-1 bg-slate-50 border border-slate-200/80 p-1.5 rounded-md focus-within:border-slate-400 focus-within:bg-white transition-colors">
-                                            <div x-show="replyToName" style="display:none;" class="flex items-center gap-1 text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded w-max mb-1 font-semibold border border-blue-200">
-                                                <span>Đang trả lời: <span x-text="replyToName"></span></span>
-                                                <button type="button" @click="openReply=false; replyToName=''" class="ml-1 bg-blue-200 rounded-full w-3.5 h-3.5 flex items-center justify-center"><span class="material-symbols-outlined !text-[9px]">close</span></button>
-                                            </div>
-                                            <div class="relative">
-                                                <input x-ref="replyInput" type="text" name="content" required placeholder="Viết phản hồi..." autocomplete="off" class="w-full pl-2 pr-8 py-1 bg-transparent border-none text-[13px] text-slate-800 focus:outline-none focus:ring-0 h-8">
-                                                <button type="submit" class="absolute right-0.5 top-0.5 w-8 h-8 flex items-center justify-center bg-primary text-white rounded-md"><span class="material-symbols-outlined !text-[13px]">send</span></button>
-                                            </div>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-
-            // Build HTML Reply (Bình luận con) — giữ nguyên (đã định nghĩa trước)
-            function buildReplyHTML(d, notifyId) {
-                let avatarBg = d.user_role == 1 ? 'bg-blue-600' : (d.user_role == 2 ? 'bg-emerald-600' :
-                    'bg-slate-600');
-                const parentInfo = d.parent_user_name ?
-                    `<div class="inline-block text-[10px] bg-indigo-50 text-indigo-600 px-1.5 py-[1px] rounded mb-1 font-bold border border-indigo-100">Trả lời: ${escapeHtml(d.parent_user_name)}</div>` :
-                    '';
-
-                let contentText = d.content;
-                contentText = contentText.replace(/(@[^\s:]+:?)/g, '<strong class="text-indigo-600">$1</strong>');
-
-                return `
-                    <div id="comment-${d.id}" class="bg-white border border-slate-100 p-2 rounded-md shadow-sm w-full break-words">
-                        ${parentInfo}
-                        <div class="flex items-start gap-2">
-                            <div class="w-6 h-6 flex-none flex items-center justify-center rounded-md text-white font-bold text-[10px] shadow-sm ${avatarBg}">
-                                ${escapeHtml(d.user_initial)}
-                            </div>
-                            <div class="flex-1 min-w-0 text-left">
-                                <div class="font-bold text-[12px] text-slate-900">${escapeHtml(d.user_name)}</div>
-                                <div class="text-[12.5px] text-slate-800 mt-0.5 leading-snug break-words w-full">${contentText}</div>
-                                <div class="mt-1 flex items-center gap-3 text-[11px] text-slate-500 font-medium">
-                                    <button @click="openReply = true; showAllReplies = true; replyToName='${escapeHtml(d.user_name)}'; $nextTick(()=>{ $refs.replyInput && $refs.replyInput.focus(); })" class="hover:underline hover:text-slate-900 transition-colors">Phản hồi</button>
-                                    <span>·</span> <span>Vừa xong</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-
-            // Xử lý Gửi Bình Luận & Phản Hồi bằng AJAX
             document.body.addEventListener('submit', async function(e) {
                 const form = e.target;
                 if (!form.classList.contains('js-ajax-comment')) return;
                 e.preventDefault();
-
                 const btn = form.querySelector('button[type="submit"]');
                 if (btn) {
                     btn.disabled = true;
                     btn.style.opacity = '0.5';
                 }
-
-                const action = form.getAttribute('action');
                 const formData = new FormData(form);
-                formData.append('_token', CSRF_TOKEN); // inject CSRF an toàn
-
-                const notifyArticle = form.closest('article[data-notification-id]');
-                const notifyId = notifyArticle ? notifyArticle.getAttribute('data-notification-id') :
-                    null;
-
+                formData.append('_token', CSRF_TOKEN);
                 try {
-                    const resp = await fetch(action, {
+                    const resp = await fetch(form.getAttribute('action'), {
                         method: 'POST',
                         headers: {
                             'Accept': 'application/json'
                         },
                         body: formData
                     });
-
                     const json = await resp.json();
-
-                    if (resp.ok && json.success) {
-                        const d = json.comment;
-
-                        if (d.parent_id) { // reply
-                            const parentEl = document.querySelector(`#comment-${d.parent_id}`);
-                            if (parentEl) {
-                                let repliesWrap = parentEl.querySelector('.replies-wrap');
-                                if (repliesWrap) {
-                                    repliesWrap.classList.remove('empty:hidden');
-                                    repliesWrap.insertAdjacentHTML('beforeend', buildReplyHTML(d,
-                                        notifyId));
-
-                                    // Alpine updates if present
-                                    if (parentEl.__x) {
-                                        parentEl.__x.$data.showAllReplies = true;
-                                        parentEl.__x.$data.openReply = false;
-                                        parentEl.__x.$data.replyToName = '';
-                                    }
-
-                                    setTimeout(() => {
-                                        const newly = document.querySelector(
-                                            `#comment-${d.id}`);
-                                        if (newly) {
-                                            newly.scrollIntoView({
-                                                behavior: 'smooth',
-                                                block: 'nearest'
-                                            });
-                                            highlightTemp(newly);
-                                        }
-                                    }, 50);
-                                }
-                            }
-                        } else { // new top-level comment
-                            const list = document.querySelector(`#comments-list-${notifyId}`);
-                            if (list) {
-                                list.insertAdjacentHTML('beforeend', buildCommentHTML(d, notifyId));
-                                setTimeout(() => {
-                                    const newly = document.querySelector(`#comment-${d.id}`);
-                                    if (newly) {
-                                        Alpine.initTree ? Alpine.initTree(newly) : null;
-                                        newly.scrollIntoView({
-                                            behavior: 'smooth',
-                                            block: 'nearest'
-                                        });
-                                        highlightTemp(newly);
-                                    }
-                                }, 50);
-                            }
-                        }
-
-                        // update comments count if provided
-                        if (json.comments_count) {
-                            const counter = document.querySelector(
-                                `[data-notification-id="${notifyId}"] .flex.items-center.gap-2 span.likes-count-${notifyId}`
-                            );
-                            // the above selector is not ideal; better update global area:
-                            const cc = document.querySelector(
-                                `[data-notification-id="${notifyId}"] .flex.items-center.justify-between span[ @click ]`
-                            );
-                            // Safe fallback: update the visible text near top
-                            const commentsBadge = document.querySelector(
-                                `[data-notification-id="${notifyId}"] [@click]`);
-                            // (we keep it simple: find element that shows comments_count text)
-                        }
-
-                        // Reset khung nhập
-                        const inputs = form.querySelectorAll('textarea, input[name="content"]');
-                        inputs.forEach(input => {
-                            input.value = '';
-                            if (input.tagName === 'TEXTAREA') input.style.height = '44px';
-                        });
-
-                    } else {
-                        alert('Lỗi: ' + (json.error || 'Dữ liệu không hợp lệ'));
-                    }
+                    if (resp.ok && json.success) window.location.reload();
+                    else alert('Lỗi: ' + (json.error || 'Dữ liệu không hợp lệ'));
                 } catch (err) {
                     console.error(err);
+                    window.location.reload();
                 } finally {
                     if (btn) {
                         btn.disabled = false;
@@ -570,43 +600,36 @@
                 }
             });
 
-            // Xử lý Gửi Thích Bằng AJAX
             document.body.addEventListener('submit', async function(e) {
                 const form = e.target;
                 if (!form.classList.contains('js-ajax-like')) return;
                 e.preventDefault();
-
-                const action = form.getAttribute('action');
                 const formData = new FormData(form);
                 formData.append('_token', CSRF_TOKEN);
-
                 try {
-                    const resp = await fetch(action, {
+                    const resp = await fetch(form.getAttribute('action'), {
                         method: 'POST',
                         headers: {
                             'Accept': 'application/json'
                         },
                         body: formData
                     });
-
                     const json = await resp.json();
                     if (resp.ok && json.success) {
-                        const matches = action.match(/notifications\/(\d+)\/like/);
+                        const matches = form.getAttribute('action').match(/notifications\/(\d+)\/like/);
                         if (matches) {
                             const nid = matches[1];
-                            const countEl = document.querySelector('.likes-count-' + nid);
-                            if (countEl) countEl.textContent = json.likes_count;
-
-                            // Đổi màu nút Like
+                            document.querySelectorAll('.likes-count-' + nid).forEach(el => el
+                                .textContent = json.likes_count);
                             const btn = form.querySelector('button');
                             const icon = btn.querySelector('span');
                             if (btn.classList.contains('text-slate-600')) {
-                                btn.classList.replace('text-slate-600', 'text-primary');
-                                btn.classList.replace('hover:bg-slate-50', 'bg-primary/5');
+                                btn.classList.replace('text-slate-600', 'text-blue-600');
+                                btn.classList.replace('hover:bg-slate-50', 'bg-blue-50/50');
                                 icon.setAttribute('style', 'font-variation-settings:"FILL"1');
                             } else {
-                                btn.classList.replace('text-primary', 'text-slate-600');
-                                btn.classList.replace('bg-primary/5', 'hover:bg-slate-50');
+                                btn.classList.replace('text-blue-600', 'text-slate-600');
+                                btn.classList.replace('bg-blue-50/50', 'hover:bg-slate-50');
                                 icon.removeAttribute('style');
                             }
                         }
@@ -616,191 +639,5 @@
                 }
             });
         });
-
-        window.highlightCommentBubble = function(hash) {
-            let el = document.querySelector(hash);
-            if (!el) {
-                console.warn('Không tìm thấy bình luận trên trang hiện tại:', hash);
-                return;
-            }
-
-            // 1. ÉP ALPINEJS MỞ KHU VỰC BÌNH LUẬN CỦA BÀI VIẾT
-            let art = el.closest('article');
-            if (art) {
-                // Cách gọi chuẩn của AlpineJS V3
-                if (typeof Alpine !== 'undefined' && typeof Alpine.$data === 'function') {
-                    let data = Alpine.$data(art);
-                    if (data && data.showComments !== undefined) {
-                        data.showComments = true;
-                    }
-                }
-                // Fallback tự động click nút "Bình luận" nếu Alpine API không rớt vào case trên
-                else {
-                    let commentsDiv = art.querySelector('[x-show="showComments"]');
-                    let btn = art.querySelector('button[\\@click="showComments = !showComments"]');
-                    if (commentsDiv && window.getComputedStyle(commentsDiv).display === 'none' && btn) {
-                        btn.click();
-                    }
-                }
-            }
-
-            // 2. ÉP ALPINEJS MỞ DANH SÁCH TRẢ LỜI CON (NẾU ĐÍCH ĐẾN BỊ ẨN)
-            let replyWrap = el.closest('.replies-wrap');
-            if (replyWrap) {
-                let parentComment = replyWrap.closest('[id^="comment-"]');
-                if (parentComment) {
-                    if (typeof Alpine !== 'undefined' && typeof Alpine.$data === 'function') {
-                        let pData = Alpine.$data(parentComment);
-                        if (pData && pData.showAllReplies !== undefined) {
-                            pData.showAllReplies = true;
-                        }
-                    }
-                }
-            }
-
-            // 3. ĐỢI DOM MỞ XONG RỒI MỚI CUỘN VÀ NHÁY SÁNG (Tăng thời gian đợi lên 250ms)
-            setTimeout(() => {
-                // Cuộn tới giữa màn hình
-                el.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'center'
-                });
-
-                // Tìm vùng có nền trắng để nháy sáng
-                let bubble = el.querySelector('.bg-white, .bg-slate-50, .bg-slate-100, .bg-slate-200\\/80') ||
-                    el;
-
-                let originalBg = bubble.style.backgroundColor;
-                let originalTransition = bubble.style.transition;
-
-                // Tắt hiệu ứng mượt tạm thời, đổi màu ngay sang xanh nhạt
-                bubble.style.transition = 'none';
-                bubble.style.backgroundColor = '#dbeafe';
-
-                void bubble.offsetWidth; // Ép trình duyệt vẽ lại DOM ngay lập tức
-
-                // Phai màu từ từ sau 500ms để người dùng kịp nhìn
-                setTimeout(() => {
-                    bubble.style.transition = 'background-color 2s ease-in-out';
-                    bubble.style.backgroundColor = originalBg;
-
-                    // Xóa rác CSS sau khi chớp xong
-                    setTimeout(() => {
-                        bubble.style.transition = originalTransition;
-                        bubble.style.backgroundColor = '';
-                    }, 2000);
-                }, 500);
-            }, 250);
-        };
-        window.highlightPost = function(hash) {
-            let el = document.querySelector(hash);
-            if (!el) {
-                console.warn('Không tìm thấy bài viết:', hash);
-                return;
-            }
-
-            // Chỉ đợi 1 chút rồi cuộn tới giữa màn hình, bỏ qua logic mở Comment
-            setTimeout(() => {
-                el.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'center'
-                });
-
-                // Đổi màu nền sang xanh nhạt để nháy sáng
-                let originalBg = el.style.backgroundColor;
-                let originalTransition = el.style.transition;
-
-                el.style.transition = 'none';
-                el.style.backgroundColor = '#dbeafe';
-
-                void el.offsetWidth; // Ép trình duyệt vẽ lại ngay lập tức
-
-                // Sau 500ms thì phai màu dần về như cũ
-                setTimeout(() => {
-                    el.style.transition = 'background-color 2s ease-in-out';
-                    el.style.backgroundColor = originalBg;
-
-                    // Xóa rác CSS
-                    setTimeout(() => {
-                        el.style.transition = originalTransition;
-                        el.style.backgroundColor = '';
-                    }, 2000);
-                }, 500);
-            }, 100);
-        };
-        // Component Xử lý Tìm kiếm Hệ thống
-        window.searchSystem = function() {
-            return {
-                searchQuery: '',
-                results: [],
-                isLoading: false,
-                isOpen: false,
-                debounceTimer: null,
-
-                init() {
-                    // Lắng nghe sự thay đổi của input để gọi API
-                    this.$watch('searchQuery', (val) => {
-                        const query = val.trim();
-                        if (query.length === 0) {
-                            this.results = [];
-                            this.isOpen = false;
-                            return;
-                        }
-
-                        this.isOpen = true;
-                        this.isLoading = true;
-                        clearTimeout(this.debounceTimer);
-
-                        // Đợi 400ms sau khi người dùng ngừng gõ mới gọi API để chống spam request
-                        this.debounceTimer = setTimeout(() => {
-                            this.fetchData(query);
-                        }, 400);
-                    });
-                },
-
-                async fetchData(query) {
-                    try {
-                        // Nhớ đảm bảo trong web.php bạn đã khai báo route này
-                        const response = await fetch(
-                            `{{ url('/student/search-api') }}?q=${encodeURIComponent(query)}`);
-                        if (response.ok) {
-                            this.results = await response.json();
-                        }
-                    } catch (error) {
-                        console.error('Lỗi tìm kiếm:', error);
-                    } finally {
-                        this.isLoading = false;
-                    }
-                },
-
-                handleResultClick(targetUrl) {
-                    this.isOpen = false;
-                    this.searchQuery = ''; // Reset input sau khi bấm
-
-                    let targetObj = new URL(targetUrl, window.location.origin);
-                    let currentPath = window.location.pathname.replace(/\/$/, '');
-                    let targetPath = targetObj.pathname.replace(/\/$/, '');
-
-                    // Logic mượn từ phần chuông thông báo
-                    if (currentPath === targetPath) {
-                        if (window.history.pushState) {
-                            window.history.pushState(null, null, targetObj.search + targetObj.hash);
-                        } else {
-                            window.location.hash = targetObj.hash;
-                        }
-
-                        // Gọi lại hàm cuộn và nháy sáng bài viết đã định nghĩa sẵn
-                        // Gọi hàm cuộn bài viết mới tạo (không mở bình luận)
-                        if (targetObj.hash && typeof window.highlightPost === 'function') {
-                            window.highlightPost(targetObj.hash);
-                        } else {
-                            window.location.reload();
-                        }
-                    } else {
-                        window.location.href = targetUrl;
-                    }
-                }
-            }
-        }
     </script>
 @endsection

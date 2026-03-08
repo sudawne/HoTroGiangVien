@@ -11,6 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // THÊM DÒNG NÀY: Xóa bảng nếu đã tồn tại để tránh lỗi trùng lặp
+        Schema::dropIfExists('course_cancellations');
+
         Schema::create('course_cancellations', function (Blueprint $table) {
             $table->id();
             $table->foreignId('student_id')->constrained('students')->cascadeOnDelete();
@@ -22,6 +25,7 @@ return new class extends Migration
             $table->timestamps();
         });
     }
+
     /**
      * Reverse the migrations.
      */

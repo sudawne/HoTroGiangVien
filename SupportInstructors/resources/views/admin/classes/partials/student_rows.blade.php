@@ -4,11 +4,15 @@
     @endphp
     <tr
         class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group {{ $isTrashed ? 'bg-slate-100/70 dark:bg-slate-900/50' : '' }}">
-        <td class="px-6 py-3 text-center">
-            {{-- data-trashed dùng cho JS ở trang show --}}
-            <input type="checkbox" value="{{ $student->id }}" data-trashed="{{ $isTrashed ? 'true' : 'false' }}"
-                class="student-checkbox select-item rounded border-gray-300 text-primary cursor-pointer">
-        </td>
+
+        {{-- CHỈ ADMIN MỚI THẤY CHECKBOX --}}
+        @if (Auth::user()->role_id == 1)
+            <td class="px-6 py-3 text-center">
+                <input type="checkbox" value="{{ $student->id }}" data-trashed="{{ $isTrashed ? 'true' : 'false' }}"
+                    class="student-checkbox select-item rounded border-gray-300 text-primary cursor-pointer">
+            </td>
+        @endif
+
         <td
             class="px-6 py-3 font-mono {{ $isTrashed ? 'text-slate-400 decoration-slate-400' : 'text-slate-700 dark:text-slate-300 font-bold' }}">
             {{ $student->student_code }}
@@ -23,7 +27,6 @@
         </td>
         <td class="px-6 py-3 text-slate-500 text-xs">{{ $student->user->email ?? 'Chưa có' }}</td>
 
-        {{-- SỬA Ở ĐÂY: Thêm 'whitespace-nowrap' để không bị xuống dòng --}}
         <td class="px-6 py-3 whitespace-nowrap">
             @if ($isTrashed)
                 <span class="text-xs text-slate-400 italic">Vô hiệu hóa</span>
@@ -52,19 +55,21 @@
         <td class="px-6 py-3 text-right">
             <div class="flex justify-end gap-1">
                 @if ($isTrashed)
-                    {{-- NÚT KHÔI PHỤC --}}
-                    <form action="{{ route($routePrefix . 'students.restore', $student->id) }}" method="POST"
-                        class="inline-block">
-                        @csrf
-                        <button type="button"
-                            class="btn-restore-student p-1.5 text-blue-600 hover:bg-blue-100 rounded transition-all"
-                            data-url="{{ route($routePrefix . 'students.restore', $student->id) }}"
-                            title="Khôi phục hoạt động">
-                            <span class="material-symbols-outlined !text-[18px]">restore</span>
-                        </button>
-                    </form>
+                    {{-- CHỈ ADMIN MỚI THẤY NÚT KHÔI PHỤC --}}
+                    @if (Auth::user()->role_id == 1)
+                        <form action="{{ route('admin.students.restore', $student->id) }}" method="POST"
+                            class="inline-block">
+                            @csrf
+                            <button type="button"
+                                class="btn-restore-student p-1.5 text-blue-600 hover:bg-blue-100 rounded transition-all"
+                                data-url="{{ route('admin.students.restore', $student->id) }}"
+                                title="Khôi phục hoạt động">
+                                <span class="material-symbols-outlined !text-[18px]">restore</span>
+                            </button>
+                        </form>
+                    @endif
                 @else
-                    {{-- CÁC NÚT KHI ĐANG HOẠT ĐỘNG --}}
+                    {{-- CẢ ADMIN VÀ GIẢNG VIÊN ĐỀU THẤY NÚT SỬA VÀ GỬI MAIL --}}
                     <button type="button"
                         class="btn-edit-student p-1.5 text-slate-600 hover:bg-slate-100 rounded transition-all"
                         data-id="{{ $student->id }}" data-code="{{ $student->student_code }}"
@@ -80,21 +85,26 @@
                         <span class="material-symbols-outlined !text-[18px]">send</span>
                     </button>
 
-                    <form action="{{ route($routePrefix . 'students.destroy', $student->id) }}" method="POST"
-                        class="inline-block form-delete-student">
-                        @csrf @method('DELETE')
-                        <button type="button"
-                            class="btn-delete-student p-1.5 text-red-600 hover:bg-red-50 rounded transition-all"
-                            data-code="{{ $student->student_code }}" title="Ẩn sinh viên">
-                            <span class="material-symbols-outlined !text-[18px]">visibility_off</span>
-                        </button>
-                    </form>
+                    {{-- CHỈ ADMIN MỚI THẤY NÚT XÓA/ẨN --}}
+                    @if (Auth::user()->role_id == 1)
+                        <form action="{{ route('admin.students.destroy', $student->id) }}" method="POST"
+                            class="inline-block form-delete-student">
+                            @csrf @method('DELETE')
+                            <button type="button"
+                                class="btn-delete-student p-1.5 text-red-600 hover:bg-red-50 rounded transition-all"
+                                data-code="{{ $student->student_code }}" title="Ẩn sinh viên">
+                                <span class="material-symbols-outlined !text-[18px]">visibility_off</span>
+                            </button>
+                        </form>
+                    @endif
                 @endif
             </div>
         </td>
     </tr>
 @empty
     <tr>
-        <td colspan="7" class="px-6 py-8 text-center text-slate-500">Không tìm thấy sinh viên nào.</td>
+        @php $colSpan = Auth::user()->role_id == 1 ? 7 : 6; @endphp
+        <td colspan="{{ $colSpan }}" class="px-6 py-8 text-center text-slate-500">Không tìm thấy sinh viên nào.
+        </td>
     </tr>
 @endforelse

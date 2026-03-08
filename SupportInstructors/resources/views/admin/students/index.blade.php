@@ -412,67 +412,68 @@
                 }
             }
 
-            if (btnDeleteSelected) {
-                btnDeleteSelected.addEventListener('click', function() {
-                    const ids = Array.from(document.querySelectorAll('.student-checkbox:checked')).map(cb =>
-                        cb.value);
+            // CHỈ RENDER CÁC ĐƯỜNG DẪN XÓA/KHÔI PHỤC NẾU LÀ ADMIN
+            @if (Auth::user()->role_id == 1)
+                if (btnDeleteSelected) {
+                    btnDeleteSelected.addEventListener('click', function() {
+                        const ids = Array.from(document.querySelectorAll('.student-checkbox:checked')).map(
+                            cb => cb.value);
+                        showConfirm(
+                            'Ẩn ' + ids.length + ' Sinh Viên?',
+                            'Các sinh viên này sẽ bị vô hiệu hóa (không xóa hẳn). Bạn có chắc chắn?',
+                            () => {
+                                performAction("{{ route('admin.students.bulk_destroy') }}",
+                                    'POST', {
+                                        ids: ids
+                                    }, 'Đã ẩn thành công!');
+                            },
+                            'danger'
+                        );
+                    });
+                }
+
+                if (btnRestoreSelected) {
+                    btnRestoreSelected.addEventListener('click', function() {
+                        const ids = Array.from(document.querySelectorAll('.student-checkbox:checked')).map(
+                            cb => cb.value);
+                        showConfirm(
+                            'Khôi phục ' + ids.length + ' Sinh Viên?',
+                            'Các sinh viên này sẽ hoạt động trở lại.',
+                            () => {
+                                performAction("{{ route('admin.students.bulk_restore') }}",
+                                    'POST', {
+                                        ids: ids
+                                    }, 'Đã khôi phục thành công!');
+                            }
+                        );
+                    });
+                }
+
+                window.deleteStudent = function(id, code) {
                     showConfirm(
-                        'Ẩn ' + ids.length + ' Sinh Viên?',
-                        'Các sinh viên này sẽ bị vô hiệu hóa (không xóa hẳn). Bạn có chắc chắn?',
+                        'Ẩn Sinh Viên?',
+                        `Bạn muốn ẩn sinh viên <b>${code}</b>? <br>Dữ liệu sẽ được chuyển vào mục đã ẩn.`,
                         () => {
-                            performAction("{{ route($routePrefix . 'students.bulk_destroy') }}",
-                                'POST', {
-                                    ids: ids
-                                }, 'Đã ẩn thành công!');
+                            let url = "{{ route('admin.students.destroy', ':id') }}".replace(':id', id);
+                            performAction(url, 'POST', {
+                                _method: 'DELETE'
+                            }, 'Đã ẩn sinh viên!');
                         },
                         'danger'
                     );
-                });
-            }
+                };
 
-            if (btnRestoreSelected) {
-                btnRestoreSelected.addEventListener('click', function() {
-                    const ids = Array.from(document.querySelectorAll('.student-checkbox:checked')).map(cb =>
-                        cb.value);
+                window.restoreStudent = function(id, code) {
                     showConfirm(
-                        'Khôi phục ' + ids.length + ' Sinh Viên?',
-                        'Các sinh viên này sẽ hoạt động trở lại.',
+                        'Khôi phục Sinh Viên?',
+                        `Bạn muốn khôi phục sinh viên <b>${code}</b>?`,
                         () => {
-                            performAction("{{ route($routePrefix . 'students.bulk_restore') }}",
-                                'POST', {
-                                    ids: ids
-                                }, 'Đã khôi phục thành công!');
+                            let url = "{{ route('admin.students.restore', ':id') }}".replace(':id', id);
+                            performAction(url, 'POST', {}, 'Đã khôi phục sinh viên!');
                         }
                     );
-                });
-            }
-
-            window.deleteStudent = function(id, code) {
-                showConfirm(
-                    'Ẩn Sinh Viên?',
-                    `Bạn muốn ẩn sinh viên <b>${code}</b>? <br>Dữ liệu sẽ được chuyển vào mục đã ẩn.`,
-                    () => {
-                        let url = "{{ route($routePrefix . 'students.destroy', ':id') }}".replace(':id',
-                            id);
-                        performAction(url, 'POST', {
-                            _method: 'DELETE'
-                        }, 'Đã ẩn sinh viên!');
-                    },
-                    'danger'
-                );
-            };
-
-            window.restoreStudent = function(id, code) {
-                showConfirm(
-                    'Khôi phục Sinh Viên?',
-                    `Bạn muốn khôi phục sinh viên <b>${code}</b>?`,
-                    () => {
-                        let url = "{{ route($routePrefix . 'students.restore', ':id') }}".replace(':id',
-                            id);
-                        performAction(url, 'POST', {}, 'Đã khôi phục sinh viên!');
-                    }
-                );
-            };
+                };
+            @endif
 
             const createFullname = document.getElementById('create_fullname');
             const createCode = document.getElementById('create_student_code');

@@ -63,22 +63,24 @@
                             class="material-symbols-outlined absolute right-2.5 top-2.5 text-blue-500 !text-[18px] animate-spin hidden">progress_activity</span>
                     </div>
 
-                    {{-- Nút Khôi Phục Nhiều (Mới thêm) --}}
-                    <button type="button" id="btn-restore-selected"
-                        class="hidden flex items-center gap-2 px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-sm hover:bg-blue-700 transition-colors shadow-sm">
-                        <span class="material-symbols-outlined !text-[18px]">history</span> Khôi phục
-                    </button>
+                    @if (Auth::user()->role_id == 1)
+                        {{-- Nút Khôi Phục Nhiều (Mới thêm) --}}
+                        <button type="button" id="btn-restore-selected"
+                            class="hidden flex items-center gap-2 px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-sm hover:bg-blue-700 transition-colors shadow-sm">
+                            <span class="material-symbols-outlined !text-[18px]">history</span> Khôi phục
+                        </button>
 
-                    {{-- Nút Xóa (Ẩn) Nhiều --}}
-                    <button type="button" id="btn-delete-selected"
-                        class="hidden flex items-center gap-2 px-3 py-2 bg-red-600 text-white text-sm font-medium rounded-sm hover:bg-red-700 transition-colors shadow-sm">
-                        <span class="material-symbols-outlined !text-[18px]">visibility_off</span> Ẩn đã chọn
-                    </button>
+                        {{-- Nút Xóa (Ẩn) Nhiều --}}
+                        <button type="button" id="btn-delete-selected"
+                            class="hidden flex items-center gap-2 px-3 py-2 bg-red-600 text-white text-sm font-medium rounded-sm hover:bg-red-700 transition-colors shadow-sm">
+                            <span class="material-symbols-outlined !text-[18px]">visibility_off</span> Ẩn đã chọn
+                        </button>
 
-                    <button @click="showCreateModal = true"
-                        class="flex items-center gap-2 px-3 py-2 bg-primary text-white text-sm font-medium rounded-sm hover:bg-primary/90 transition-colors shadow-sm">
-                        <span class="material-symbols-outlined !text-[18px]">add</span> Thêm SV
-                    </button>
+                        <button @click="showCreateModal = true"
+                            class="flex items-center gap-2 px-3 py-2 bg-primary text-white text-sm font-medium rounded-sm hover:bg-primary/90 transition-colors shadow-sm">
+                            <span class="material-symbols-outlined !text-[18px]">add</span> Thêm SV
+                        </button>
+                    @endif
 
                     <a href="{{ route($routePrefix . 'classes.export', $class->id) }}" id="btn-export-excel"
                         class="flex items-center gap-2 px-3 py-2 bg-green-600 text-white text-sm font-medium rounded-sm hover:bg-green-700 transition-colors shadow-sm">
@@ -106,10 +108,12 @@
                     <thead
                         class="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-slate-500 uppercase font-semibold text-xs">
                         <tr>
-                            <th class="px-6 py-3 w-10 text-center">
-                                <input type="checkbox" id="select-all"
-                                    class="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4 cursor-pointer">
-                            </th>
+                            @if (Auth::user()->role_id == 1)
+                                <th class="px-6 py-3 w-10 text-center">
+                                    <input type="checkbox" id="select-all"
+                                        class="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4 cursor-pointer">
+                                </th>
+                            @endif
                             <th class="px-6 py-3 w-32">Mã SV</th>
                             <th class="px-6 py-3">Họ và Tên</th>
                             <th class="px-6 py-3 w-32">Ngày sinh</th>
@@ -129,83 +133,88 @@
             </div>
         </div>
 
-        {{-- ================= MODAL TẠO MỚI SINH VIÊN (GIỮ NGUYÊN) ================= --}}
-        <div x-show="showCreateModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" x-cloak>
-            <div class="bg-white dark:bg-[#1e1e2d] w-full max-w-2xl rounded-lg shadow-xl overflow-hidden"
-                @click.away="showCreateModal = false">
-                <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
-                    <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2">
-                        <span class="material-symbols-outlined text-primary">person_add</span> Thêm Sinh viên mới
-                    </h3>
-                    <button @click="showCreateModal = false" class="text-slate-400 hover:text-red-500"><span
-                            class="material-symbols-outlined">close</span></button>
-                </div>
+        {{-- ================= MODAL TẠO MỚI SINH VIÊN (CHỈ ADMIN) ================= --}}
+        @if (Auth::user()->role_id == 1)
+            <div x-show="showCreateModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" x-cloak>
+                <div class="bg-white dark:bg-[#1e1e2d] w-full max-w-2xl rounded-lg shadow-xl overflow-hidden"
+                    @click.away="showCreateModal = false">
+                    <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+                        <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-primary">person_add</span> Thêm Sinh viên mới
+                        </h3>
+                        <button @click="showCreateModal = false" class="text-slate-400 hover:text-red-500"><span
+                                class="material-symbols-outlined">close</span></button>
+                    </div>
 
-                <form id="formCreateStudent" action="{{ route($routePrefix . 'students.store') }}" method="POST"
-                    class="p-6">
-                    @csrf
-                    <input type="hidden" name="class_id" value="{{ $class->id }}">
-                    <div id="create-student-error"
-                        class="hidden mb-4 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm"></div>
+                    <form id="formCreateStudent" action="{{ route('admin.students.store') }}" method="POST"
+                        class="p-6">
+                        @csrf
+                        <input type="hidden" name="class_id" value="{{ $class->id }}">
+                        <div id="create-student-error"
+                            class="hidden mb-4 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm"></div>
 
-                    <div class="space-y-4">
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Mã Sinh
-                                    Viên <span class="text-red-500">*</span></label>
-                                <input type="text" name="student_code" id="create_student_code" required
-                                    placeholder="VD: 20110001"
-                                    class="w-full px-3 py-2 border border-slate-300 rounded-sm text-sm font-mono uppercase focus:ring-1 focus:ring-primary">
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Mã Sinh
+                                        Viên <span class="text-red-500">*</span></label>
+                                    <input type="text" name="student_code" id="create_student_code" required
+                                        placeholder="VD: 20110001"
+                                        class="w-full px-3 py-2 border border-slate-300 rounded-sm text-sm font-mono uppercase focus:ring-1 focus:ring-primary">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Ngày
+                                        sinh</label>
+                                    <input type="date" name="dob"
+                                        class="w-full px-3 py-2 border border-slate-300 rounded-sm text-sm focus:ring-1 focus:ring-primary">
+                                </div>
                             </div>
                             <div>
-                                <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Ngày
-                                    sinh</label>
-                                <input type="date" name="dob"
+                                <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Họ và
+                                    Tên <span class="text-red-500">*</span></label>
+                                <input type="text" name="fullname" id="create_fullname" required
+                                    placeholder="VD: Nguyễn Văn A"
                                     class="w-full px-3 py-2 border border-slate-300 rounded-sm text-sm focus:ring-1 focus:ring-primary">
                             </div>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Họ và
-                                Tên <span class="text-red-500">*</span></label>
-                            <input type="text" name="fullname" id="create_fullname" required
-                                placeholder="VD: Nguyễn Văn A"
-                                class="w-full px-3 py-2 border border-slate-300 rounded-sm text-sm focus:ring-1 focus:ring-primary">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-1.5">Email Hệ thống</label>
-                            <div class="relative">
-                                <input type="email" name="email" id="create_email" placeholder="Để trống để tự tạo"
-                                    class="w-full px-3 py-2 border border-slate-300 rounded-sm text-sm focus:ring-1 focus:ring-primary pr-10">
-                                <span
-                                    class="absolute right-3 top-2 text-slate-400 material-symbols-outlined !text-[18px]">mail</span>
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Email Hệ
+                                    thống</label>
+                                <div class="relative">
+                                    <input type="email" name="email" id="create_email"
+                                        placeholder="Để trống để tự tạo"
+                                        class="w-full px-3 py-2 border border-slate-300 rounded-sm text-sm focus:ring-1 focus:ring-primary pr-10">
+                                    <span
+                                        class="absolute right-3 top-2 text-slate-400 material-symbols-outlined !text-[18px]">mail</span>
+                                </div>
+                                <p class="text-[11px] text-blue-500 mt-1 italic">Hệ thống sẽ tự động tạo email dựa vào tên
+                                    và
+                                    mã SV.</p>
                             </div>
-                            <p class="text-[11px] text-blue-500 mt-1 italic">Hệ thống sẽ tự động tạo email dựa vào tên và
-                                mã SV.</p>
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Trạng
+                                    thái <span class="text-red-500">*</span></label>
+                                <select name="status" required
+                                    class="w-full px-3 py-2 border border-slate-300 rounded-sm text-sm focus:ring-1 focus:ring-primary">
+                                    <option value="studying" selected>Đang học</option>
+                                    <option value="reserved">Bảo lưu</option>
+                                    <option value="dropped">Thôi học</option>
+                                </select>
+                            </div>
                         </div>
-                        <div>
-                            <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Trạng
-                                thái <span class="text-red-500">*</span></label>
-                            <select name="status" required
-                                class="w-full px-3 py-2 border border-slate-300 rounded-sm text-sm focus:ring-1 focus:ring-primary">
-                                <option value="studying" selected>Đang học</option>
-                                <option value="reserved">Bảo lưu</option>
-                                <option value="dropped">Thôi học</option>
-                            </select>
-                        </div>
-                    </div>
 
-                    <div class="mt-6 pt-4 flex justify-end gap-3 border-t border-slate-100 dark:border-slate-700">
-                        <button type="button" @click="showCreateModal = false"
-                            class="px-4 py-2 border border-slate-300 rounded-sm text-slate-600 hover:bg-slate-50 transition-colors text-sm font-medium">Hủy
-                            bỏ</button>
-                        <button type="submit" id="btn-submit-create"
-                            class="px-5 py-2 bg-primary text-white rounded-sm hover:bg-primary/90 flex items-center gap-2 text-sm font-medium shadow-sm transition-all active:scale-95">
-                            <span class="material-symbols-outlined !text-[16px]">save</span> Thêm Sinh Viên
-                        </button>
-                    </div>
-                </form>
+                        <div class="mt-6 pt-4 flex justify-end gap-3 border-t border-slate-100 dark:border-slate-700">
+                            <button type="button" @click="showCreateModal = false"
+                                class="px-4 py-2 border border-slate-300 rounded-sm text-slate-600 hover:bg-slate-50 transition-colors text-sm font-medium">Hủy
+                                bỏ</button>
+                            <button type="submit" id="btn-submit-create"
+                                class="px-5 py-2 bg-primary text-white rounded-sm hover:bg-primary/90 flex items-center gap-2 text-sm font-medium shadow-sm transition-all active:scale-95">
+                                <span class="material-symbols-outlined !text-[18px]">save</span> Thêm Sinh Viên
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
-        </div>
+        @endif
 
     </div>
 
@@ -289,7 +298,7 @@
             const selectAll = document.getElementById('select-all');
             const btnSendSelectedEmail = document.getElementById('btn-send-selected-email');
             const btnDeleteSelected = document.getElementById('btn-delete-selected');
-            const btnRestoreSelected = document.getElementById('btn-restore-selected'); // Mới thêm
+            const btnRestoreSelected = document.getElementById('btn-restore-selected');
             const btnExportExcel = document.getElementById('btn-export-excel');
             const searchInput = document.getElementById('live-search-input');
             const searchSpinner = document.getElementById('search-spinner');
@@ -582,81 +591,6 @@
                 });
                 toggleActionBtns();
 
-                // NÚT ẨN 1 NGƯỜI
-                document.querySelectorAll('.btn-delete-student').forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        const form = this.closest('form');
-                        const code = this.getAttribute('data-code');
-                        const url = form.action;
-                        showConfirm({
-                            title: 'Ẩn Sinh Viên?',
-                            message: `Bạn có chắc muốn ẩn sinh viên ${code}? Sinh viên này sẽ bị vô hiệu hóa nhưng không mất dữ liệu.`,
-                            btnText: 'Ẩn ngay',
-                            btnColor: 'red',
-                            icon: 'visibility_off',
-                            callback: async () => {
-                                try {
-                                    const response = await fetch(url, {
-                                        method: 'POST',
-                                        headers: {
-                                            'X-Requested-With': 'XMLHttpRequest',
-                                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                                            'Content-Type': 'application/x-www-form-urlencoded'
-                                        },
-                                        body: new URLSearchParams({
-                                            '_method': 'DELETE'
-                                        })
-                                    });
-                                    const data = await response.json();
-                                    if (data.success) {
-                                        showToast('success', data.message);
-                                        setTimeout(() => window.location.reload(), 500);
-                                    } else {
-                                        showToast('error', data.message);
-                                    }
-                                } catch (e) {
-                                    showToast('error', 'Có lỗi xảy ra.');
-                                }
-                            }
-                        });
-                    });
-                });
-
-                // NÚT KHÔI PHỤC 1 NGƯỜI
-                document.querySelectorAll('.btn-restore-student').forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        const url = this.getAttribute('data-url');
-                        showConfirm({
-                            title: 'Khôi phục Sinh Viên?',
-                            message: 'Bạn muốn kích hoạt lại sinh viên này?',
-                            btnText: 'Khôi phục',
-                            btnColor: 'blue',
-                            icon: 'history',
-                            callback: async () => {
-                                try {
-                                    const response = await fetch(url, {
-                                        method: 'POST',
-                                        headers: {
-                                            'X-Requested-With': 'XMLHttpRequest',
-                                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                                            'Content-Type': 'application/json'
-                                        }
-                                    });
-                                    const data = await response.json();
-                                    if (data.success) {
-                                        showToast('success', data.message);
-                                        setTimeout(() => window.location.reload(), 500);
-                                    } else {
-                                        showToast('error', data.message);
-                                    }
-                                } catch (e) {
-                                    showToast('error', 'Có lỗi xảy ra khi khôi phục.');
-                                }
-                            }
-                        });
-                    });
-                });
-
                 // NÚT SỬA 1 NGƯỜI
                 document.querySelectorAll('.btn-edit-student').forEach(btn => {
                     btn.addEventListener('click', function() {
@@ -701,103 +635,185 @@
                         });
                     });
                 });
+
+                // MÃ JS LIÊN QUAN ĐẾN XÓA/KHÔI PHỤC (CHỈ GẮN SỰ KIỆN NẾU LÀ ADMIN)
+                @if (Auth::user()->role_id == 1)
+                    document.querySelectorAll('.btn-delete-student').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const form = this.closest('form');
+                            const code = this.getAttribute('data-code');
+                            const url = form.action;
+                            showConfirm({
+                                title: 'Ẩn Sinh Viên?',
+                                message: `Bạn có chắc muốn ẩn sinh viên ${code}? Sinh viên này sẽ bị vô hiệu hóa nhưng không mất dữ liệu.`,
+                                btnText: 'Ẩn ngay',
+                                btnColor: 'red',
+                                icon: 'visibility_off',
+                                callback: async () => {
+                                    try {
+                                        const response = await fetch(url, {
+                                            method: 'POST',
+                                            headers: {
+                                                'X-Requested-With': 'XMLHttpRequest',
+                                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                                'Content-Type': 'application/x-www-form-urlencoded'
+                                            },
+                                            body: new URLSearchParams({
+                                                '_method': 'DELETE'
+                                            })
+                                        });
+                                        const data = await response.json();
+                                        if (data.success) {
+                                            showToast('success', data.message);
+                                            setTimeout(() => window.location.reload(),
+                                                500);
+                                        } else {
+                                            showToast('error', data.message);
+                                        }
+                                    } catch (e) {
+                                        showToast('error', 'Có lỗi xảy ra.');
+                                    }
+                                }
+                            });
+                        });
+                    });
+
+                    document.querySelectorAll('.btn-restore-student').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const url = this.getAttribute('data-url');
+                            showConfirm({
+                                title: 'Khôi phục Sinh Viên?',
+                                message: 'Bạn muốn kích hoạt lại sinh viên này?',
+                                btnText: 'Khôi phục',
+                                btnColor: 'blue',
+                                icon: 'history',
+                                callback: async () => {
+                                    try {
+                                        const response = await fetch(url, {
+                                            method: 'POST',
+                                            headers: {
+                                                'X-Requested-With': 'XMLHttpRequest',
+                                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                                'Content-Type': 'application/json'
+                                            }
+                                        });
+                                        const data = await response.json();
+                                        if (data.success) {
+                                            showToast('success', data.message);
+                                            setTimeout(() => window.location.reload(),
+                                                500);
+                                        } else {
+                                            showToast('error', data.message);
+                                        }
+                                    } catch (e) {
+                                        showToast('error',
+                                            'Có lỗi xảy ra khi khôi phục.');
+                                    }
+                                }
+                            });
+                        });
+                    });
+                @endif
             }
             initTableEvents();
 
-            // --- 7. BULK ACTIONS ---
-
-            // XÓA (ẨN) NHIỀU
-            if (btnDeleteSelected) {
-                btnDeleteSelected.addEventListener('click', function() {
-                    const ids = Array.from(document.querySelectorAll('.student-checkbox:checked')).map(cb =>
-                        cb.value);
-                    if (ids.length === 0) return;
-                    showConfirm({
-                        title: 'Ẩn ' + ids.length + ' Sinh Viên?',
-                        message: 'Các sinh viên đã chọn sẽ bị ẩn (vô hiệu hóa). Bạn có chắc chắn?',
-                        btnText: 'Ẩn tất cả',
-                        btnColor: 'red',
-                        icon: 'visibility_off',
-                        callback: async () => {
-                            loadingModal.classList.remove('hidden');
-                            if (progressContainer) progressContainer.classList.add('hidden');
-                            if (loadingTitle) loadingTitle.innerText = "Đang xử lý...";
-                            try {
-                                const response = await fetch(
-                                    '{{ route($routePrefix . 'students.bulk_destroy') }}', {
-                                        method: 'POST',
-                                        headers: {
-                                            'Content-Type': 'application/json',
-                                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                                        },
-                                        body: JSON.stringify({
-                                            ids: ids
-                                        })
-                                    });
-                                const data = await response.json();
-                                loadingModal.classList.add('hidden');
-                                if (data.success) {
-                                    showToast('success', data.message);
-                                    setTimeout(() => window.location.reload(), 1000);
-                                } else {
-                                    showToast('error', data.message);
+            // --- 7. BULK ACTIONS (CHỈ RENDER JS NẾU LÀ ADMIN) ---
+            @if (Auth::user()->role_id == 1)
+                if (btnDeleteSelected) {
+                    btnDeleteSelected.addEventListener('click', function() {
+                        const ids = Array.from(document.querySelectorAll('.student-checkbox:checked')).map(
+                            cb =>
+                            cb.value);
+                        if (ids.length === 0) return;
+                        showConfirm({
+                            title: 'Ẩn ' + ids.length + ' Sinh Viên?',
+                            message: 'Các sinh viên đã chọn sẽ bị ẩn (vô hiệu hóa). Bạn có chắc chắn?',
+                            btnText: 'Ẩn tất cả',
+                            btnColor: 'red',
+                            icon: 'visibility_off',
+                            callback: async () => {
+                                loadingModal.classList.remove('hidden');
+                                if (progressContainer) progressContainer.classList.add(
+                                    'hidden');
+                                if (loadingTitle) loadingTitle.innerText = "Đang xử lý...";
+                                try {
+                                    const response = await fetch(
+                                        "{{ route('admin.students.bulk_destroy') }}", {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                            },
+                                            body: JSON.stringify({
+                                                ids: ids
+                                            })
+                                        });
+                                    const data = await response.json();
+                                    loadingModal.classList.add('hidden');
+                                    if (data.success) {
+                                        showToast('success', data.message);
+                                        setTimeout(() => window.location.reload(), 1000);
+                                    } else {
+                                        showToast('error', data.message);
+                                    }
+                                } catch (e) {
+                                    loadingModal.classList.add('hidden');
+                                    showToast('error', 'Có lỗi xảy ra.');
                                 }
-                            } catch (e) {
-                                loadingModal.classList.add('hidden');
-                                showToast('error', 'Có lỗi xảy ra.');
                             }
-                        }
+                        });
                     });
-                });
-            }
+                }
 
-            // KHÔI PHỤC NHIỀU
-            if (btnRestoreSelected) {
-                btnRestoreSelected.addEventListener('click', function() {
-                    const ids = Array.from(document.querySelectorAll('.student-checkbox:checked')).map(cb =>
-                        cb.value);
-                    if (ids.length === 0) return;
+                if (btnRestoreSelected) {
+                    btnRestoreSelected.addEventListener('click', function() {
+                        const ids = Array.from(document.querySelectorAll('.student-checkbox:checked')).map(
+                            cb =>
+                            cb.value);
+                        if (ids.length === 0) return;
 
-                    showConfirm({
-                        title: 'Khôi phục ' + ids.length + ' Sinh Viên?',
-                        message: 'Các sinh viên đã chọn sẽ được kích hoạt lại.',
-                        btnText: 'Khôi phục tất cả',
-                        btnColor: 'blue',
-                        icon: 'history',
-                        callback: async () => {
-                            loadingModal.classList.remove('hidden');
-                            if (loadingTitle) loadingTitle.innerText = "Đang khôi phục...";
-                            if (progressContainer) progressContainer.classList.add('hidden');
+                        showConfirm({
+                            title: 'Khôi phục ' + ids.length + ' Sinh Viên?',
+                            message: 'Các sinh viên đã chọn sẽ được kích hoạt lại.',
+                            btnText: 'Khôi phục tất cả',
+                            btnColor: 'blue',
+                            icon: 'history',
+                            callback: async () => {
+                                loadingModal.classList.remove('hidden');
+                                if (loadingTitle) loadingTitle.innerText = "Đang khôi phục...";
+                                if (progressContainer) progressContainer.classList.add(
+                                    'hidden');
 
-                            try {
-                                const response = await fetch(
-                                    '{{ route($routePrefix . 'students.bulk_restore') }}', {
-                                        method: 'POST',
-                                        headers: {
-                                            'Content-Type': 'application/json',
-                                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                                        },
-                                        body: JSON.stringify({
-                                            ids: ids
-                                        })
-                                    });
-                                const data = await response.json();
-                                loadingModal.classList.add('hidden');
+                                try {
+                                    const response = await fetch(
+                                        "{{ route('admin.students.bulk_restore') }}", {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                            },
+                                            body: JSON.stringify({
+                                                ids: ids
+                                            })
+                                        });
+                                    const data = await response.json();
+                                    loadingModal.classList.add('hidden');
 
-                                if (data.success) {
-                                    showToast('success', data.message);
-                                    setTimeout(() => window.location.reload(), 1000);
-                                } else {
-                                    showToast('error', data.message);
+                                    if (data.success) {
+                                        showToast('success', data.message);
+                                        setTimeout(() => window.location.reload(), 1000);
+                                    } else {
+                                        showToast('error', data.message);
+                                    }
+                                } catch (e) {
+                                    loadingModal.classList.add('hidden');
+                                    showToast('error', 'Lỗi hệ thống khi khôi phục.');
                                 }
-                            } catch (e) {
-                                loadingModal.classList.add('hidden');
-                                showToast('error', 'Lỗi hệ thống khi khôi phục.');
                             }
-                        }
+                        });
                     });
-                });
-            }
+                }
+            @endif
 
             // --- 8. SEARCH, EXPORT, EMAIL BATCH ---
             let debounceTimer;
@@ -865,7 +881,6 @@
                 });
             }
 
-            // Hàm gửi email theo lô
             function chunkArray(myArray, chunk_size) {
                 var results = [];
                 while (myArray.length) {

@@ -73,7 +73,7 @@
                 <th width="25%">Họ và Tên</th>
                 <th width="10%">Lớp</th>
                 <th width="15%">Mức cảnh báo</th>
-                <th width="10%">GPA Kỳ</th>
+                <th width="10%">TBHK</th>
                 <th width="20%">Lý do</th>
             </tr>
         </thead>
@@ -93,7 +93,9 @@
                         @endif
                     </td>
                     
-                    <td class="text-center">{{ number_format($warning->gpa_term ?? 0, 2) }}</td>
+                    <td class="text-center">
+                        {{ isset($warning->gpa_term) && (float)$warning->gpa_term > 0 ? number_format($warning->gpa_term, 2) : '-' }}
+                    </td>
                     <td>{{ $warning->reason }}</td>
                 </tr>
             @endforeach
@@ -105,7 +107,7 @@
         <tr>
             <td width="50%"></td>
             <td width="50%">
-                <div style="font-style: italic;">Kiên Giang, ngày ... tháng ... năm ......</div>
+                <div style="font-style: italic;">An Giang, ngày ... tháng ... năm ......</div>
                 <div class="font-bold" style="margin-top: 5px;">NGƯỜI LẬP BẢNG</div>
                 <div style="height: 80px;"></div>
                 <div class="font-bold">{{ Auth::user()->name ?? '' }}</div>

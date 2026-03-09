@@ -3,7 +3,7 @@
 
 @section('content')
     {{-- Container mở rộng full màn hình --}}
-    <div class="w-full px-4 py-4 h-[calc(100vh-80px)] flex flex-col">
+    <div class="w-full h-[calc(100vh-80px)] flex flex-col">
 
         @if (!isset($previewData))
             {{-- FORM GIAI ĐOẠN 1: UPLOAD & PREVIEW --}}
@@ -19,21 +19,17 @@
                     <input type="hidden" name="semester_id" value="{{ $semester_id }}">
         @endif
 
-        {{-- === PHẦN 1: THANH CÔNG CỤ (TOOLBAR) === --}}
-        <div
-            class="bg-white dark:bg-[#1e1e2d] border border-slate-200 dark:border-slate-700 p-4 rounded-lg shadow-sm mb-4 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-20">
+        <div class="rounded-lg mb-4 flex flex-col xl:flex-row xl:items-center justify-between gap-4 sticky top-0 z-20">
 
-            {{-- Nhóm bên trái: Quay lại & Học kỳ --}}
-            <div class="flex items-center gap-4 flex-1">
-                <a href="{{ route($routePrefix . 'course_cancellations.index') }}"
-                    class="flex items-center gap-2 text-slate-500 hover:text-red-600 transition-colors font-medium text-sm">
-                    <span class="material-symbols-outlined !text-[20px]">arrow_back</span>
-                    Hủy bỏ & Trở về
-                </a>
+            <x-page-header title="Nhập dữ liệu" description="Tải lên file Excel để cập nhật danh sách hủy học phần"
+                :routePrefix="$routePrefix" :breadcrumbs="[
+                    ['label' => 'Hủy học phần', 'url' => route($routePrefix . 'course_cancellations.index')],
+                    ['label' => 'Nhập dữ liệu'],
+                ]" />
 
-                <div class="h-6 w-px bg-slate-300 dark:bg-slate-700"></div>
+            <div class="flex flex-wrap items-center gap-4">
 
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 border-r border-slate-300 dark:border-slate-700 pr-4">
                     <span class="material-symbols-outlined text-slate-400 !text-[20px]">calendar_month</span>
                     <select name="semester_id"
                         class="bg-slate-50 dark:bg-slate-800 border-none text-sm font-semibold text-slate-700 dark:text-slate-200 focus:ring-0 cursor-pointer py-1 pl-2 pr-8 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
@@ -45,41 +41,35 @@
                         @endforeach
                     </select>
                 </div>
-            </div>
 
-            {{-- Nhóm bên phải: Các nút thao tác --}}
-            <div class="flex items-center gap-3">
-                @if (!isset($previewData))
-                    {{-- Trạng thái 1: Chưa có dữ liệu --}}
+                <div class="flex items-center gap-3">
+                    @if (!isset($previewData))
+                        <label for="file-upload"
+                            class="cursor-pointer flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg font-medium text-sm transition-colors border border-slate-200 dark:border-slate-600">
+                            <span class="material-symbols-outlined !text-[20px] text-green-600">table_view</span>
+                            <span id="toolbar-filename">Chọn file Excel</span>
+                            <input id="file-upload" name="file" type="file" class="hidden" accept=".xlsx,.xls,.csv"
+                                required onchange="updateFileName(this)" />
+                        </label>
 
-                    {{-- Nút chọn file Excel --}}
-                    <label for="file-upload"
-                        class="cursor-pointer flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg font-medium text-sm transition-colors border border-slate-200 dark:border-slate-600">
-                        <span class="material-symbols-outlined !text-[20px] text-green-600">table_view</span>
-                        <span id="toolbar-filename">Chọn file Excel</span>
-                        <input id="file-upload" name="file" type="file" class="hidden" accept=".xlsx,.xls,.csv"
-                            required onchange="updateFileName(this)" />
-                    </label>
+                        <button type="submit"
+                            class="flex items-center gap-2 bg-primary hover:bg-indigo-700 text-white px-5 py-2 rounded-lg font-medium text-sm transition-colors shadow-sm shadow-indigo-500/30">
+                            <span class="material-symbols-outlined !text-[20px]">visibility</span>
+                            Xem dữ liệu
+                        </button>
+                    @else
+                        <div
+                            class="px-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg text-sm font-medium border border-blue-100 dark:border-blue-800 flex items-center gap-2">
+                            <span class="material-symbols-outlined !text-[18px]">description</span>
+                            File: {{ $selected_file_name ?? 'Data.xlsx' }}
+                        </div>
 
-                    {{-- Nút Xem dữ liệu --}}
-                    <button type="submit"
-                        class="flex items-center gap-2 bg-primary hover:bg-indigo-700 text-white px-5 py-2 rounded-lg font-medium text-sm transition-colors shadow-sm shadow-indigo-500/30">
-                        <span class="material-symbols-outlined !text-[20px]">visibility</span>
-                        Xem dữ liệu
-                    </button>
-                @else
-                    {{-- Trạng thái 2: Đã có dữ liệu (Preview) --}}
-                    <div
-                        class="px-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg text-sm font-medium border border-blue-100 dark:border-blue-800 flex items-center gap-2">
-                        <span class="material-symbols-outlined !text-[18px]">description</span>
-                        File: {{ $selected_file_name ?? 'Data.xlsx' }}
-                    </div>
-
-                    <a href="{{ route($routePrefix . 'course_cancellations.import') }}"
-                        class="px-4 py-2 text-slate-500 hover:text-slate-700 font-medium text-sm">
-                        Chọn lại
-                    </a>
-                @endif
+                        <a href="{{ route($routePrefix . 'course_cancellations.import') }}"
+                            class="px-4 py-2 text-slate-500 hover:text-slate-700 font-medium text-sm">
+                            Chọn lại
+                        </a>
+                    @endif
+                </div>
             </div>
         </div>
 

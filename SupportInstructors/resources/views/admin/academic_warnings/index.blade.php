@@ -197,7 +197,7 @@
                             <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Họ và tên</th>
                             <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Lớp</th>
                             <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Học kỳ</th>
-                            <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase text-center">GPA</th>
+                            <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase text-center">TBHK</th>
                             <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase text-center">Nợ tín</th>
                             <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Mức cảnh báo</th>
                             <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Lý do</th>

@@ -18,21 +18,19 @@
 @section('content')
     <script src="https://cdn.ckeditor.com/ckeditor5/40.0.0/classic/ckeditor.js"></script>
 
-    <div class="w-full px-4 md:px-8 py-6">
-        <div class="mb-6 flex items-center justify-between">
-            <a href="{{ route($routePrefix . 'notifications.index') }}"
-                class="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-100 py-1.5 px-3 rounded-lg transition-colors -ml-3">
-                <span class="material-symbols-outlined !text-[20px]">arrow_back</span>
-                Quay lại danh sách
-            </a>
+    <div class="w-full">
+        <div class="mb-6 flex flex-col md:flex-row md:items-start justify-between gap-4">
+            <x-page-header title="Cập Nhật Bài Đăng" description="Chỉnh sửa nội dung thông báo đã tạo" :routePrefix="$routePrefix"
+                :breadcrumbs="[
+                    ['label' => 'Thông báo', 'url' => route($routePrefix . 'notifications.index')],
+                    ['label' => 'Cập nhật'],
+                ]" />
 
-            <div class="flex items-center gap-3">
-                <span class="px-3 py-1 bg-yellow-100 text-yellow-700 text-xs font-bold rounded-md border border-yellow-200">
+            <div>
+                <span
+                    class="px-3 py-1 bg-yellow-100 text-yellow-700 text-xs font-bold rounded-sm border border-yellow-200 inline-block mt-2">
                     Trạng thái: {{ $notification->status == 'draft' ? 'Bản nháp' : 'Chờ duyệt' }}
                 </span>
-                <h1 class="text-xl font-bold text-slate-800 uppercase flex items-center gap-2">
-                    <span class="material-symbols-outlined text-primary !text-[24px]">edit_document</span> Cập Nhật Bài Đăng
-                </h1>
             </div>
         </div>
 

@@ -2,18 +2,13 @@
 @section('title', 'Thêm Lớp học mới')
 
 @section('content')
-    <div class="w-full px-4 py-6">
-        <div class="flex items-center justify-between mb-6">
-            <div class="flex items-center gap-3">
-                <a href="{{ route($routePrefix . 'classes.index') }}"
-                    class="p-2 bg-white border border-slate-300 rounded-sm text-slate-600 hover:bg-slate-50 transition-colors shadow-sm">
-                    <span class="material-symbols-outlined !text-[16px] block">arrow_back</span>
-                </a>
-                <div>
-                    <h1 class="text-2xl font-bold text-slate-800 dark:text-white uppercase">Thêm Lớp Mới</h1>
-                    <p class="text-xs text-slate-500">Nhập thông tin lớp học vào hệ thống</p>
-                </div>
-            </div>
+    <div class="w-full">
+        <div class="mb-6">
+            <x-page-header title="Thêm Lớp Mới" description="Nhập thông tin lớp học vào hệ thống" :routePrefix="$routePrefix"
+                :breadcrumbs="[
+                    ['label' => 'Lớp học', 'url' => route($routePrefix . 'classes.index')],
+                    ['label' => 'Thêm mới'],
+                ]" />
         </div>
 
         <div class="bg-white dark:bg-[#1e1e2d] border border-slate-200 dark:border-slate-700 rounded-sm shadow-sm">

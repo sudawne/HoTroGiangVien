@@ -3,7 +3,7 @@
 
 @section('content')
 
-    <div class="w-full px-4 py-6" x-data="{
+    <div class="w-full" x-data="{
         confirmModalOpen: false,
         errorModalOpen: false,
         actionType: '',
@@ -61,9 +61,9 @@
     }">
         {{-- Header --}}
         <div class="flex items-center justify-between mb-6">
-            <div>
-                <h1 class="text-2xl font-bold text-slate-800 dark:text-white uppercase">Danh sách Giảng viên</h1>
-                <p class="text-xs text-slate-500">Quản lý thông tin đội ngũ giảng dạy</p>
+            <div class="mb-6">
+                <x-page-header title="Danh sách Giảng viên" description="Quản lý thông tin đội ngũ giảng dạy"
+                    :routePrefix="$routePrefix" :breadcrumbs="[['label' => 'Giảng viên']]" />
             </div>
             <div class="flex items-center gap-2">
                 {{-- KHU VỰC NÚT HÀNG LOẠT (JS Vanilla sẽ toggle class hidden ở đây) --}}

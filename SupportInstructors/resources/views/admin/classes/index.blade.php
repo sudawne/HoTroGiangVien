@@ -3,18 +3,12 @@
 
 @section('content')
     <div class="max-w-[1400px] mx-auto">
-        <div class="flex flex-col md:flex-row justify-between items-end md:items-center gap-4 mb-8">
-            <div>
-                <h1
-                    class="text-xl font-bold text-slate-800 dark:text-white uppercase tracking-wide border-l-4 border-primary pl-3">
-                    Danh sách Lớp học
-                </h1>
-                <p class="text-xs text-slate-500 mt-1 pl-4">Quản lý hồ sơ và sinh viên trực thuộc</p>
-            </div>
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+            <x-page-header title="Danh sách Lớp học" description="Quản lý hồ sơ và sinh viên trực thuộc" :routePrefix="$routePrefix"
+                :breadcrumbs="[['label' => 'Lớp học']]" />
 
-            {{-- CHỈ ADMIN MỚI THẤY NÚT TẠO MỚI --}}
             @if (Auth::user()->role_id == 1)
-                <div class="flex gap-2">
+                <div class="flex items-center gap-2">
                     <a href="{{ route($routePrefix . 'classes.create') }}"
                         class="bg-slate-800 hover:bg-slate-700 dark:bg-white dark:hover:bg-slate-200 text-white dark:text-slate-900 px-4 py-1.5 rounded-sm text-xs font-bold uppercase tracking-wider shadow-sm transition-all flex items-center gap-2">
                         <span class="material-symbols-outlined !text-[16px]">add</span> Tạo mới

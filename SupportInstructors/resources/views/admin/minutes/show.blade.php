@@ -2,32 +2,36 @@
 @section('title', 'Xem chi tiết biên bản')
 
 @section('content')
-    <div class="max-w-[1200px] mx-auto pb-10">
+    <div class="w-full pb-10">
 
-        {{-- THANH CÔNG CỤ (Sẽ ẩn khi in) --}}
-        <div
-            class="flex items-center justify-between mb-6 bg-white dark:bg-[#1e1e2d] p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 no-print">
-            <div class="flex items-center gap-4">
-                <a href="{{ route($routePrefix . 'minutes.index') }}"
-                    class="p-2 rounded-full hover:bg-slate-100 text-slate-500 transition-colors">
-                    <span class="material-symbols-outlined">arrow_back</span>
-                </a>
+        <div class="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6 no-print">
+
+            <div class="flex flex-col gap-2">
+                <x-page-header title="Chi tiết biên bản" description="Xem thông tin chi tiết và xuất file báo cáo"
+                    :routePrefix="$routePrefix" :breadcrumbs="[
+                        ['label' => 'Biên bản họp', 'url' => route($routePrefix . 'minutes.index')],
+                        ['label' => 'Chi tiết'],
+                    ]" />
+
                 <div>
-                    <h1 class="text-xl font-bold text-slate-800 dark:text-white">Chi tiết biên bản</h1>
                     @if ($minute->status == 'published')
-                        <span class="text-xs text-emerald-600 font-bold uppercase flex items-center gap-1">
+                        <span
+                            class="inline-flex items-center gap-1 text-xs text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-sm font-bold uppercase border border-emerald-200">
                             <span class="material-symbols-outlined text-[14px]">lock</span> Đã duyệt & Công bố
                         </span>
                     @else
-                        <span class="text-xs text-orange-500 font-bold uppercase">Bản nháp / Chờ duyệt</span>
+                        <span
+                            class="inline-flex items-center gap-1 text-xs text-orange-700 bg-orange-100 px-2.5 py-1 rounded-sm font-bold uppercase border border-orange-200">
+                            <span class="material-symbols-outlined text-[14px]">pending_actions</span> Bản nháp / Chờ duyệt
+                        </span>
                     @endif
                 </div>
             </div>
 
-            <div class="flex gap-2">
+            <div class="flex flex-wrap gap-2 mt-2 md:mt-0">
                 @if ($minute->status === 'draft')
                     <a href="{{ route($routePrefix . 'minutes.edit', $minute->id) }}"
-                        class="px-4 py-2 bg-orange-50 text-orange-600 font-bold rounded border border-orange-200 hover:bg-orange-100 flex items-center gap-2">
+                        class="px-4 py-2 bg-orange-50 text-orange-600 text-sm font-bold rounded-sm border border-orange-200 hover:bg-orange-100 flex items-center gap-2 transition-colors">
                         <span class="material-symbols-outlined text-[18px]">edit</span> Sửa
                     </a>
 
@@ -37,19 +41,21 @@
                             @csrf
                             @method('PUT')
                             <button type="submit"
-                                class="px-4 py-2 bg-emerald-600 text-white font-bold rounded shadow hover:bg-emerald-700 flex items-center gap-2">
+                                class="px-4 py-2 bg-emerald-600 text-white text-sm font-bold rounded-sm shadow-sm hover:bg-emerald-700 flex items-center gap-2 transition-colors">
                                 <span class="material-symbols-outlined text-[18px]">check</span> Duyệt
                             </button>
                         </form>
                     @endif
                 @endif
+
                 <a href="{{ route($routePrefix . 'minutes.export_word', $minute->id) }}"
-                    class="px-4 py-2 bg-blue-600 text-white font-bold rounded shadow hover:bg-blue-700 flex items-center gap-2">
+                    class="px-4 py-2 bg-primary text-white text-sm font-bold rounded-sm shadow-sm hover:bg-primary/90 flex items-center gap-2 transition-colors">
                     <span class="material-symbols-outlined text-[18px]">description</span> Tải file Word
                 </a>
+
                 {{-- Nút In --}}
                 <button onclick="window.print()"
-                    class="px-4 py-2 bg-blue-600 text-white font-bold rounded shadow hover:bg-blue-700 flex items-center gap-2">
+                    class="px-4 py-2 bg-slate-600 text-white text-sm font-bold rounded-sm shadow-sm hover:bg-slate-700 flex items-center gap-2 transition-colors">
                     <span class="material-symbols-outlined text-[18px]">print</span> In biên bản
                 </button>
             </div>

@@ -1,152 +1,139 @@
 @php
-    // Xác định prefix của route dựa trên quyền người dùng
-    $routePrefix = Auth::user()->role_id == 1 ? 'admin.' : 'lecturer.';
+    $user = Auth::user();
+    $student = $user->student ?? null;
+    $class = $student ? $student->class : null;
+    $advisor = $class ? $class->advisor : null;
 @endphp
 
 <aside
-    class="fixed inset-y-0 left-0 z-30 w-64 bg-white dark:bg-[#1e1e2d] border-r border-slate-200 dark:border-slate-700 flex flex-col transition-transform duration-300 transform lg:static lg:translate-x-0"
-    :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
-    {{-- LOGO --}}
+    class="fixed inset-y-0 left-0 z-30 w-64 lg:w-72 bg-white dark:bg-[#1e1e2d] border-r border-slate-200 dark:border-slate-700 flex flex-col transition-transform duration-300 transform md:static md:translate-x-0 h-screen"
+    :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'" x-cloak>
+
+    {{-- LOGO & TIÊU ĐỀ (Hiện trên cả Desktop và Mobile) --}}
     <div
-        class="h-16 flex items-center justify-between px-5 border-b border-slate-100 dark:border-slate-800 flex-shrink-0">
-        <div class="flex items-center gap-3">
-            <div class="bg-primary/10 p-1.5 rounded text-primary">
+        class="h-[60px] flex items-center justify-between px-5 border-b border-slate-100 dark:border-slate-800 flex-shrink-0">
+        <a href="{{ url('/student') }}"
+            class="flex items-center gap-3 text-slate-800 dark:text-white hover:opacity-80 transition-opacity w-full">
+            <div class="bg-primary/10 p-1.5 rounded text-primary flex items-center justify-center">
                 <span class="material-symbols-outlined !text-[20px]">school</span>
             </div>
-            <div>
-                <h1 class="font-bold text-slate-800 dark:text-white leading-tight">Cố Vấn Học Tập</h1>
-                <p class="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Đại học Kiên Giang</p>
+            <div class="flex-1 min-w-0">
+                <h1 class="font-bold text-[14px] leading-tight truncate">Cổng Sinh Viên</h1>
+                <p class="text-[10px] text-slate-500 dark:text-slate-400 font-medium truncate">Đại học Kiên Giang</p>
             </div>
-        </div>
-        <button @click="sidebarOpen = false" class="lg:hidden text-slate-500 hover:text-red-500 transition-colors">
-            <span class="material-symbols-outlined">close</span>
+        </a>
+
+        {{-- Nút đóng sidebar (Chỉ hiện trên Mobile) --}}
+        <button @click="sidebarOpen = false"
+            class="md:hidden text-slate-500 hover:text-red-500 transition-colors p-1 bg-slate-50 rounded ml-2">
+            <span class="material-symbols-outlined !text-[20px]">close</span>
         </button>
     </div>
 
-    {{-- MENU CHÍNH --}}
-    <nav class="flex-1 overflow-y-auto py-4 px-3 flex flex-col gap-1">
+    {{-- KHU VỰC NỘI DUNG SIDEBAR --}}
+    <div class="flex-1 overflow-y-auto custom-scrollbar flex flex-col pt-5 px-4 pb-4">
 
-        {{-- TỔNG QUAN --}}
-        <a class="flex items-center gap-3 px-3 py-2 rounded transition-colors group
-            {{ request()->routeIs($routePrefix . 'dashboard') ? 'bg-primary/10 text-primary' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white' }}"
-            href="{{ route($routePrefix . 'dashboard') }}">
-            <span class="material-symbols-outlined !text-[16px] font-medium"
-                data-weight="{{ request()->routeIs($routePrefix . 'dashboard') ? 'fill' : 'regular' }}">dashboard</span>
-            <span class="font-semibold text-sm">Tổng quan</span>
-        </a>
+        {{-- THÔNG TIN SINH VIÊN --}}
+        <div
+            class="bg-slate-50/60 border border-slate-200 dark:border-slate-700 rounded-xl p-4 mb-6 flex gap-3.5 items-center shadow-sm relative overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-transparent opacity-50"></div>
 
-        {{-- QUẢN LÝ --}}
-        <div class="pt-2 pb-1 px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Quản lý</div>
-
-        <a class="flex items-center gap-3 px-3 py-2 rounded transition-colors
-            {{ request()->routeIs($routePrefix . 'classes.*') ? 'bg-primary/10 text-primary' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white' }}"
-            href="{{ route($routePrefix . 'classes.index') }}">
-            <span class="material-symbols-outlined !text-[16px]">groups</span>
-            <span class="font-medium text-sm">Quản lý Lớp học</span>
-        </a>
-
-        {{-- CHỈ HIỂN THỊ QUẢN LÝ GIẢNG VIÊN NẾU LÀ ADMIN (role_id = 1) --}}
-        @if (Auth::user()->role_id == 1)
-            <a class="flex items-center gap-3 px-3 py-2 rounded transition-colors
-            {{ request()->routeIs('admin.lecturers.*') ? 'bg-primary/10 text-primary' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white' }}"
-                href="{{ route($routePrefix . 'lecturers.index') }}">
-                <span class="material-symbols-outlined !text-[16px]">supervisor_account</span>
-                <span class="font-medium text-sm">Quản lý Giảng viên</span>
-            </a>
-        @endif
-
-        <a class="flex items-center gap-3 px-3 py-2 rounded transition-colors
-            {{ request()->routeIs($routePrefix . 'students.*') ? 'bg-primary/10 text-primary' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white' }}"
-            href="{{ route($routePrefix . 'students.index') }}">
-            <span class="material-symbols-outlined !text-[16px]">badge</span>
-            <span class="font-medium text-sm">Hồ sơ Sinh viên</span>
-        </a>
-        <a class="flex items-center gap-3 px-3 py-2 rounded transition-colors
-            {{ request()->routeIs($routePrefix . 'subjects.*') ? 'bg-primary/10 text-primary font-medium' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white' }}"
-            href="{{ route($routePrefix . 'subjects.index') }}">
-            <span class="material-symbols-outlined !text-[16px]">menu_book</span>
-            <span class="font-medium text-sm">Học phần & Môn học</span>
-        </a>
-        <a class="flex items-center gap-3 px-3 py-2 rounded transition-colors
-         {{ request()->routeIs($routePrefix . 'academic-results.*') ? 'bg-primary/10 text-primary' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white' }}"
-            href="{{ route($routePrefix . 'academic-results.index') }}">
-            <span class="material-symbols-outlined !text-[16px]">analytics</span>
-            <span class="font-medium text-sm">Kết quả học tập</span>
-        </a>
-
-        <a class="flex items-center gap-3 px-3 py-2 rounded transition-colors
-         {{ request()->routeIs($routePrefix . 'training_points.*') ? 'bg-primary/10 text-primary' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white' }}"
-            href="{{ route($routePrefix . 'training_points.index') }}">
-            <span class="material-symbols-outlined !text-[16px]">star</span>
-            <span class="font-medium text-sm">Điểm rèn luyện</span>
-        </a>
-
-        {{-- BÁO CÁO --}}
-        <div class="pt-2 pb-1 px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Báo cáo</div>
-
-        <a class="flex items-center gap-3 px-3 py-2 rounded transition-colors
-            {{ request()->routeIs($routePrefix . 'academic_warnings.*') ? 'bg-primary/10 text-primary' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white' }}"
-            href="{{ route($routePrefix . 'academic_warnings.index') }}">
-            <span class="material-symbols-outlined !text-[16px]"
-                data-weight="{{ request()->routeIs($routePrefix . 'academic_warnings.*') ? 'fill' : 'regular' }}">warning</span>
-            <span class="font-medium text-sm">Cảnh cáo học tập</span>
-        </a>
-        <a class="flex items-center gap-3 px-3 py-2 rounded transition-colors
-            {{ request()->routeIs($routePrefix . 'course_cancellations.*') ? 'bg-primary/10 text-primary' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white' }}"
-            href="{{ route($routePrefix . 'course_cancellations.index') }}">
-            <span class="material-symbols-outlined !text-[16px]">remove_circle_outline</span>
-            <span class="font-medium text-sm">Xóa học phần</span>
-        </a>
-        <a class="flex items-center gap-3 px-3 py-2 rounded transition-colors
-            {{ request()->routeIs($routePrefix . 'notifications.*') ? 'bg-primary/10 text-primary' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white' }}"
-            href="{{ route($routePrefix . 'notifications.index') }}">
-            <span class="material-symbols-outlined !text-[16px]">campaign</span>
-            <span class="font-medium text-sm">Thông báo & Tin tức</span>
-        </a>
-
-        <a class="flex items-center gap-3 px-3 py-2 rounded transition-colors
-            {{ request()->routeIs($routePrefix . 'minutes.*') ? 'bg-primary/10 text-primary' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white' }}"
-            href="{{ route($routePrefix . 'minutes.index') }}">
-            <span class="material-symbols-outlined !text-[16px]">description</span>
-            <span class="font-medium text-sm">Biên bản họp</span>
-        </a>
-
-        {{-- USER PROFILE & ĐĂNG XUẤT --}}
-        <div class="mt-auto pt-4 border-t border-slate-100 dark:border-slate-800 relative group">
-
-            <div
-                class="absolute bottom-full left-0 w-full mb-2 bg-white dark:bg-[#1e1e2d] border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg overflow-hidden invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200">
-                <a href="{{ route($routePrefix . 'profile.change_password') }}"
-                    class="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors">
-                    <span class="material-symbols-outlined !text-[16px]">settings</span>
-                    <span class="text-sm font-medium">Đổi mật khẩu</span>
-                </a>
-                <div class="h-[1px] bg-slate-100 dark:bg-slate-700 mx-2"></div>
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-                    <button type="submit"
-                        class="flex w-full items-center gap-3 px-4 py-3 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition-colors">
-                        <span class="material-symbols-outlined !text-[16px]">logout</span>
-                        <span class="text-sm font-medium">Đăng xuất</span>
-                    </button>
-                </form>
+            <div class="relative z-10 flex-none">
+                @if ($user && $user->avatar_url)
+                    <img src="{{ asset('storage/' . $user->avatar_url) }}"
+                        class="w-12 h-12 rounded-lg object-cover border border-slate-200 shadow-sm" alt="avatar">
+                @else
+                    <div
+                        class="w-12 h-12 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-[18px] shadow-sm">
+                        {{ mb_substr($user->name ?? 'S', 0, 1) }}
+                    </div>
+                @endif
             </div>
 
-            <button
-                class="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left">
-                <div class="size-9 rounded bg-slate-200 overflow-hidden border border-slate-300 flex-shrink-0"
-                    style="background-image: url('https://cdn4.iconfinder.com/data/icons/free-large-boss-icon-set/512/Admin.png'); background-size: cover;">
-                </div>
-                <div class="flex-1 overflow-hidden">
-                    <p class="text-sm font-bold text-slate-700 dark:text-slate-200 leading-none truncate">
-                        {{ Auth::user()->name ?? 'Administrator' }}
-                    </p>
-                    <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1 truncate">
-                        {{ optional(Auth::user()->role)->name == 'ADMIN' ? 'Quản trị viên' : 'Giảng viên' }}
-                    </p>
-                </div>
-                <span class="material-symbols-outlined text-slate-400 !text-[16px]">expand_less</span>
-            </button>
+            <div class="relative z-10 flex-1 min-w-0">
+                <h3 class="text-[14px] font-extrabold text-slate-800 dark:text-slate-100 leading-tight truncate"
+                    title="{{ $user->name ?? '' }}">
+                    {{ $user->name ?? '' }}
+                </h3>
+                <p class="text-slate-500 dark:text-slate-400 text-[11.5px] font-medium mt-1 truncate">
+                    MSSV: <span
+                        class="font-bold text-slate-700 dark:text-slate-300">{{ $student->student_code ?? 'Chưa cập nhật' }}</span>
+                </p>
+                <p class="text-[11.5px] font-semibold mt-0.5 text-blue-600 dark:text-blue-400 truncate">
+                    Lớp: {{ $class->code ?? 'Chưa xếp lớp' }}
+                </p>
+            </div>
         </div>
-    </nav>
+
+        {{-- MENU HỆ THỐNG --}}
+        <div class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-2 ml-1">Menu Hệ Thống</div>
+        <nav class="flex flex-col gap-1.5 mb-6 font-display">
+            <a class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 {{ request()->routeIs('student.index') || request()->is('/') || request()->is('student') ? 'bg-primary/10 text-primary font-bold shadow-sm' : 'text-slate-600 font-medium hover:bg-slate-50 dark:hover:bg-slate-800 dark:text-slate-300 dark:hover:text-white' }}"
+                href="{{ url('/student') }}">
+                <span class="material-symbols-outlined !text-[18px]"
+                    {{ request()->routeIs('student.index') || request()->is('/') || request()->is('student') ? 'style=font-variation-settings:"FILL"1' : '' }}>feed</span>
+                <span class="text-[13px]">Bảng tin</span>
+            </a>
+        </nav>
+
+        {{-- CỐ VẤN HỌC TẬP (Luôn đẩy xuống dưới cùng màn hình nếu còn chỗ trống) --}}
+        <div class="mt-auto pt-4 border-t border-slate-100 dark:border-slate-700/50">
+            <div class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-3 ml-1">Cố vấn học tập
+            </div>
+
+            <div
+                class="bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-3.5">
+                @if ($advisor && $advisor->user)
+                    <div class="flex items-center gap-3 mb-3.5">
+                        <div class="flex-none">
+                            @if ($advisor->user->avatar_url)
+                                <img src="{{ asset('storage/' . $advisor->user->avatar_url) }}"
+                                    class="w-10 h-10 rounded-full object-cover border-2 border-emerald-200 shadow-sm"
+                                    alt="advisor">
+                            @else
+                                <div
+                                    class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-[14px] border-2 border-emerald-200 shadow-sm">
+                                    {{ mb_substr($advisor->user->name, 0, 1) }}
+                                </div>
+                            @endif
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <p class="font-bold text-[13px] text-slate-800 dark:text-slate-100 leading-tight truncate"
+                                title="{{ $advisor->degree ? $advisor->degree . '. ' : '' }}{{ $advisor->user->name }}">
+                                {{ $advisor->degree ? $advisor->degree . '. ' : '' }}{{ $advisor->user->name }}
+                            </p>
+                            <p class="text-[11px] text-slate-500 mt-0.5 truncate">
+                                {{ $advisor->position ?? 'Giảng viên' }}</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2.5 mb-4 px-1">
+                        <a href="mailto:{{ $advisor->user->email }}"
+                            class="flex items-center gap-2.5 text-[12px] text-slate-600 dark:text-slate-300 hover:text-primary transition-colors"
+                            title="{{ $advisor->user->email }}">
+                            <span class="material-symbols-outlined !text-[15px] text-slate-400">mail</span>
+                            <span class="truncate">{{ $advisor->user->email }}</span>
+                        </a>
+                        @if ($advisor->user->phone)
+                            <div class="flex items-center gap-2.5 text-[12px] text-slate-600 dark:text-slate-300">
+                                <span class="material-symbols-outlined !text-[15px] text-slate-400">call</span>
+                                <span>{{ $advisor->user->phone }}</span>
+                            </div>
+                        @endif
+                    </div>
+
+                    <button
+                        class="w-full bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 py-2 rounded-lg text-[12.5px] font-bold transition-all flex justify-center items-center gap-1.5 shadow-sm">
+                        <span class="material-symbols-outlined !text-[16px]">calendar_month</span> Đặt lịch hẹn
+                    </button>
+                @else
+                    <div class="text-center py-4 flex flex-col items-center opacity-60">
+                        <span class="material-symbols-outlined !text-[32px] mb-2 text-slate-400">person_off</span>
+                        <p class="text-[12px] text-slate-500 font-medium">Lớp hiện chưa có Cố vấn.</p>
+                    </div>
+                @endif
+            </div>
+        </div>
+
+    </div>
 </aside>

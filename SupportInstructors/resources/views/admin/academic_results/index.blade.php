@@ -6,24 +6,12 @@
     {{-- THÊM x-data ĐỂ QUẢN LÝ MODAL BẰNG ALPINE.JS --}}
     <div class="max-w-[1400px] mx-auto" x-data="{ showExportModal: false }">
 
-        {{-- HEADER --}}
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-            <div>
-                <nav aria-label="Breadcrumb" class="flex text-sm text-slate-500 dark:text-slate-400 mb-1">
-                    <ol class="flex items-center space-x-2">
-                        <li><a class="hover:text-primary transition-colors"
-                                href="{{ route($routePrefix . 'dashboard') }}">Trang
-                                chủ</a></li>
-                        <li><span class="material-symbols-outlined !text-[12px]">chevron_right</span></li>
-                        <li><span class="font-medium text-slate-900 dark:text-slate-200">Kết quả học tập</span></li>
-                    </ol>
-                </nav>
-                <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Quản lý Kết quả học tập</h1>
-                <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Theo dõi GPA hệ 10, hệ 4 và xếp loại học lực
-                    của sinh viên.</p>
-            </div>
+            <x-page-header title="Quản lý Kết quả học tập"
+                description="Theo dõi TBHK hệ 10, hệ 4 và xếp loại học lực của sinh viên." :routePrefix="$routePrefix"
+                :breadcrumbs="[['label' => 'Kết quả học tập']]" />
+
             <div class="flex items-center gap-2">
-                {{-- THÊM SỰ KIỆN MỞ MODAL VÀO NÚT NÀY --}}
                 <button @click="showExportModal = true"
                     class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-sm font-medium transition-all shadow-sm text-sm">
                     <span class="material-symbols-outlined !text-[18px]">download</span> Xuất Báo cáo
@@ -208,8 +196,8 @@
                         <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase w-12 text-center">#</th>
                         <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Sinh viên</th>
                         <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Lớp</th>
-                        <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase text-center">GPA (10)</th>
-                        <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase text-center">GPA (4)</th>
+                        <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase text-center">TBHK (10)</th>
+                        <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase text-center">TBHK (4)</th>
                         <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase text-center">Xếp loại</th>
                         <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase text-right">Tác vụ</th>
                     </tr>

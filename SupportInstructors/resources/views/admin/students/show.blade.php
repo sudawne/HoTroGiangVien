@@ -71,7 +71,7 @@
         $latestResult = $student->academic_results->sortByDesc('semester_id')->first();
     @endphp
 
-    <div class="w-full px-4 py-6" x-data="{
+    <div class="w-full" x-data="{
         activeTab: 'warnings',
         selectedSemester: '{{ $defaultSemester }}',
         dataMap: {{ json_encode($semesterMap) }}
@@ -79,22 +79,23 @@
 
         {{-- === HEADER & BACK BUTTON === --}}
         <div class="flex items-center justify-between mb-6">
-            <div class="flex items-center gap-4">
-                <a href="{{ route($routePrefix . 'students.index') }}"
-                    class="p-2 bg-white dark:bg-[#1e1e2d] border border-slate-300 dark:border-slate-700 rounded-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-all">
-                    <span class="material-symbols-outlined !text-[18px] block">arrow_back</span>
-                </a>
-                <div>
-                    <h1 class="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                        Hồ sơ Sinh viên
-                        @if ($student->trashed())
-                            <span
-                                class="bg-red-100 text-red-600 text-xs px-2 py-0.5 rounded-sm border border-red-200 font-medium">Đã
-                                ẩn</span>
-                        @endif
-                    </h1>
-                    <p class="text-sm text-slate-500">Xem tổng quan học tập và lịch sử tư vấn</p>
-                </div>
+            <div class="mb-6">
+                <x-page-header title="Chi tiết Hồ sơ Sinh viên" description="Xem tổng quan học tập và lịch sử tư vấn"
+                    :routePrefix="$routePrefix" :breadcrumbs="[
+                        ['label' => 'Sinh viên', 'url' => route($routePrefix . 'students.index')],
+                        ['label' => 'Chi tiết'],
+                    ]" />
+
+                {{-- Hiển thị trạng thái tài khoản --}}
+                @if ($student->trashed())
+                    <div class="mt-2">
+                        <span
+                            class="bg-red-100 text-red-600 text-xs px-2.5 py-1 rounded-sm border border-red-200 font-medium inline-flex items-center gap-1">
+                            <span class="material-symbols-outlined !text-[14px]">visibility_off</span>
+                            Tài khoản này hiện đang bị ẩn
+                        </span>
+                    </div>
+                @endif
             </div>
             <div class="flex gap-2">
                 <button
@@ -449,7 +450,8 @@
                                         <div
                                             class="flex flex-wrap gap-2 text-xs bg-white/60 p-2 rounded-md border border-black/5 mb-3">
                                             <div class="bg-white px-2 py-1 rounded-sm border border-slate-100">GPA Kỳ:
-                                                <strong class="text-slate-800">{{ $warning->gpa_term }}</strong></div>
+                                                <strong class="text-slate-800">{{ $warning->gpa_term }}</strong>
+                                            </div>
                                             <div class="bg-white px-2 py-1 rounded-sm border border-slate-100">Nợ: <strong
                                                     class="text-red-600">{{ $warning->credits_owed }} TC</strong></div>
                                             <div class="bg-white px-2 py-1 rounded-sm border border-slate-100">Lần cảnh

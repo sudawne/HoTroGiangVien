@@ -15,31 +15,36 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;                 // Xử lý chuỗi
 use PhpOffice\PhpWord\PhpWord;              // Class chính tạo file Word
 use PhpOffice\PhpWord\IOFactory;            // Class xuất file
-use PhpOffice\PhpWord\Shared\Html;          
+use PhpOffice\PhpWord\Shared\Html;
 use Barryvdh\DomPDF\Facade\Pdf;
 // --------------------------
 
 class MeetingMinuteController extends Controller
 {
     // --- 1. INDEX ---
-    public function index(Request $request) {
+    public function index(Request $request)
+    {
         $query = MeetingMinute::with(['studentClass', 'semester', 'creator']);
         if ($request->filled('semester_id')) $query->where('semester_id', $request->semester_id);
         if ($request->filled('academic_year')) {
-            $query->whereHas('semester', function($q) use ($request) {
+            $query->whereHas('semester', function ($q) use ($request) {
                 $q->where('academic_year', $request->academic_year);
             });
         }
         if ($request->filled('status')) $query->where('status', $request->status);
-        
+
         $minutes = $query->orderBy('created_at', 'desc')->paginate(10)->withQueryString();
         $academicYears = Semester::orderBy('academic_year', 'desc')->get()->groupBy('academic_year');
-        
+
         return view('admin.minutes.index', compact('minutes', 'academicYears'));
     }
 
     // --- 2. CREATE ---
-    public function create(Request $request) {
+    public function create(Request $request)
+    {
+        // CHẶN ADMIN (Role 1)
+        if (Auth::user()->role_id == 1) abort(403, 'Quản trị viên không có quyền tạo biên bản.');
+
         $classes = Classes::all();
         $selectedClassId = $request->input('class_id', $classes->first()->id ?? null);
         $currentClass = $selectedClassId ? Classes::with(['advisor.user', 'students'])->find($selectedClassId) : null;
@@ -49,61 +54,83 @@ class MeetingMinuteController extends Controller
     }
 
     // --- 3. STORE ---
-    public function store(Request $request) {
+    public function store(Request $request)
+    {
+        // CHẶN ADMIN (Role 1)
+        if (Auth::user()->role_id == 1) abort(403, 'Quản trị viên không có quyền lưu biên bản.');
+
         $request->validate(['title' => 'required', 'class_id' => 'required']);
         $data = $request->all();
         $data['created_by'] = Auth::id();
         $data['status'] = $request->input('action') === 'publish' ? 'published' : 'draft';
-        
+
         $total = Student::where('class_id', $request->class_id)->count();
         $data['attendees_count'] = $total - count($request->absent_list ?? []);
-        
+
         MeetingMinute::create($data);
         return redirect()->route('admin.minutes.index')->with('success', 'Lưu thành công');
     }
 
     // --- 4. SHOW ---
-    public function show($id) {
+    public function show($id)
+    {
         $minute = MeetingMinute::with(['studentClass', 'semester', 'creator', 'monitor', 'secretary'])->findOrFail($id);
         $absentStudents = \App\Models\Student::whereIn('id', $minute->absent_list ?? [])->get();
         return view('admin.minutes.show', compact('minute', 'absentStudents'));
     }
 
     // --- 5. EDIT ---
-    public function edit($id) {
+    public function edit($id)
+    {
         $minute = MeetingMinute::findOrFail($id);
-        if($minute->status === 'published') return redirect()->route('admin.minutes.index')->with('error', 'Đã duyệt không thể sửa');
-        
+
+        // NẾU LÀ ADMIN (Role 1) VÀ BIÊN BẢN CHƯA DUYỆT THÌ CHO VÀO ĐỂ DUYỆT, CÒN NẾU ĐÃ DUYỆT THÌ CHẶN LẠI
+        if (Auth::user()->role_id == 1 && $minute->status === 'published') {
+            return redirect()->route('admin.minutes.index')->with('error', 'Biên bản đã duyệt không thể sửa.');
+        }
+
+        if ($minute->status === 'published') return redirect()->route('admin.minutes.index')->with('error', 'Đã duyệt không thể sửa');
+
         $classes = Classes::all();
         $semesters = Semester::orderBy('start_date', 'desc')->get();
         $currentClass = Classes::with('students')->find($minute->class_id);
         $students = $currentClass ? $currentClass->students : collect([]);
-        
+
         return view('admin.minutes.edit', compact('minute', 'classes', 'semesters', 'students', 'currentClass'));
     }
 
     // --- 6. UPDATE ---
-    public function update(Request $request, $id) {
+    public function update(Request $request, $id)
+    {
         $minute = MeetingMinute::findOrFail($id);
+
+        // ADMIN CHỈ ĐƯỢC NHẤN NÚT "DUYỆT" CHỨ KHÔNG ĐƯỢC CẬP NHẬT NỘI DUNG. NẾU CỐ TÌNH GỌI HÀM UPDATE NÀY SẼ BỊ CHẶN LẠI
+        if (Auth::user()->role_id == 1) abort(403, 'Quản trị viên không có quyền thay đổi nội dung biên bản.');
+
         $data = $request->all();
-        
+
         $total = Student::where('class_id', $minute->class_id)->count();
         $data['attendees_count'] = $total - count($request->absent_list ?? []);
         $data['status'] = $request->input('action') === 'publish' ? 'published' : 'draft';
-        
+
         $minute->update($data);
         return redirect()->route('admin.minutes.index')->with('success', 'Cập nhật thành công');
     }
 
     // --- 7. APPROVE ---
-    public function approve($id) {
-        if((Auth::user()->role_id ?? 0) != 1) return back();
+    public function approve($id)
+    {
+        if ((Auth::user()->role_id ?? 0) != 1) return back();
         MeetingMinute::where('id', $id)->update(['status' => 'published']);
         return redirect()->route('admin.minutes.index')->with('success', 'Đã duyệt.');
     }
 
     // --- 9. DESTROY ---
-    public function destroy($id) {
+    public function destroy($id)
+    {
+        // CHẶN ADMIN KHÔNG CHO XÓA
+        if (Auth::user()->role_id == 1) abort(403, 'Quản trị viên không có quyền xóa biên bản.');
+
         MeetingMinute::destroy($id);
         return back()->with('success', 'Đã xóa.');
     }
@@ -122,19 +149,21 @@ class MeetingMinuteController extends Controller
         // Tạo trang A4
         $section = $phpWord->addSection([
             'paperSize' => 'A4',
-            'marginTop' => 1134, 'marginBottom' => 1134,
-            'marginLeft' => 1701, 'marginRight' => 1134,
+            'marginTop' => 1134,
+            'marginBottom' => 1134,
+            'marginLeft' => 1701,
+            'marginRight' => 1134,
         ]);
 
-        $table = $section->addTable(['unit' => 'pct', 'width' => 5000]); 
+        $table = $section->addTable(['unit' => 'pct', 'width' => 5000]);
         $table->addRow();
 
         $headerStyle = ['alignment' => 'center', 'spaceAfter' => 0];
         $boldStyle = ['bold' => true, 'size' => 11];
         $Style = ['size' => 11];
-        
+
         // Cột Trái
-        $cellLeft = $table->addCell(4500); // 45%
+        $cellLeft = $table->addCell(4500);
         $cellLeft->addText('TRƯỜNG ĐẠI HỌC KIÊN GIANG', $Style, $headerStyle);
         $cellLeft->addText('KHOA THÔNG TIN TRUYỀN THÔNG', $boldStyle, $headerStyle);
         $cellLeft->addText('_______________________', $boldStyle, $headerStyle);
@@ -148,17 +177,19 @@ class MeetingMinuteController extends Controller
         $section->addTextBreak(1);
 
         // Tiêu đề
-        $tenHocKyDB = $minute->semester->name ?? ''; 
+        $tenHocKyDB = $minute->semester->name ?? '';
         $soHocKy = trim(str_ireplace('Học kỳ', '', $tenHocKyDB));
         $section->addText('BIÊN BẢN HỌP LỚP', ['bold' => true, 'size' => 16], ['alignment' => 'center']);
         $section->addText($minute->title, ['bold' => true, 'size' => 14], ['alignment' => 'center']);
         $section->addText(
-            "Học kỳ: ".($soHocKy ?? '...') . " Năm học: " . ($minute->semester->academic_year ?? '...'),
-            ['italic' => false], ['alignment' => 'center']);
+            "Học kỳ: " . ($soHocKy ?? '...') . " Năm học: " . ($minute->semester->academic_year ?? '...'),
+            ['italic' => false],
+            ['alignment' => 'center']
+        );
         $section->addTextBreak(1);
 
         // Hàm hỗ trợ add heading
-        $addHeading = function($text) use ($section) {
+        $addHeading = function ($text) use ($section) {
             $section->addText($text, ['bold' => true, 'size' => 13], ['spaceBefore' => 120, 'spaceAfter' => 0]);
         };
 
@@ -178,10 +209,10 @@ class MeetingMinuteController extends Controller
         $section->addText("- Cố vấn: " . ($minute->studentClass->advisor->user->name ?? ''), [], ['indentation' => ['left' => 300]]);
         $section->addText("- Chủ trì: " . ($minute->monitor->fullname ?? ''), [], ['indentation' => ['left' => 300]]);
         $section->addText("- Thư ký: " . ($minute->secretary->fullname ?? ''), [], ['indentation' => ['left' => 300]]);
-        
-        $siSoText = "- Tổng số: " . ($minute->attendees_count + count($minute->absent_list ?? [])) . 
-                    "; Có mặt: " . $minute->attendees_count . 
-                    "; Vắng: " . count($minute->absent_list ?? []);
+
+        $siSoText = "- Tổng số: " . ($minute->attendees_count + count($minute->absent_list ?? [])) .
+            "; Có mặt: " . $minute->attendees_count .
+            "; Vắng: " . count($minute->absent_list ?? []);
         $section->addText($siSoText, [], ['indentation' => ['left' => 300]]);
 
         // Mục II, III, IV
@@ -199,10 +230,10 @@ class MeetingMinuteController extends Controller
         // Chữ ký (Sử dụng 'pct' cho bảng chữ ký luôn)
         $footerTable = $section->addTable(['unit' => 'pct', 'width' => 5000]);
         $footerTable->addRow();
-        
+
         $footerTable->addCell(5000)->addText('THƯ KÝ', ['bold' => true], ['alignment' => 'center']);
         $footerTable->addCell(5000)->addText('CỐ VẤN HỌC TẬP', ['bold' => true], ['alignment' => 'center']);
-        
+
         $footerTable->addRow();
         $footerTable->addCell(5000)->addTextBreak(3);
         $footerTable->addCell(5000)->addTextBreak(3);
@@ -214,7 +245,7 @@ class MeetingMinuteController extends Controller
         // Xuất file
         $filename = "Bien-ban-" . Str::slug($minute->title) . ".docx";
         $objWriter = IOFactory::createWriter($phpWord, 'Word2007');
-        
+
         return response()->streamDownload(function () use ($objWriter) {
             $objWriter->save('php://output');
         }, $filename);
@@ -224,10 +255,10 @@ class MeetingMinuteController extends Controller
     {
         // 1. Lấy dữ liệu
         $minute = MeetingMinute::with([
-            'studentClass.advisor.user', 
-            'semester', 
-            'creator', 
-            'monitor', 
+            'studentClass.advisor.user',
+            'semester',
+            'creator',
+            'monitor',
             'secretary'
         ])->findOrFail($id);
 
@@ -253,10 +284,10 @@ class MeetingMinuteController extends Controller
         // 3. Load View và xuất PDF
         // Lưu ý: Cần tạo file view 'admin.minutes.pdf_template' ở Bước 3
         $pdf = Pdf::loadView('admin.minutes.pdf_template', $data);
-        
+
         // Cấu hình font chữ tiếng Việt (DejaVu Sans là font mặc định hỗ trợ UTF-8 tốt nhất trong DomPDF)
         $pdf->setOption('defaultFont', 'DejaVu Sans');
-        
+
         return $pdf->download('Bien-ban-' . Str::slug($minute->title) . '.pdf');
     }
 }

@@ -5,17 +5,17 @@
 @section('content')
     <div class="max-w-[1400px] mx-auto flex flex-col gap-6">
 
-        {{-- HEADER --}}
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-                <h1 class="text-2xl font-bold text-slate-800 dark:text-white">Biên bản Sinh hoạt lớp</h1>
-                <p class="text-slate-500 text-sm mt-1">Lưu trữ và quản lý các biên bản họp định kỳ, đột xuất và xét điểm rèn
-                    luyện.</p>
-            </div>
-            <a href="{{ route($routePrefix . 'minutes.create') }}"
-                class="flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-bold rounded-lg hover:bg-primary/90 transition-colors shadow-lg shadow-primary/30">
-                <span class="material-symbols-outlined !text-[20px]">add</span> Tạo biên bản mới
-            </a>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 ">
+            <x-page-header title="Biên bản Sinh hoạt lớp"
+                description="Lưu trữ và quản lý các biên bản họp định kỳ, đột xuất và xét điểm rèn luyện." :routePrefix="$routePrefix"
+                :breadcrumbs="[['label' => 'Biên bản họp']]" />
+
+            @if (Auth::user()->role_id == 2)
+                <a href="{{ route($routePrefix . 'minutes.create') }}"
+                    class="flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-bold rounded-lg hover:bg-primary/90 transition-colors shadow-lg shadow-primary/30">
+                    <span class="material-symbols-outlined !text-[20px]">add</span> Tạo biên bản mới
+                </a>
+            @endif
         </div>
 
         {{-- MAIN LAYOUT --}}
@@ -33,7 +33,7 @@
                             {{-- Option Tất cả --}}
                             <a href="{{ route($routePrefix . 'minutes.index') }}"
                                 class="flex items-center justify-between p-2 rounded-lg {{ !request('semester_id') && !request('academic_year') ? 'bg-primary/10 text-primary font-bold' : 'hover:bg-slate-50 text-slate-600' }}">
-                                <span class="text-sm italic">Tất cả thời gian</span>
+                                <span class="text-sm">Tất cả thời gian</span>
                                 <span class="material-symbols-outlined text-[18px]">calendar_today</span>
                             </a>
 
@@ -116,7 +116,6 @@
                                 <div
                                     class="flex flex-row sm:flex-col items-center justify-center bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg w-full sm:w-20 h-14 sm:h-20 flex-shrink-0 text-center gap-2 sm:gap-0">
                                     <span class="text-xs font-bold text-slate-400 uppercase hidden sm:block">Tháng</span>
-                                    {{-- Lấy tháng và năm từ held_at --}}
                                     <span class="text-xl sm:text-3xl font-bold text-slate-800 dark:text-white leading-none">
                                         {{ $minute->held_at ? $minute->held_at->format('m') : '--' }}
                                     </span>
@@ -166,13 +165,14 @@
 
                                 {{-- ACTION BUTTONS --}}
                                 <div class="flex gap-2 self-end sm:self-auto flex-wrap items-stretch">
-                                    {{-- Nút XEM --}}
+
+                                    {{-- Nút XEM (Ai cũng thấy) --}}
                                     <a href="{{ route($routePrefix . 'minutes.show', $minute->id) }}"
                                         class="flex items-center gap-1 px-3 py-1.5 rounded text-xs font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 transition-colors border border-slate-200">
                                         <span class="material-symbols-outlined !text-[16px]">visibility</span> Xem
                                     </a>
 
-                                    {{-- Nút Tải Word --}}
+                                    {{-- Nút Tải File (Ai cũng thấy) --}}
                                     <a href="{{ route($routePrefix . 'minutes.export_word', $minute->id) }}"
                                         class="flex items-center gap-1 px-3 py-1.5 rounded text-xs font-bold text-primary bg-primary/5 hover:bg-primary/10 transition-colors border border-primary/10">
                                         <span class="material-symbols-outlined !text-[16px]">download</span> Word
@@ -182,28 +182,37 @@
                                         <span class="material-symbols-outlined !text-[16px]">picture_as_pdf</span> PDF
                                     </a>
 
+                                    {{-- NẾU BIÊN BẢN CHƯA ĐƯỢC DUYỆT (DRAFT) --}}
                                     @if ($minute->status === 'draft')
-                                        {{-- Nút Sửa / Kiểm duyệt --}}
-                                        <a href="{{ route($routePrefix . 'minutes.edit', $minute->id) }}"
-                                            class="flex items-center gap-1 px-3 py-1.5 rounded text-xs font-bold text-orange-600 bg-orange-50 hover:bg-orange-100 transition-colors border border-orange-100">
+                                        {{-- NẾU LÀ ADMIN (Role 1) -> Hiện nút DUYỆT --}}
+                                        @if ((Auth::user()->role_id ?? 0) == 1)
+                                            <form action="{{ route($routePrefix . 'minutes.approve', $minute->id) }}"
+                                                method="POST" class="contents">
+                                                @csrf @method('PUT')
+                                                <button type="submit"
+                                                    class="flex items-center gap-1 px-3 py-1.5 rounded text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition-colors border border-emerald-200">
+                                                    <span class="material-symbols-outlined !text-[16px]">fact_check</span>
+                                                    Duyệt
+                                                </button>
+                                            </form>
 
-                                            @if ((Auth::user()->role_id ?? 0) == 1)
-                                                <span class="material-symbols-outlined !text-[16px]">fact_check</span> Duyệt
-                                            @else
+                                            {{-- NẾU LÀ GIẢNG VIÊN (Role 2) -> Hiện nút SỬA và XÓA --}}
+                                        @elseif ((Auth::user()->role_id ?? 0) == 2)
+                                            <a href="{{ route($routePrefix . 'minutes.edit', $minute->id) }}"
+                                                class="flex items-center gap-1 px-3 py-1.5 rounded text-xs font-bold text-orange-600 bg-orange-50 hover:bg-orange-100 transition-colors border border-orange-100">
                                                 <span class="material-symbols-outlined !text-[16px]">edit</span> Sửa
-                                            @endif
-                                        </a>
+                                            </a>
 
-                                        {{-- Nút XÓA (Đã Fix ID và CSS) --}}
-                                        <form id="form-delete-minute-{{ $minute->id }}"
-                                            action="{{ route($routePrefix . 'minutes.destroy', $minute->id) }}"
-                                            method="POST" class="contents">
-                                            @csrf @method('DELETE')
-                                            <button type="button" onclick="confirmDelete({{ $minute->id }})"
-                                                class="flex items-center gap-1 px-3 py-1.5 rounded text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 transition-colors border border-red-100 cursor-pointer">
-                                                <span class="material-symbols-outlined !text-[16px]">delete</span> Xóa
-                                            </button>
-                                        </form>
+                                            <form id="form-delete-minute-{{ $minute->id }}"
+                                                action="{{ route($routePrefix . 'minutes.destroy', $minute->id) }}"
+                                                method="POST" class="contents">
+                                                @csrf @method('DELETE')
+                                                <button type="button" onclick="confirmDelete({{ $minute->id }})"
+                                                    class="flex items-center gap-1 px-3 py-1.5 rounded text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 transition-colors border border-red-100 cursor-pointer">
+                                                    <span class="material-symbols-outlined !text-[16px]">delete</span> Xóa
+                                                </button>
+                                            </form>
+                                        @endif
                                     @endif
                                 </div>
                             </div>
@@ -217,6 +226,19 @@
             </div>
         </div>
     </div>
+
+    <script>
+        function confirmDelete(minuteId) {
+            window.showConfirm(
+                'Xóa biên bản',
+                'Bạn có chắc chắn muốn xóa vĩnh viễn biên bản này không? <br><span class="text-xs text-red-500 italic">Hành động này không thể hoàn tác.</span>',
+                function() {
+                    document.getElementById('form-delete-minute-' + minuteId).submit();
+                },
+                'danger'
+            );
+        }
+    </script>
 @endsection
 <script>
     function confirmDelete(minuteId) {

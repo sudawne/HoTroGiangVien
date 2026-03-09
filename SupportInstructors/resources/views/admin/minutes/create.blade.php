@@ -28,22 +28,17 @@
         <input type="hidden" name="class_id" value="{{ $currentClass->id ?? '' }}">
 
         {{-- HEADER --}}
-        <div
-            class="h-16 bg-white dark:bg-[#1e1e2d] border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-6 z-20 shrink-0">
-            <div class="flex items-center gap-4">
-                <a href="{{ route($routePrefix . 'minutes.index') }}"
-                    class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 transition-colors">
-                    <span class="material-symbols-outlined">arrow_back</span>
-                </a>
-                <div>
-                    <h1 class="text-lg font-bold text-slate-800 dark:text-white uppercase">Tạo Biên Bản Mới</h1>
-                    <p class="text-xs text-slate-500">
-                        Lớp: <span class="font-bold text-primary">{{ $currentClass->code ?? '...' }}</span>
-                    </p>
-                </div>
-            </div>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <x-page-header title="Tạo Biên Bản Mới"
+                description="Đang soạn thảo biên bản cho lớp {{ $currentClass->code ?? '...' }}" :routePrefix="$routePrefix"
+                :breadcrumbs="[
+                    ['label' => 'Biên bản họp', 'url' => route($routePrefix . 'minutes.index')],
+                    ['label' => 'Tạo mới'],
+                ]" />
 
-            <div class="text-xs text-slate-400 italic">
+            <div
+                class="flex items-center gap-2 text-xs text-slate-500 italic bg-slate-50 dark:bg-slate-800/50 px-3 py-1.5 rounded-md border border-slate-100 dark:border-slate-700">
+                <span class="material-symbols-outlined !text-[16px] animate-pulse text-primary">edit_note</span>
                 Đang soạn thảo...
             </div>
         </div>

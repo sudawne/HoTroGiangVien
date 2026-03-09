@@ -18,16 +18,13 @@
 @section('content')
     <script src="https://cdn.ckeditor.com/ckeditor5/40.0.0/classic/ckeditor.js"></script>
 
-    <div class="w-full px-4 md:px-8 py-6">
-        <div class="mb-6 flex items-center justify-between">
-            <a href="{{ route($routePrefix . 'notifications.index') }}"
-                class="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-100 py-1.5 px-3 rounded-lg transition-colors -ml-3">
-                <span class="material-symbols-outlined !text-[20px]">arrow_back</span>
-                Quay lại danh sách
-            </a>
-            <h1 class="text-xl font-bold text-slate-800 uppercase flex items-center gap-2">
-                <span class="material-symbols-outlined text-primary !text-[24px]">campaign</span> Soạn Bài Đăng Mới
-            </h1>
+    <div class="w-full">
+        <div class="mb-6">
+            <x-page-header title="Soạn Bài Đăng Mới" description="Tạo thông báo hoặc tin tức mới trên hệ thống"
+                :routePrefix="$routePrefix" :breadcrumbs="[
+                    ['label' => 'Thông báo', 'url' => route($routePrefix . 'notifications.index')],
+                    ['label' => 'Soạn mới'],
+                ]" />
         </div>
 
         <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">

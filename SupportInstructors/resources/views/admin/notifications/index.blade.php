@@ -2,17 +2,13 @@
 @section('title', 'Quản lý Thông báo')
 
 @section('content')
-    <div class="w-full px-4 py-6">
+    <div class="w-full">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-            <div class="flex items-center gap-3">
-                <span class="material-symbols-outlined text-primary !text-[36px]">campaign</span>
-                <div>
-                    <h1 class="text-2xl font-bold text-slate-800 dark:text-white">Quản lý Thông báo</h1>
-                    <p class="text-sm text-slate-500 mt-1">Quản lý, xét duyệt thông báo của Khoa và Giảng viên</p>
-                </div>
-            </div>
+            <x-page-header title="Quản lý Thông báo" description="Quản lý, xét duyệt thông báo của Khoa và Giảng viên"
+                :routePrefix="$routePrefix" :breadcrumbs="[['label' => 'Thông báo']]" />
+
             <a href="{{ route($routePrefix . 'notifications.create') }}"
-                class="px-5 py-2.5 bg-primary text-white font-bold rounded-sm hover:bg-primary/90 flex items-center gap-2 shadow-sm transition-colors">
+                class="px-5 py-2 bg-primary text-white font-bold rounded-sm hover:bg-primary/90 flex items-center gap-2 shadow-sm transition-colors text-sm">
                 <span class="material-symbols-outlined !text-[20px]">add_circle</span> Đăng bài mới
             </a>
         </div>

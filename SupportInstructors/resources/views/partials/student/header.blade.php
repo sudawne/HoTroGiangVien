@@ -105,18 +105,11 @@
                 class="md:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-full transition-colors">
                 <span class="material-symbols-outlined !text-[24px]">menu</span>
             </button>
-            <a href="{{ url('/student') }}"
-                class="flex items-center gap-2 text-primary hover:opacity-80 transition-opacity hidden md:flex">
-                <span class="material-symbols-outlined text-[28px]">school</span>
-                <h2 class="text-[16px] font-extrabold leading-tight tracking-tight font-display whitespace-nowrap">Cổng
-                    Sinh Viên</h2>
-            </a>
-
             {{-- Ở GIỮA: Thanh Tìm Kiếm Desktop --}}
-            <div class="flex-1 max-w-[600px] hidden md:block relative ml-4" x-data="liveSearch()"
+            <div class="flex-1 max-w-[600px] rounded-sm hidden md:block relative ml-4" x-data="liveSearch()"
                 @click.away="showPopup = false">
                 <form action="{{ url('/student') }}" method="GET"
-                    class="flex w-full items-center rounded-full bg-slate-100/80 border border-slate-200 focus-within:border-primary focus-within:bg-white focus-within:shadow-sm transition-all overflow-hidden px-3 h-[40px]">
+                    class="flex w-full items-center rounded-sm bg-slate-100/80 border border-slate-200 focus-within:border-primary focus-within:bg-white focus-within:shadow-sm transition-all overflow-hidden px-3 h-[40px]">
                     @if (request('filter'))
                         <input type="hidden" name="filter" value="{{ request('filter') }}">
                     @endif
@@ -126,9 +119,9 @@
 
                     <span class="material-symbols-outlined !text-[18px] text-slate-400">search</span>
                     <input type="text" name="search" x-model="query" @input.debounce.300ms="fetchData"
-                        @focus="if(query.trim().length > 0) showPopup = true"
-                        class="w-full bg-transparent text-slate-700 focus:outline-0 focus:ring-0 border-none px-2 text-[14px] placeholder:text-slate-400"
-                        placeholder="Tìm thông báo, file đính kèm..." autocomplete="off" />
+                        class="w-full rounded-sm bg-transparent text-slate-700 focus:outline-0 focus:ring-0 border-none px-2 text-[14px] placeholder:text-slate-400"
+                        placeholder="Tìm thông báo, file đính kèm..." autocomplete="off"
+                        @focus="if(query.trim().length > 0) showPopup = true" />
 
                     <span x-show="loading"
                         class="material-symbols-outlined !text-[16px] text-primary animate-spin absolute right-3"
@@ -142,7 +135,7 @@
 
                 {{-- Popup Search Desktop --}}
                 <div x-show="showPopup" x-transition.opacity.duration.200ms
-                    class="absolute left-0 w-full md:w-[450px] top-full mt-2 bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col z-50"
+                    class="absolute left-0 w-full md:w-[600px] top-full mt-2 bg-white rounded-sm shadow-2xl border border-slate-200 overflow-hidden flex flex-col z-50"
                     x-cloak>
                     <div class="px-4 py-2.5 bg-slate-50 border-b border-slate-100"><span
                             class="text-[12px] font-bold text-slate-500 uppercase">Kết quả tìm kiếm</span></div>
@@ -160,7 +153,8 @@
                                 class="flex items-start gap-3 p-3.5 border-b border-slate-50 hover:bg-blue-50/40 transition-colors">
                                 <div
                                     class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-slate-100 text-slate-500 mt-0.5">
-                                    <span class="material-symbols-outlined !text-[20px]">article</span></div>
+                                    <span class="material-symbols-outlined !text-[20px]">article</span>
+                                </div>
                                 <div class="flex-1 min-w-0">
                                     <h4 class="text-[13.5px] font-bold text-slate-800 leading-tight mb-1"
                                         x-text="item.title"></h4>
@@ -202,10 +196,16 @@
                         } else { window.location.href = targetUrl; }
                     };
                     if (!isRead) {
-                        if (rowAll) { rowAll.setAttribute('data-is-read', 'true');
-                            rowAll.classList.remove('bg-blue-50/30', 'alert-unread-bg'); let dot = rowAll.querySelector('.unread-dot'); if (dot) dot.remove(); }
-                        if (rowGroup) { rowGroup.setAttribute('data-is-read', 'true');
-                            rowGroup.classList.remove('bg-blue-50/30', 'alert-unread-bg'); }
+                        if (rowAll) {
+                            rowAll.setAttribute('data-is-read', 'true');
+                            rowAll.classList.remove('bg-blue-50/30', 'alert-unread-bg');
+                            let dot = rowAll.querySelector('.unread-dot');
+                            if (dot) dot.remove();
+                        }
+                        if (rowGroup) {
+                            rowGroup.setAttribute('data-is-read', 'true');
+                            rowGroup.classList.remove('bg-blue-50/30', 'alert-unread-bg');
+                        }
                         if (this.unread > 0) this.unread--;
                         fetch('{{ url('/student/alerts/mark-read') }}', { method: 'POST', headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Content-Type': 'application/json' }, body: JSON.stringify({ alert_id: alertId }) }).then(() => goToTarget()).catch(() => goToTarget());
                     } else { goToTarget(); }
@@ -220,7 +220,7 @@
                 </button>
 
                 <div x-show="alertOpen" x-transition
-                    class="fixed left-2 right-2 top-[65px] sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[420px] bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col z-[80] sm:origin-top-right"
+                    class="fixed left-2 right-2 top-[65px] sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[420px] bg-white rounded-sm shadow-2xl border border-slate-200 overflow-hidden flex flex-col z-[80] sm:origin-top-right"
                     x-cloak>
                     <div class="px-5 py-3.5 flex justify-between items-center bg-slate-50/80 border-b border-slate-100">
                         <h3 class="font-extrabold text-slate-800 text-[15px]">Thông báo</h3>
@@ -258,8 +258,7 @@
                                     </div>
                                     <div class="flex-1 min-w-0">
                                         <p class="text-[13px] text-slate-700 leading-snug">{!! $alert->message !!}</p>
-                                        <p
-                                            class="text-[11px] font-medium text-blue-600 mt-1.5 flex items-center gap-1">
+                                        <p class="text-[11px] font-medium text-blue-600 mt-1.5 flex items-center gap-1">
                                             <span
                                                 class="material-symbols-outlined !text-[13px]">schedule</span>{{ $alert->time->diffForHumans() }}
                                         </p>
@@ -349,7 +348,7 @@
                 </button>
 
                 <div :class="profileOpen ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2'"
-                    class="sm:group-hover:opacity-100 sm:group-hover:visible sm:group-hover:translate-y-0 absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-lg border border-slate-100 transition-all duration-200 z-50">
+                    class="sm:group-hover:opacity-100 sm:group-hover:visible sm:group-hover:translate-y-0 absolute right-0 top-full mt-2 w-48 bg-white rounded-sm shadow-lg border border-slate-100 transition-all duration-200 z-50">
                     <div class="p-3 border-b border-slate-50 sm:hidden">
                         <p class="text-[13px] font-bold text-slate-800 truncate">{{ Auth::user()->name }}</p>
                         <p class="text-[11px] text-slate-500">Sinh viên</p>
@@ -357,7 +356,7 @@
                     <form method="POST" action="{{ url('/logout') }}" class="m-0 p-1">
                         @csrf
                         <button type="submit"
-                            class="w-full flex items-center gap-2 px-3 py-2 text-[13px] font-bold text-red-600 hover:bg-red-50 rounded-lg transition-colors text-left">
+                            class="w-full flex items-center gap-2 px-3 py-2 text-[13px] font-bold text-red-600 hover:bg-red-50 rounded-sm transition-colors text-left">
                             <span class="material-symbols-outlined !text-[18px]">logout</span>
                             Đăng xuất
                         </button>
@@ -407,7 +406,8 @@
                                 class="flex items-start gap-3 p-4 border-b border-slate-50 hover:bg-blue-50/40">
                                 <div
                                     class="w-10 h-10 rounded-full flex items-center justify-center bg-slate-100 text-slate-500">
-                                    <span class="material-symbols-outlined !text-[20px]">article</span></div>
+                                    <span class="material-symbols-outlined !text-[20px]">article</span>
+                                </div>
                                 <div class="flex-1 min-w-0">
                                     <h4 class="text-[14px] font-bold text-slate-800 truncate" x-text="item.title">
                                     </h4>

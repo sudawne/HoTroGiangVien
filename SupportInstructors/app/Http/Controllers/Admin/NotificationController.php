@@ -19,6 +19,12 @@ use Illuminate\Support\Facades\Storage;
 
 class NotificationController extends Controller
 {
+    // Hàm phụ trợ giúp sinh Route động
+    private function getRoutePrefix()
+    {
+        return (Auth::user()->role_id == 1) ? 'admin.' : 'lecturer.';
+    }
+
     public function index(Request $request)
     {
         $classes = Classes::orderBy('code', 'asc')->get();
@@ -101,20 +107,24 @@ class NotificationController extends Controller
             $notification->classes()->sync($request->class_ids);
         }
 
+        $routePrefix = $this->getRoutePrefix(); // Lấy Route phù hợp (admin. hoặc lecturer.)
+
         if ($status === 'approved') {
             $count = $this->sendNotificationEmails($notification);
-            return redirect()->route('admin.notifications.index')->with('success', "Đã xuất bản và GỬI EMAIL thành công cho $count sinh viên!");
+            return redirect()->route($routePrefix . 'notifications.index')->with('success', "Đã xuất bản và GỬI EMAIL thành công cho $count sinh viên!");
         }
 
         $msg = $status === 'draft' ? 'Đã lưu bản nháp (Chưa gửi)!' : 'Đã gửi yêu cầu đăng, chờ Admin duyệt!';
-        return redirect()->route('admin.notifications.index')->with('success', $msg);
+        return redirect()->route($routePrefix . 'notifications.index')->with('success', $msg);
     }
 
     public function edit($id)
     {
         $notification = Notification::with('classes')->findOrFail($id);
+        $routePrefix = $this->getRoutePrefix();
+
         if ($notification->status === 'approved') {
-            return redirect()->route('admin.notifications.index')->with('error', 'Không thể sửa thông báo đã xuất bản!');
+            return redirect()->route($routePrefix . 'notifications.index')->with('error', 'Không thể sửa thông báo đã xuất bản!');
         }
         $classes = Classes::orderBy('code', 'asc')->get();
         return view('admin.notifications.edit', compact('notification', 'classes'));
@@ -123,6 +133,8 @@ class NotificationController extends Controller
     public function update(Request $request, $id)
     {
         $notification = Notification::findOrFail($id);
+        $routePrefix = $this->getRoutePrefix();
+
         if ($notification->status === 'approved') {
             return redirect()->back()->with('error', 'Không thể sửa thông báo đã xuất bản!');
         }
@@ -165,16 +177,16 @@ class NotificationController extends Controller
         if ($request->target_audience === 'class' && $request->has('class_ids')) {
             $notification->classes()->sync($request->class_ids);
         } else {
-            $notification->classes()->detach(); // Nếu chọn Toàn trường thì xóa sạch các liên kết lớp
+            $notification->classes()->detach();
         }
 
         if ($status === 'approved') {
             $count = $this->sendNotificationEmails($notification);
-            return redirect()->route('admin.notifications.index')->with('success', "Đã xuất bản và GỬI EMAIL thành công cho $count sinh viên!");
+            return redirect()->route($routePrefix . 'notifications.index')->with('success', "Đã xuất bản và GỬI EMAIL thành công cho $count sinh viên!");
         }
 
         $msg = $status === 'draft' ? 'Đã cập nhật bản nháp!' : 'Đã gửi yêu cầu đăng, chờ Admin duyệt!';
-        return redirect()->route('admin.notifications.index')->with('success', $msg);
+        return redirect()->route($routePrefix . 'notifications.index')->with('success', $msg);
     }
 
     public function approve($id)
@@ -206,11 +218,13 @@ class NotificationController extends Controller
     public function destroy($id)
     {
         $notification = Notification::findOrFail($id);
+        $routePrefix = $this->getRoutePrefix();
+
         if ($notification->attachment_url) {
             Storage::disk('public')->delete($notification->attachment_url);
         }
         $notification->delete();
-        return redirect()->route('admin.notifications.index')->with('success', 'Đã xóa thông báo!');
+        return redirect()->route($routePrefix . 'notifications.index')->with('success', 'Đã xóa thông báo!');
     }
 
     public function toggleLike(Request $request, $id)
@@ -293,7 +307,6 @@ class NotificationController extends Controller
         if ($notification->target_audience === 'all') {
             $realStudentEmails = User::where('role_id', 3)->whereNotNull('email')->pluck('email')->toArray();
         } else {
-            // Lấy ID của tất cả các lớp đã chọn
             $classIds = $notification->classes->pluck('id')->toArray();
             $realStudentEmails = Student::whereIn('class_id', $classIds)
                 ->whereHas('user', function ($q) {
@@ -305,7 +318,6 @@ class NotificationController extends Controller
         $countRealEmails = count($realStudentEmails);
 
         if ($countRealEmails > 0) {
-            // EMAIL TEST - Thay bằng $realStudentEmails nếu hệ thống chạy thật
             $testEmails = ['nguyen22082006204@vnkgu.edu.vn'];
 
             try {

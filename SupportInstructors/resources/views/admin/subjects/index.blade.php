@@ -2,14 +2,12 @@
 @section('title', 'Quản lý Môn học')
 
 @section('content')
-    <div class="w-full px-4 py-6" x-data="{ showCreateModal: false, showEditModal: false }">
+    <div class="w-full" x-data="{ showCreateModal: false, showEditModal: false }">
 
-        {{-- HEADER --}}
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-            <div>
-                <h1 class="text-2xl font-bold text-slate-800 dark:text-white">Quản lý Môn học</h1>
-                <p class="text-slate-500 text-sm mt-1">Danh sách các học phần trong chương trình đào tạo.</p>
-            </div>
+            <x-page-header title="Quản lý Môn học" description="Danh sách các học phần trong chương trình đào tạo."
+                :routePrefix="$routePrefix" :breadcrumbs="[['label' => 'Môn học']]" />
+
             <button @click="showCreateModal = true"
                 class="flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-bold rounded-lg hover:bg-primary/90 transition-colors shadow-lg shadow-primary/30">
                 <span class="material-symbols-outlined !text-[20px]">add</span> Thêm môn học

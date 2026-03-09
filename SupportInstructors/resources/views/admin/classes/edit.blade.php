@@ -6,18 +6,13 @@
 @endsection
 
 @section('content')
-    <div class="w-full px-4 py-6">
-        <div class="flex items-center justify-between mb-6">
-            <div class="flex items-center gap-3">
-                <a href="{{ route($routePrefix . 'classes.index') }}"
-                    class="p-2 bg-white border border-slate-300 rounded-sm text-slate-600 hover:bg-slate-50 transition-colors shadow-sm">
-                    <span class="material-symbols-outlined !text-[16px] block">arrow_back</span>
-                </a>
-                <div>
-                    <h1 class="text-2xl font-bold text-slate-800 dark:text-white uppercase">Cập nhật Lớp học</h1>
-                    <p class="text-xs text-slate-500">Chỉnh sửa thông tin lớp {{ $class->code }}</p>
-                </div>
-            </div>
+    <div class="w-full">
+        <div class="mb-6">
+            <x-page-header title="Cập nhật Lớp học" description="Chỉnh sửa thông tin lớp {{ $class->code }}"
+                :routePrefix="$routePrefix" :breadcrumbs="[
+                    ['label' => 'Lớp học', 'url' => route($routePrefix . 'classes.index')],
+                    ['label' => 'Cập nhật'],
+                ]" />
         </div>
 
         <div class="bg-white dark:bg-[#1e1e2d] border border-slate-200 dark:border-slate-700 rounded-sm shadow-sm mb-6">

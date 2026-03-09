@@ -48,30 +48,29 @@
 @endsection
 
 @section('content')
-    <div class="w-full min-h-screen bg-white font-inter pb-16 m-0">
-        <main class="mx-auto flex w-full max-w-none flex-col px-6 md:px-10 py-8">
+    <div class="w-full min-h-screen pb-16 m-0">
+        <div class="mb-6 flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6">
+            <x-page-header title="Chi Tiết Thông Báo" description="Xem trước nội dung thông báo trước khi xuất bản"
+                :routePrefix="$routePrefix" :breadcrumbs="[
+                    ['label' => 'Thông báo', 'url' => route($routePrefix . 'notifications.index')],
+                    ['label' => 'Chi tiết'],
+                ]" />
 
-            <div class="flex items-center justify-between mb-6 font-lexend">
-                <a href="{{ route($routePrefix . 'notifications.index') }}"
-                    class="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-100 py-1.5 px-3 rounded-lg transition-colors -ml-3">
-                    <span class="material-symbols-outlined !text-[20px]">arrow_back</span>
-                    Quay lại danh sách
-                </a>
-
-                @if ($notification->status == 'pending' && Auth::user()->role_id == 1)
+            @if ($notification->status == 'pending' && Auth::user()->role_id == 1)
+                <div class="mt-2 md:mt-0 flex-shrink-0">
                     <form id="approve-form-show"
                         action="{{ route($routePrefix . 'notifications.approve', $notification->id) }}" method="POST"
                         class="hidden">@csrf</form>
                     <button type="button"
                         onclick="showConfirm('Xác nhận Duyệt','Xuất bản thông báo và tự động gửi Email đến sinh viên. Hành động này không thể hoàn tác.', () => document.getElementById('approve-form-show').submit(), 'primary')"
-                        class="flex items-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-bold text-white hover:bg-primary/90 transition-all shadow-sm">
+                        class="flex items-center gap-2 rounded-sm bg-primary px-4 py-2 text-sm font-bold text-white hover:bg-primary/90 transition-all shadow-sm">
                         <span class="material-symbols-outlined !text-[18px]">send</span>
                         <span class="hidden sm:inline">Duyệt & Xuất bản</span>
                     </button>
-                @endif
-            </div>
-
-            {{-- POST --}}
+                </div>
+            @endif
+        </div>
+        <main class="flex w-full bg-white font-inter  max-w-none flex-col px-6 py-6">
             <article class="flex flex-col mb-8 pb-6 border-b border-slate-200">
                 <div class="flex items-center gap-3 mb-4">
                     <div

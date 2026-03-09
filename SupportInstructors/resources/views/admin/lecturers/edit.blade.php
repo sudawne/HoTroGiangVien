@@ -2,20 +2,14 @@
 @section('title', 'Cập nhật Giảng viên')
 
 @section('content')
-    <div class="w-full px-4 py-6">
+    <div class="w-full">
         {{-- Header --}}
-        <div class="flex items-center justify-between mb-8">
-            <div class="flex items-center gap-3">
-                <a href="{{ route($routePrefix . 'lecturers.index') }}"
-                    class="p-2 bg-white border border-slate-300 rounded-sm text-slate-600 hover:bg-slate-50 transition-colors shadow-sm">
-                    <span class="material-symbols-outlined !text-[18px] block">arrow_back</span>
-                </a>
-                <div>
-                    <h1 class="text-2xl font-bold text-slate-800 dark:text-white uppercase">Cập nhật Giảng viên</h1>
-                    <p class="text-xs text-slate-500">Chỉnh sửa thông tin thầy/cô: <span
-                            class="font-bold text-primary">{{ $lecturer->user->name }}</span></p>
-                </div>
-            </div>
+        <div class="mb-8">
+            <x-page-header title="Thêm Giảng viên" description="Tạo tài khoản mới cho Giảng viên/Cố vấn học tập"
+                :routePrefix="$routePrefix" :breadcrumbs="[
+                    ['label' => 'Giảng viên', 'url' => route($routePrefix . 'lecturers.index')],
+                    ['label' => 'Chỉnh sửa'],
+                ]" />
         </div>
 
         {{-- Hiển thị lỗi chung --}}

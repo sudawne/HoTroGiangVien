@@ -2,19 +2,14 @@
 @section('title', 'Thêm Giảng viên')
 
 @section('content')
-    <div class="w-full px-4 py-6">
+    <div class="w-full">
         {{-- Header --}}
-        <div class="flex items-center justify-between mb-8">
-            <div class="flex items-center gap-3">
-                <a href="{{ route($routePrefix . 'lecturers.index') }}"
-                    class="p-2 bg-white border border-slate-300 rounded-sm text-slate-600 hover:bg-slate-50 transition-colors shadow-sm">
-                    <span class="material-symbols-outlined !text-[18px] block">arrow_back</span>
-                </a>
-                <div>
-                    <h1 class="text-2xl font-bold text-slate-800 dark:text-white uppercase">Thêm Giảng viên</h1>
-                    <p class="text-xs text-slate-500">Tạo tài khoản mới cho Giảng viên/Cố vấn học tập</p>
-                </div>
-            </div>
+        <div class="mb-8">
+            <x-page-header title="Thêm Giảng viên" description="Tạo tài khoản mới cho Giảng viên/Cố vấn học tập"
+                :routePrefix="$routePrefix" :breadcrumbs="[
+                    ['label' => 'Giảng viên', 'url' => route($routePrefix . 'lecturers.index')],
+                    ['label' => 'Thêm mới'],
+                ]" />
         </div>
 
         {{-- Hiển thị lỗi chung (Ngoại lệ Database) --}}
@@ -37,8 +32,7 @@
             </div>
         @endif
 
-        <form action="{{ route($routePrefix . 'lecturers.store') }}" method="POST" enctype="multipart/form-data"
-            novalidate>
+        <form action="{{ route($routePrefix . 'lecturers.store') }}" method="POST" enctype="multipart/form-data" novalidate>
             @csrf
             <div class="flex flex-col lg:flex-row gap-6">
 
@@ -113,8 +107,7 @@
                                     </div>
                                     @error('email')
                                         <p class="text-red-500 text-xs font-medium mt-1 flex items-center gap-1">
-                                            <span
-                                                class="material-symbols-outlined !text-[14px]">error</span>{{ $message }}
+                                            <span class="material-symbols-outlined !text-[14px]">error</span>{{ $message }}
                                         </p>
                                     @else
                                         <p class="text-[11px] text-blue-500 mt-1 italic">Email sẽ tự động tạo từ tên (vd:

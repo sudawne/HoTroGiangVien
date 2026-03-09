@@ -20,7 +20,7 @@
             theme: {
                 extend: {
                     colors: {
-                        "primary": "#463acb",
+                        "primary": "#004B8D",
                         "background-light": "#f6f6f8",
                         "background-dark": "#14131f",
                         "slate-800": "#1e293b",

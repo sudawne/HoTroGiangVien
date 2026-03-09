@@ -2,14 +2,11 @@
 @section('title', 'Danh sách Sinh viên')
 
 @section('content')
-    <div class="w-full px-4 py-6" x-data="{ showImportModal: false, showCreateModal: false }">
+    <div class="w-full" x-data="{ showImportModal: false, showCreateModal: false }">
 
-        {{-- Header & Toolbar --}}
         <div class="flex flex-col md:flex-row justify-between items-end md:items-center gap-4 mb-6">
-            <div>
-                <h1 class="text-2xl font-bold text-slate-800 dark:text-white uppercase">Hồ sơ Sinh viên</h1>
-                <p class="text-xs text-slate-500">Quản lý thông tin và trạng thái học tập</p>
-            </div>
+            <x-page-header title="Hồ sơ Sinh viên" description="Quản lý thông tin và trạng thái học tập" :routePrefix="$routePrefix"
+                :breadcrumbs="[['label' => 'Sinh viên']]" />
 
             <div class="flex gap-2">
                 {{-- CHỈ ADMIN MỚI THẤY CÁC NÚT NÀY --}}

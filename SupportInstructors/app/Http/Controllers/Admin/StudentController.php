@@ -24,31 +24,23 @@ class StudentController extends Controller
             $q->withTrashed();
         }])->withTrashed();
 
-        // NẾU LÀ GIẢNG VIÊN (role_id = 2) -> Chỉ lấy sinh viên thuộc lớp mà họ làm Cố vấn học tập
         if ($user->role_id == 2) {
             $lecturer = Lecturer::where('user_id', $user->id)->first();
             if ($lecturer) {
-                // Lấy ID các lớp do giảng viên này cố vấn
                 $classIds = Classes::where('advisor_id', $lecturer->id)->pluck('id')->toArray();
                 $query->whereIn('class_id', $classIds);
-
-                // Lọc danh sách lớp ở dropdown cũng chỉ hiện lớp của giảng viên này
                 $classes = Classes::where('advisor_id', $lecturer->id)->get();
             } else {
-                $query->where('id', '<', 0); // Không có lớp thì không thấy ai
+                $query->where('id', '<', 0); 
                 $classes = collect();
             }
         } else {
-            // ADMIN thấy tất cả các lớp
             $classes = Classes::all();
         }
-
-        // 1. Lọc theo lớp (nếu có chọn ở dropdown)
         if ($request->has('class_id') && $request->class_id != '') {
             $query->where('class_id', $request->class_id);
         }
 
-        // 2. Tìm kiếm thông minh
         if ($request->has('search') && $request->search != '') {
             $search = trim($request->search);
 

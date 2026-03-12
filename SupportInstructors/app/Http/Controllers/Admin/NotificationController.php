@@ -19,7 +19,6 @@ use Illuminate\Support\Facades\Storage;
 
 class NotificationController extends Controller
 {
-    // Hàm phụ trợ giúp sinh Route động
     private function getRoutePrefix()
     {
         return (Auth::user()->role_id == 1) ? 'admin.' : 'lecturer.';
@@ -102,12 +101,11 @@ class NotificationController extends Controller
             'allow_comments' => $allowComments,
         ]);
 
-        // Lưu mảng các lớp vào bảng trung gian
         if ($request->target_audience === 'class' && $request->has('class_ids')) {
             $notification->classes()->sync($request->class_ids);
         }
 
-        $routePrefix = $this->getRoutePrefix(); // Lấy Route phù hợp (admin. hoặc lecturer.)
+        $routePrefix = $this->getRoutePrefix(); 
 
         if ($status === 'approved') {
             $count = $this->sendNotificationEmails($notification);
@@ -173,7 +171,6 @@ class NotificationController extends Controller
             'allow_comments' => $allowComments,
         ]);
 
-        // Cập nhật lại danh sách lớp nhận thông báo
         if ($request->target_audience === 'class' && $request->has('class_ids')) {
             $notification->classes()->sync($request->class_ids);
         } else {

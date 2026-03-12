@@ -17,7 +17,6 @@ class WarningsExport implements FromView, ShouldAutoSize
 
     public function view(): View
     {
-        // Trỏ tới file Blade để xuất giao diện Excel
         return view('admin.academic_warnings.excel_export', [
             'data' => $this->data
         ]);

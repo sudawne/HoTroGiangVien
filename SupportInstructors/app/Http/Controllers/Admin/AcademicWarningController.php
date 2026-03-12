@@ -24,17 +24,10 @@ class AcademicWarningController extends Controller
 {
     public function index(Request $request)
     {
-        
-        // 1. Khởi tạo Query
         $query = AcademicWarning::query()->with(['student', 'student.class', 'semester']);
-
-        // 2. Xử lý Bộ lọc
-        // Lọc theo Học kỳ
         if ($request->filled('semester_id')) {
             $query->where('semester_id', $request->semester_id);
         }
-        
-        // Lọc theo Mức cảnh báo
         if ($request->filled('level')) {
             $query->where('warning_level', $request->level);
         }

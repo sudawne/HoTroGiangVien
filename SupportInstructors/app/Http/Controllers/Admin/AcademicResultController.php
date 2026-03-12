@@ -7,15 +7,12 @@ use Illuminate\Http\Request;
 use App\Models\AcademicResult;
 use App\Models\Student;
 use App\Models\Semester;
-use App\Models\Classes; // [QUAN TRỌNG] Nhớ import Model Classes
+use App\Models\Classes; 
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\DB;
 
 class AcademicResultController extends Controller
 {
-    /**
-     * 1. Hiển thị danh sách (Index)
-     */
     public function index(Request $request)
     {
         $query = AcademicResult::with(['student.studentClass', 'semester']);
@@ -38,9 +35,7 @@ class AcademicResultController extends Controller
             });
         }
 
-        // --- TÍNH TOÁN THỐNG KÊ (STATS) ---
-        // Clone query để thống kê theo bộ lọc hiện tại (nếu muốn) hoặc thống kê toàn bộ
-        // Ở đây mình thống kê toàn bộ học kỳ hiện tại cho nhanh
+        // --- TÍNH TOÁN THỐNG KÊ---
         $statsQuery = AcademicResult::query();
         if ($request->filled('semester_id')) {
             $statsQuery->where('semester_id', $request->semester_id);
@@ -59,7 +54,6 @@ class AcademicResultController extends Controller
         $semesters = Semester::orderBy('start_date', 'desc')->get();
         $classes = Classes::all();
 
-        // Trả về JSON nếu là AJAX Search
         if ($request->ajax()) {
             return view('admin.academic_results.partials.table_rows', compact('results'))->render();
         }
@@ -67,30 +61,23 @@ class AcademicResultController extends Controller
         return view('admin.academic_results.index', compact('results', 'semesters', 'classes', 'stats'));
     }
 
-    /**
-     * 2. Hiển thị form Import
-     */
     public function import()
     {
         $semesters = Semester::orderBy('start_date', 'desc')->get();
-        $classes = Classes::all(); // Thêm dòng này
+        $classes = Classes::all(); 
 
         return view('admin.academic_results.import', compact('semesters', 'classes'));
     }
 
-    /**
-     * 3. Xử lý file Excel và hiển thị Preview
-     */
     public function preview(Request $request)
     {
         $request->validate([
             'file' => 'required|mimes:xlsx,xls,csv',
             'semester_id' => 'required',
-            // 'class_id' => 'required',
         ]);
 
         $array = Excel::toArray([], $request->file('file'));
-        $rows = isset($array[0]) ? array_slice($array[0], 4) : []; // Data từ dòng 4
+        $rows = isset($array[0]) ? array_slice($array[0], 4) : []; // từ dòng 4
 
         $previewData = [];
         $selectedClassId = $request->class_id;
@@ -108,7 +95,6 @@ class AcademicResultController extends Controller
                 $status = 'error';
                 $message = 'Sinh viên chưa có trong hệ thống';
             } elseif ($selectedClassId && $student->class_id != $selectedClassId) {
-                // Cảnh báo nếu sinh viên trong file không thuộc lớp đã chọn
                 $status = 'warning';
                 $message = 'Sinh viên thuộc lớp khác (' . ($student->studentClass->code ?? 'N/A') . ')';
             }
@@ -123,7 +109,7 @@ class AcademicResultController extends Controller
                 'classification' => $row[11] ?? 'Chưa xét',
 
                 'student_id' => $student ? $student->id : null,
-                'status' => $status, // valid, error, warning
+                'status' => $status, 
                 'message' => $message,
             ];
         }
@@ -131,13 +117,10 @@ class AcademicResultController extends Controller
         return view('admin.academic_results.preview', [
             'previewData' => $previewData,
             'semester_id' => $request->semester_id,
-            'class_id' => $request->class_id, // Truyền lại class_id để lưu sau này
+            'class_id' => $request->class_id, 
         ]);
     }
 
-    /**
-     * 4. Lưu chính thức vào CSDL
-     */
     public function storeImport(Request $request)
     {
         $data = json_decode($request->data, true);
@@ -147,7 +130,6 @@ class AcademicResultController extends Controller
         DB::beginTransaction();
         try {
             foreach ($data as $row) {
-                // Lưu nếu hợp lệ hoặc chỉ là cảnh báo (vẫn cho lưu nhưng warning)
                 if (($row['status'] == 'valid' || $row['status'] == 'warning') && $row['student_id']) {
                     AcademicResult::updateOrCreate(
                         [
@@ -172,17 +154,9 @@ class AcademicResultController extends Controller
             return back()->with('error', 'Lỗi khi lưu dữ liệu: ' . $e->getMessage());
         }
     }
-    /**
-     * Hiển thị chi tiết 1 kết quả học tập
-     */
     public function show($id)
     {
         $result = AcademicResult::with(['student', 'semester'])->findOrFail($id);
-
-        // Bạn có thể return về view chi tiết sau
-        // return view('admin.academic_results.show', compact('result'));
-
-        // Tạm thời nếu chưa có view thì cho quay lại kèm thông báo:
         return back()->with('info', 'Chức năng xem chi tiết đang được cập nhật!');
     }
     public function export(Request $request)
@@ -199,19 +173,14 @@ class AcademicResultController extends Controller
         if ($request->filled('classification')) {
             $query->where('classification', $request->classification);
         }
-
-        // Lấy tất cả dữ liệu phù hợp (không phân trang)
         $data = $query->get();
 
         if ($data->isEmpty()) {
             return back()->with('error', 'Không có dữ liệu nào phù hợp với bộ lọc hiện tại để xuất.');
         }
-
-        // Xử lý xuất Excel
         if ($request->format === 'excel') {
             return Excel::download(new \App\Exports\AcademicResultsExport($data), 'ket-qua-hoc-tap-sv.xlsx');
         }
-        // Xử lý xuất PDF
         elseif ($request->format === 'pdf') {
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('admin.academic_results.pdf_export', compact('data'));
             $pdf->setOption('defaultFont', 'DejaVu Sans');
@@ -219,7 +188,6 @@ class AcademicResultController extends Controller
 
             return $pdf->download('ket-qua-hoc-tap-sv.pdf');
         }
-
         return back();
     }
 }

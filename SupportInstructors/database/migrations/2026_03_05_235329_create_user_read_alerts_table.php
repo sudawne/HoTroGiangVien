@@ -11,10 +11,8 @@ return new class extends Migration
         Schema::create('user_read_alerts', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('user_id');
-            $table->string('alert_id'); // Lưu trữ dạng: 'c_1', 'l_2', 'p_3'
+            $table->string('alert_id'); 
             $table->timestamp('read_at')->useCurrent();
-
-            // Ràng buộc không cho trùng lặp
             $table->unique(['user_id', 'alert_id']);
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });

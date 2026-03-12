@@ -5,11 +5,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@yield('title', 'Trường Đại học Kiên Giang - Đăng nhập')</title>
-
-    {{-- Tailwind + plugins --}}
     <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
-
-    {{-- Fonts & Icons (GIỮ LẠI MATERIAL ICONS CŨ CỦA BẠN ĐỂ KHÔNG BỊ LỖI TRANG ĐĂNG NHẬP) --}}
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -50,7 +46,6 @@
     <header class="bg-primary w-full shadow-md z-10">
         <div class="container mx-auto px-1 py-3 flex items-center">
             <div class="flex items-center space-x-4 relative">
-                {{-- Glow trắng phía sau logo --}}
                 <div
                     class="absolute -left-6 top-1/2 -translate-y-1/2 w-32 h-32 bg-[radial-gradient(circle,rgba(255,255,255,0.85)_0%,rgba(255,255,255,0.4)_85%,transparent_70%)] blur-xl">
                 </div>
@@ -69,7 +64,6 @@
     </header>
 
     {{-- Content --}}
-    {{-- Đổi items-center thành items-start để dính sát lên trên, thêm mt-8 để cách Header 1 chút cho đỡ sát viền --}}
     <main
         class="flex-grow w-full container mx-auto px-4 mt-8 py-4 flex flex-col md:flex-row justify-center items-start gap-8">
         @yield('content')

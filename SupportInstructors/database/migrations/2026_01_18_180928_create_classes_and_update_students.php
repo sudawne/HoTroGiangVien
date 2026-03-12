@@ -12,8 +12,7 @@ return new class extends Migration
         Schema::create('classes', function (Blueprint $table) {
             $table->id();
             $table->foreignId('department_id')->constrained('departments');
-            $table->foreignId('advisor_id')->constrained('lecturers'); // CVHT
-            // Monitor ID (Lớp trưởng) sẽ update sau hoặc để nullable để tránh lỗi vòng lặp lúc insert
+            $table->foreignId('advisor_id')->constrained('lecturers'); 
             $table->foreignId('monitor_id')->nullable()->constrained('students');
             $table->string('code')->unique()->comment('20DTHA2');
             $table->string('name');
@@ -21,10 +20,9 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        // 2. Cập nhật bảng Students (Thêm các cột mới theo thiết kế)
+        // 2. Cập nhật bảng Students 
         Schema::table('students', function (Blueprint $table) {
             $table->foreignId('class_id')->nullable()->after('user_id')->constrained('classes');
-            // student_code đã có, bỏ qua
             $table->string('fullname')->after('student_code');
             $table->date('dob')->nullable()->after('fullname');
             $table->string('pob')->nullable()->after('dob')->comment('Nơi sinh');

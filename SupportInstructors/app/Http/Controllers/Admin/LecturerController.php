@@ -20,7 +20,6 @@ class LecturerController extends Controller
 {
     public function index(Request $request)
     {
-        // QUAN TRỌNG: withTrashed() trong closure của User để lấy được user đã bị xóa mềm
         $query = Lecturer::with(['user' => function ($q) {
             $q->withTrashed();
         }, 'department']);
@@ -123,7 +122,6 @@ class LecturerController extends Controller
 
     public function edit($id)
     {
-        // Lấy Lecturer và User (kể cả đã xóa mềm để sửa thông tin nếu cần)
         $lecturer = Lecturer::where('id', $id)->with(['user' => function ($q) {
             $q->withTrashed();
         }])->firstOrFail();
@@ -184,7 +182,6 @@ class LecturerController extends Controller
         }
     }
 
-    // 1. Ẩn 1 dòng (Soft Delete)
     public function destroy($id)
     {
         $lecturer = Lecturer::findOrFail($id);
@@ -195,7 +192,6 @@ class LecturerController extends Controller
         return redirect()->back()->with('success', 'Đã ẩn giảng viên (Chuyển sang trạng thái vô hiệu hóa).');
     }
 
-    // 2. Khôi phục 1 dòng
     public function restore($id)
     {
         $lecturer = Lecturer::where('id', $id)->with(['user' => function ($q) {
@@ -213,11 +209,9 @@ class LecturerController extends Controller
         $ids = $request->ids;
         if (empty($ids)) return response()->json(['error' => 'Chưa chọn mục nào.'], 400);
 
-        // Chỉ lấy những cái chưa xóa để xóa
         $lecturers = Lecturer::whereIn('id', $ids)->get();
         $count = 0;
         foreach ($lecturers as $lec) {
-            // Logic xóa mềm User
             if ($lec->user && !$lec->user->trashed()) {
                 if (\App\Models\Classes::where('advisor_id', $lec->id)->exists()) continue;
                 $lec->user->delete();
@@ -227,13 +221,12 @@ class LecturerController extends Controller
         return response()->json(['success' => true, 'message' => "Đã ẩn $count giảng viên."]);
     }
 
-    // 4. Khôi phục hàng loạt
+    // Khôi phục hàng loạt
     public function bulkRestore(Request $request)
     {
         $ids = $request->ids;
         if (empty($ids)) return response()->json(['error' => 'Chưa chọn mục nào.'], 400);
 
-        // Lấy cả những cái đã xóa để khôi phục
         $lecturers = Lecturer::whereIn('id', $ids)->with(['user' => function ($q) {
             $q->withTrashed();
         }])->get();

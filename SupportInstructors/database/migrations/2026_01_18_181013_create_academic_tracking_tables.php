@@ -9,7 +9,6 @@ return new class extends Migration
 {
     public function up()
     {
-        // 1. Import Batches (Lô nhập liệu)
         Schema::create('import_batches', function (Blueprint $table) {
             $table->id();
             $table->foreignId('semester_id')->constrained('semesters');
@@ -22,7 +21,6 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        // 2. Student Debts (Nợ môn)
         Schema::create('student_debts', function (Blueprint $table) {
             $table->id();
             $table->foreignId('batch_id')->nullable()->constrained('import_batches')->onDelete('cascade');
@@ -37,7 +35,6 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        // 3. Academic Warnings (Cảnh báo học vụ)
         Schema::create('academic_warnings', function (Blueprint $table) {
             $table->id();
             $table->foreignId('batch_id')->constrained('import_batches')->onDelete('cascade');
@@ -54,21 +51,6 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        // 4. Course Cancellations (Hủy học phần)
-        Schema::create('course_cancellations', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('batch_id')->constrained('import_batches')->onDelete('cascade');
-            $table->foreignId('student_id')->constrained('students')->onDelete('cascade');
-            $table->foreignId('semester_id')->constrained('semesters');
-            $table->string('course_code');
-            $table->string('course_name');
-            $table->integer('credits');
-            $table->string('reason')->nullable();
-            $table->boolean('is_notified')->default(false);
-            $table->timestamps();
-        });
-
-        // 5. Academic Results (Kết quả học tập)
         Schema::create('academic_results', function (Blueprint $table) {
             $table->id();
             $table->foreignId('batch_id')->nullable()->constrained('import_batches')->onDelete('cascade');
@@ -88,7 +70,6 @@ return new class extends Migration
     public function down()
     {
         Schema::dropIfExists('academic_results');
-        Schema::dropIfExists('course_cancellations');
         Schema::dropIfExists('academic_warnings');
         Schema::dropIfExists('student_debts');
         Schema::dropIfExists('import_batches');

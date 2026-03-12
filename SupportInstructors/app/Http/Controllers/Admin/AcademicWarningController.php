@@ -39,7 +39,7 @@ class AcademicWarningController extends Controller
             });
         }
 
-        // Tìm kiếm (Tên hoặc MSSV)
+        // Tìm kiếm
         if ($request->filled('search')) {
             $search = $request->search;
             $query->whereHas('student', function ($q) use ($search) {
@@ -47,17 +47,13 @@ class AcademicWarningController extends Controller
                 ->orWhere('student_code', 'like', "%$search%");
             });
         }
-
-        // 3. Lấy dữ liệu phân trang
         $warnings = $query->latest('id')->paginate(10)->withQueryString();
 
         if ($request->ajax()) {
-            // Chỉ trả về các dòng <tr> thay vì cả trang web
             return view('admin.academic_warnings.partials.table_rows', compact('warnings'))->render();
         }
 
         $statsQuery = clone $query; 
-        // Bỏ phân trang để đếm tổng
         $allWarnings = $statsQuery->get(); 
         
         $stats = [
@@ -67,16 +63,14 @@ class AcademicWarningController extends Controller
             'dropout' => $allWarnings->where('warning_level', '>=', 3)->count(),
         ];
 
-        // 5. Lấy dữ liệu cho các Select box bộ lọc
         $semesters = Semester::orderBy('start_date', 'desc')->get();
-        $classes = \App\Models\Classes::all(); // Hoặc lấy Classes::select('id', 'code')->get();
+        $classes = \App\Models\Classes::all();
 
         return view('admin.academic_warnings.index', compact('warnings', 'stats', 'semesters', 'classes'));
     }
 
     public function showImport()
     {
-        // Lấy danh sách học kỳ để chọn
         $semesters = Semester::orderBy('start_date', 'desc')->get();
         return view('admin.academic_warnings.import', compact('semesters'));
     }
@@ -89,7 +83,6 @@ class AcademicWarningController extends Controller
         ]);
 
         try {
-            // 1. Dùng thư viện Excel để đọc file thành mảng (Hỗ trợ cả .xlsx và .csv)
             $array = Excel::toArray([], $request->file('file'));
             
             if (empty($array)) {
@@ -99,7 +92,6 @@ class AcademicWarningController extends Controller
             $headerIndex = null;
             $previewData = [];
 
-            // 2. Tìm dòng header (chứa chữ "Mã sinh viên" hoặc "MSSV")
             foreach ($data as $index => $row) {
                 $rowString = implode(' ', array_map(function($item) { return (string)$item; }, $row));
                 if (mb_stripos($rowString, 'Mã sinh viên') !== false || mb_stripos($rowString, 'MSSV') !== false) {
@@ -112,43 +104,31 @@ class AcademicWarningController extends Controller
                 return back()->with('error', 'Không tìm thấy cột "Mã sinh viên" trong file. Vui lòng kiểm tra lại file Excel.');
             }
 
-            // 3. Map dữ liệu
             for ($i = $headerIndex + 1; $i < count($data); $i++) {
                 $row = $data[$i];
-
-                // Kiểm tra nếu cột Mã SV (index 1) bị rỗng thì bỏ qua dòng này
                 if (!isset($row[1]) || trim($row[1]) == '') continue;
-
                 $khoa = isset($row[5]) ? trim((string)$row[5]) : '';
-                
-                // So sánh: Chuyển về chữ hoa để chắc chắn (TT&TT, tt&tt đều nhận)
-                // Nếu KHÔNG PHẢI là TT&TT thì bỏ qua vòng lặp này
                 if (mb_strtoupper($khoa) !== 'TT&TT') {
                     continue; 
                 }
 
                 $mssv = trim((string)$row[1]); 
                 $student = Student::where('student_code', $mssv)->first();
-                // Xử lý ngày sinh
                 $dobRaw = isset($row[3]) ? $row[3] : null;
                 $dobFormatted = null;   
                 if ($dobRaw) {
                     try {
-                        // Trường hợp 1: Excel trả về số Serial (ví dụ: 45321)
                         if (is_numeric($dobRaw)) {
                             $dobFormatted = Date::excelToDateTimeObject($dobRaw)->format('Y-m-d');
                         } 
-                        // Trường hợp 2: Excel trả về chuỗi (20/01/2004 hoặc 2004-01-20)
                         else {
-                            // Thay thế dấu / bằng - để Carbon dễ hiểu
                             $cleanDate = str_replace('/', '-', $dobRaw);
                             $dobFormatted = Carbon::parse($cleanDate)->format('Y-m-d');
                         }
                     } catch (\Exception $e) {
-                        $dobFormatted = null; // Nếu lỗi format thì để trống
+                        $dobFormatted = null;
                     }
                 }
-                // Xử lý điểm số (chuyển đổi nếu là text "Không ĐKHP")
                 $gpa = (isset($row[6]) && is_numeric($row[6])) ? $row[6] : 0;
                 $gpa_acc = (isset($row[7]) && is_numeric($row[7])) ? $row[7] : 0;
                 $credits_failed = (isset($row[9]) && is_numeric($row[9])) ? $row[9] : 0;
@@ -168,7 +148,6 @@ class AcademicWarningController extends Controller
                     'note' => $row[11] ?? '',
                     'exists' => $student ? true : false,
                     'student_id' => $student ? $student->id : null,
-                    // Lưu lại dòng raw để dùng ở bước store nếu cần
                     'raw_row' => $row 
                 ];
             }
@@ -196,25 +175,19 @@ class AcademicWarningController extends Controller
     {
         $data = json_decode($request->input('data'), true);
         $semesterId = $request->input('semester_id');
-
-        // Lấy ID người dùng hiện tại, nếu chưa login hoặc lỗi thì lấy ID mặc định là 1 (Admin)
         $importerId = Auth::id() ?? 1; 
 
         DB::beginTransaction();
         try {
-            // 1. Tạo Lô Import (ImportBatch)
             $batch = ImportBatch::create([
                 'semester_id' => $semesterId,
-                'imported_by' => $importerId, // <--- Đã sửa lỗi tại đây
+                'imported_by' => $importerId, 
                 'name' => 'Import Cảnh báo ' . now()->format('d/m/Y H:i'),
                 'type' => 'warning',
                 'status' => 'published',
                 'total_records' => count($data)
             ]);
-
-            // 2. Lưu chi tiết cảnh báo
             foreach ($data as $item) {
-                // Tìm lại sinh viên trong DB (đề phòng vừa thêm nhanh)
                 $student = Student::where('student_code', $item['mssv'])->first();
 
                 if ($student) {
@@ -247,7 +220,6 @@ class AcademicWarningController extends Controller
 
     public function quickAddStudent(Request $request)
     {
-        // 1. Thêm Validation để đảm bảo dữ liệu đúng
         $request->validate([
             'mssv' => 'required|unique:students,student_code',
             'fullname' => 'required',
@@ -257,28 +229,18 @@ class AcademicWarningController extends Controller
 
         try {
             DB::beginTransaction();
-            // B1. Tách chuỗi họ tên thành mảng: "Nguyễn Văn An" -> ["Nguyễn", "Văn", "An"]
             $parts = explode(' ', trim($request->fullname));
-            
-            // B2. Lấy phần tử cuối cùng: "An"
             $lastName = array_pop($parts);
-            
-            // B3. Chuyển thành slug (bỏ dấu, chữ thường): "An" -> "an"
             $slugName = Str::slug($lastName, ''); 
-            
-            // B4. Ghép chuỗi: an + 22082001 + @vngkgu.edu.vn
             $generatedEmail = $slugName . $request->mssv . '@vnkgu.edu.vn';
-            // 2. Tạo User cho sinh viên
             $user = User::create([
                 'name' => $request->fullname,
                 'email' => $generatedEmail,
-                'password' => Hash::make($request->mssv), // Pass mặc định là MSSV
-                'role_id' => 3, // Role Student
+                'password' => Hash::make($request->mssv),
+                'role_id' => 3, 
                 'username' => $request->mssv,
                 'is_active' => 1
             ]);
-
-            // 3. Xử lý ngày sinh
             $dob = null;
             if (!empty($request->dob)) {
                 try {
@@ -287,14 +249,12 @@ class AcademicWarningController extends Controller
                     $dob = null; 
                 }
             }
-
-            // 4. Tạo Sinh viên (QUAN TRỌNG: Thêm class_id vào đây)
             $student = Student::create([
                 'user_id' => $user->id,
                 'student_code' => $request->mssv,
                 'fullname' => $request->fullname,
                 'dob' => $dob,
-                'class_id' => $request->class_id, // <--- ĐÃ BỔ SUNG DÒNG NÀY
+                'class_id' => $request->class_id,
                 'status' => 'studying'
             ]);
             
@@ -316,7 +276,6 @@ class AcademicWarningController extends Controller
 
     public function export(Request $request) 
     {
-        // 1. Lọc dữ liệu (Logic giống hệt hàm index để đảm bảo bộ lọc khớp với những gì đang xem)
         $query = AcademicWarning::with(['student.studentClass', 'semester']);
 
         if ($request->filled('semester_id')) {
@@ -330,17 +289,11 @@ class AcademicWarningController extends Controller
         }
 
         $data = $query->get();
-
-        // 2. Xử lý xuất file
         if ($request->format === 'excel') {
-            // Class WarningsExport vẫn để ở app/Exports là chuẩn nhất của Laravel
             return Excel::download(new WarningsExport($data), 'danh-sach-canh-bao.xlsx');
         } 
         elseif ($request->format === 'pdf') {
-            // [QUAN TRỌNG] Load view từ thư mục warning: resources/views/admin/academic_warnings/pdf_export.blade.php
             $pdf = Pdf::loadView('admin.academic_warnings.pdf_export', compact('data'));
-            
-            // Cấu hình font và khổ giấy
             $pdf->setOption('defaultFont', 'DejaVu Serif');
             $pdf->setPaper('a4', 'portrait');
             

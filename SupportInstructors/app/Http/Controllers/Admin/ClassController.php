@@ -152,8 +152,6 @@ class ClassController extends Controller
     public function edit(Request $request, string $id)
     {
         $class = Classes::findOrFail($id);
-
-        // Bảo mật: Giảng viên chỉ được sửa lớp của mình
         if (Auth::user()->role_id == 2) {
             $lecturer = Lecturer::where('user_id', Auth::id())->first();
             if (!$lecturer || $class->advisor_id != $lecturer->id) {
@@ -208,7 +206,6 @@ class ClassController extends Controller
     {
         $class = Classes::findOrFail($id);
 
-        // Bảo mật: Giảng viên chỉ được sửa lớp của mình
         if (Auth::user()->role_id == 2) {
             $lecturer = Lecturer::where('user_id', Auth::id())->first();
             if (!$lecturer || $class->advisor_id != $lecturer->id) {
@@ -216,7 +213,6 @@ class ClassController extends Controller
             }
         }
 
-        // Tùy theo Role mà validate khác nhau
         if (Auth::user()->role_id == 1) {
             $request->validate([
                 'code' => 'required|unique:classes,code,' . $id,
@@ -233,7 +229,6 @@ class ClassController extends Controller
                 'academic_year.required' => 'Vui lòng nhập Niên khóa.',
             ]);
         } else {
-            // Giảng viên chỉ validate Lớp trưởng và Bí thư
             $request->validate([
                 'monitor_id' => 'nullable|exists:students,id',
                 'secretary_id' => 'nullable|exists:students,id',
@@ -243,7 +238,6 @@ class ClassController extends Controller
         DB::beginTransaction();
 
         try {
-            // Chỉ Admin mới được lưu thông tin chính của lớp
             if (Auth::user()->role_id == 1) {
                 $class->code = $request->code;
                 $class->name = $request->name;
@@ -251,14 +245,12 @@ class ClassController extends Controller
                 $class->academic_year = $request->academic_year;
             }
 
-            // Cả Admin và Giảng viên đều được lưu cán bộ lớp
             $class->monitor_id = $request->monitor_id;
             $class->secretary_id = $request->secretary_id;
 
             $class->save();
 
             $newIds = [];
-            // Cả Admin và Giảng viên đều được thêm sinh viên mới
             if ($request->filled('students_list')) {
                 $newIds = $this->processStudentList($request->students_list, $class->id);
             }
@@ -409,7 +401,6 @@ class ClassController extends Controller
         try {
             $student = Student::findOrFail($id);
 
-            // Chặn giảng viên sửa sinh viên của lớp khác
             if (Auth::user()->role_id == 2) {
                 $lecturer = Lecturer::where('user_id', Auth::id())->first();
                 $class = Classes::find($student->class_id);

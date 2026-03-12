@@ -121,9 +121,15 @@ class NotificationController extends Controller
         $notification = Notification::with('classes')->findOrFail($id);
         $routePrefix = $this->getRoutePrefix();
 
+        // CHẶN: Giảng viên không được sửa bài của người khác (bao gồm cả Admin)
+        if (Auth::user()->role_id != 1 && $notification->sender_id != Auth::id()) {
+            return redirect()->route($routePrefix . 'notifications.index')->with('error', 'Bạn không có quyền chỉnh sửa bài đăng này!');
+        }
+
         if ($notification->status === 'approved') {
             return redirect()->route($routePrefix . 'notifications.index')->with('error', 'Không thể sửa thông báo đã xuất bản!');
         }
+
         $classes = Classes::orderBy('code', 'asc')->get();
         return view('admin.notifications.edit', compact('notification', 'classes'));
     }
@@ -132,6 +138,11 @@ class NotificationController extends Controller
     {
         $notification = Notification::findOrFail($id);
         $routePrefix = $this->getRoutePrefix();
+
+        // CHẶN: Giảng viên không được sửa bài của người khác
+        if (Auth::user()->role_id != 1 && $notification->sender_id != Auth::id()) {
+            return redirect()->route($routePrefix . 'notifications.index')->with('error', 'Bạn không có quyền chỉnh sửa bài đăng này!');
+        }
 
         if ($notification->status === 'approved') {
             return redirect()->back()->with('error', 'Không thể sửa thông báo đã xuất bản!');
@@ -217,9 +228,15 @@ class NotificationController extends Controller
         $notification = Notification::findOrFail($id);
         $routePrefix = $this->getRoutePrefix();
 
+        // CHẶN: Giảng viên không được xóa bài của người khác (bao gồm cả Admin)
+        if (Auth::user()->role_id != 1 && $notification->sender_id != Auth::id()) {
+            return redirect()->route($routePrefix . 'notifications.index')->with('error', 'Bạn không có quyền xóa bài đăng này!');
+        }
+
         if ($notification->attachment_url) {
             Storage::disk('public')->delete($notification->attachment_url);
         }
+
         $notification->delete();
         return redirect()->route($routePrefix . 'notifications.index')->with('success', 'Đã xóa thông báo!');
     }

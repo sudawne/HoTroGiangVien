@@ -104,8 +104,8 @@ class LecturerController extends Controller
             DB::commit();
 
             try {
-                $testRecipient = 'nguyen22082006204@vnkgu.edu.vn';
-                Mail::to($testRecipient)->send(new LecturerAccountCreated($user, $rawPassword));
+                // Đã xóa mail test, sử dụng chính email của tài khoản vừa tạo
+                Mail::to($user->email)->send(new LecturerAccountCreated($user, $rawPassword));
             } catch (\Exception $mailEx) {
                 Log::error('Lỗi gửi mail giảng viên: ' . $mailEx->getMessage());
             }

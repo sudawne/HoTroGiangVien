@@ -11,20 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // 1. Thêm dòng này để rọn dẹp bảng cũ đang bị kẹt trong DB
-        Schema::dropIfExists('course_cancellations');
-
-        // 2. Chạy lệnh tạo bảng như bình thường
         Schema::create('course_cancellations', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('student_id')->constrained('students')->cascadeOnDelete();
-            $table->foreignId('semester_id')->constrained('semesters')->cascadeOnDelete();
 
-            // Cột khóa ngoại trỏ tới bảng môn học
-            $table->foreignId('subject_id')->constrained('subjects')->cascadeOnDelete();
+            $table->foreignId('student_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('semester_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('subject_id')->constrained()->cascadeOnDelete();
 
-            $table->string('reason')->default('Nợ học phí')->comment('Lý do xóa');
-            $table->decimal('debt_amount', 15, 0)->nullable()->comment('Số tiền nợ (nếu có)');
+            $table->string('reason')->default('Nợ học phí');
+            $table->decimal('debt_amount', 15, 0)->nullable();
+
             $table->timestamps();
         });
     }

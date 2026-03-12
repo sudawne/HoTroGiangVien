@@ -60,32 +60,31 @@
         }
     }">
         {{-- Header --}}
-        <div class="flex items-center justify-between mb-6">
-            <div class="mb-6">
-                <x-page-header title="Danh sách Giảng viên" description="Quản lý thông tin đội ngũ giảng dạy"
-                    :routePrefix="$routePrefix" :breadcrumbs="[['label' => 'Giảng viên']]" />
-            </div>
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+            <x-page-header title="Danh sách Giảng viên" description="Quản lý thông tin đội ngũ giảng dạy" :routePrefix="$routePrefix"
+                :breadcrumbs="[['label' => 'Giảng viên']]" />
+
             <div class="flex items-center gap-2">
                 {{-- KHU VỰC NÚT HÀNG LOẠT (JS Vanilla sẽ toggle class hidden ở đây) --}}
                 <div id="bulk-restore-btn" class="hidden flex gap-2 bulk-anim">
                     <button @click="openConfirm('restore')"
-                        class="h-10 px-3 bg-blue-100 border border-blue-200 text-blue-600 rounded-sm font-medium hover:bg-blue-200 flex items-center gap-2 shadow-sm transition-all">
+                        class="h-10 px-3 bg-blue-100 border border-blue-200 text-blue-600 rounded-sm font-medium hover:bg-blue-200 flex items-center gap-2 shadow-sm transition-all text-sm">
                         <span class="material-symbols-outlined !text-[20px]">visibility</span>
-                        <span class="hidden sm:inline text-xs">Hiện/Khôi phục</span>
+                        <span class="hidden sm:inline">Hiện/Khôi phục</span>
                     </button>
                 </div>
 
                 <div id="bulk-delete-btn" class="hidden flex gap-2 bulk-anim">
                     <button @click="openConfirm('delete')"
-                        class="h-10 px-3 bg-red-100 border border-red-200 text-red-600 rounded-sm font-medium hover:bg-red-200 flex items-center gap-2 shadow-sm transition-all">
+                        class="h-10 px-3 bg-red-100 border border-red-200 text-red-600 rounded-sm font-medium hover:bg-red-200 flex items-center gap-2 shadow-sm transition-all text-sm">
                         <span class="material-symbols-outlined !text-[20px]">visibility_off</span>
-                        <span class="hidden sm:inline text-xs">Ẩn đã chọn</span>
+                        <span class="hidden sm:inline">Ẩn đã chọn</span>
                     </button>
                 </div>
 
                 {{-- Nút Thêm mới --}}
                 <a href="{{ route($routePrefix . 'lecturers.create') }}"
-                    class="h-10 px-4 bg-primary text-white rounded-sm font-medium hover:bg-primary/90 flex items-center gap-2 shadow-sm transition-colors">
+                    class="h-10 px-4 bg-primary text-white rounded-sm font-medium hover:bg-primary/90 flex items-center gap-2 shadow-sm transition-colors text-sm">
                     <span class="material-symbols-outlined !text-[20px]">add</span>
                     <span class="hidden sm:inline">Thêm mới</span>
                 </a>
@@ -187,12 +186,13 @@
                                             <a href="{{ route($routePrefix . 'lecturers.edit', $lec->id) }}"
                                                 class="p-1.5 text-slate-500 hover:text-primary hover:bg-slate-100 rounded transition-colors"><span
                                                     class="material-symbols-outlined !text-[18px]">edit</span></a>
-                                            {{-- Form Ẩn --}}
-                                            <form action="{{ route($routePrefix . 'lecturers.destroy', $lec->id) }}"
-                                                method="POST"
-                                                onsubmit="return confirm('Bạn có chắc muốn ẩn giảng viên này?');">
+
+                                            {{-- SỬ DỤNG GLOBAL MODAL Ở ĐÂY --}}
+                                            <form id="delete-form-{{ $lec->id }}"
+                                                action="{{ route($routePrefix . 'lecturers.destroy', $lec->id) }}"
+                                                method="POST">
                                                 @csrf @method('DELETE')
-                                                <button type="submit"
+                                                <button type="button" onclick="confirmDeleteLecturer({{ $lec->id }})"
                                                     class="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
                                                     title="Ẩn giảng viên">
                                                     <span
@@ -214,46 +214,50 @@
             <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-700">{{ $lecturers->links() }}</div>
         </div>
 
-        {{-- ================= MODAL XÁC NHẬN (Confirm) ================= --}}
+        {{-- ================= MODAL XÁC NHẬN BULK ACTION (AlpineJS) ================= --}}
         <div x-show="confirmModalOpen" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto">
             <div x-show="confirmModalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0"
                 x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200"
                 x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
-                class="fixed inset-0 bg-gray-500/75 transition-opacity"></div>
+                class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"></div>
 
-            <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
                 <div x-show="confirmModalOpen" x-transition:enter="ease-out duration-300"
                     x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                     x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
                     x-transition:leave="ease-in duration-200"
                     x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
                     x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                    class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+                    class="relative transform overflow-hidden rounded-lg bg-white dark:bg-[#1e1e2d] text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-md border border-slate-200 dark:border-slate-700">
 
-                    <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                    <div class="px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
                         <div class="sm:flex sm:items-start">
-                            <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full sm:mx-0 sm:h-10 sm:w-10"
-                                :class="actionType === 'delete' ? 'bg-red-100' : 'bg-blue-100'">
+                            <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full sm:mx-0 sm:h-10 sm:w-10 transition-colors"
+                                :class="actionType === 'delete' ? 'bg-red-100 dark:bg-red-900/30' :
+                                    'bg-blue-100 dark:bg-blue-900/30'">
                                 <span class="material-symbols-outlined"
-                                    :class="actionType === 'delete' ? 'text-red-600' : 'text-blue-600'"
+                                    :class="actionType === 'delete' ? 'text-red-600 dark:text-red-400' :
+                                        'text-blue-600 dark:text-blue-400'"
                                     x-text="actionType === 'delete' ? 'visibility_off' : 'visibility'"></span>
                             </div>
                             <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
-                                <h3 class="text-base font-semibold leading-6 text-gray-900"
-                                    x-text="actionType === 'delete' ? 'Xác nhận Ẩn' : 'Xác nhận Khôi phục'"></h3>
+                                <h3 class="text-base font-semibold leading-6 text-slate-900 dark:text-white"
+                                    x-text="actionType === 'delete' ? 'Xác nhận Ẩn hàng loạt' : 'Xác nhận Khôi phục hàng loạt'">
+                                </h3>
                                 <div class="mt-2">
-                                    <p class="text-sm text-gray-500">
+                                    <p class="text-sm text-slate-500 dark:text-slate-400">
                                         Bạn có chắc chắn muốn <span
                                             x-text="actionType === 'delete' ? 'ẩn' : 'khôi phục'"></span>
-                                        <span x-text="selectedCount" class="font-bold text-slate-800"></span> giảng viên
+                                        <span x-text="selectedCount"
+                                            class="font-bold text-slate-800 dark:text-slate-200"></span> giảng viên
                                         đã chọn?
                                     </p>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-                        {{-- QUAN TRỌNG: Gọi executeBulkAction() --}}
+                    <div
+                        class="bg-slate-50 dark:bg-slate-800/50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 border-t border-slate-100 dark:border-slate-700">
                         <button type="button" @click="executeBulkAction()" :disabled="isSubmitting"
                             class="inline-flex w-full justify-center rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm sm:ml-3 sm:w-auto transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             :class="actionType === 'delete' ? 'bg-red-600 hover:bg-red-500' : 'bg-blue-600 hover:bg-blue-500'">
@@ -261,8 +265,8 @@
                             <span x-show="isSubmitting">Đang xử lý...</span>
                         </button>
                         <button type="button" @click="confirmModalOpen = false" :disabled="isSubmitting"
-                            class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto">
-                            Hủy
+                            class="mt-3 inline-flex w-full justify-center rounded-md bg-white dark:bg-slate-700 px-3 py-2 text-sm font-semibold text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 sm:mt-0 sm:w-auto transition-colors">
+                            Hủy bỏ
                         </button>
                     </div>
                 </div>
@@ -271,29 +275,32 @@
 
         {{-- ================= MODAL LỖI (Error) ================= --}}
         <div x-show="errorModalOpen" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto">
-            <div class="fixed inset-0 bg-gray-500/75 transition-opacity"></div>
-            <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"></div>
+            <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
                 <div
-                    class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-md">
-                    <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                    class="relative transform overflow-hidden rounded-lg bg-white dark:bg-[#1e1e2d] text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-md border border-slate-200 dark:border-slate-700">
+                    <div class="px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
                         <div class="sm:flex sm:items-start">
                             <div
-                                class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-orange-100 sm:mx-0 sm:h-10 sm:w-10">
-                                <span class="material-symbols-outlined text-orange-600">warning</span>
+                                class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900/30 sm:mx-0 sm:h-10 sm:w-10">
+                                <span class="material-symbols-outlined text-orange-600 dark:text-orange-400">warning</span>
                             </div>
                             <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
-                                <h3 class="text-base font-semibold leading-6 text-gray-900">Lỗi chọn dữ liệu</h3>
+                                <h3 class="text-base font-semibold leading-6 text-slate-900 dark:text-white">Lỗi chọn dữ
+                                    liệu</h3>
                                 <div class="mt-2">
-                                    <p class="text-sm text-gray-500">Vui lòng chọn cùng một loại trạng thái (hoặc cùng
+                                    <p class="text-sm text-slate-500 dark:text-slate-400">Vui lòng chọn cùng một loại trạng
+                                        thái (hoặc cùng
                                         <b>đã ẩn</b>, hoặc cùng <b>đang hoạt động</b>) để thao tác.
                                     </p>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                    <div
+                        class="bg-slate-50 dark:bg-slate-800/50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 border-t border-slate-100 dark:border-slate-700">
                         <button type="button" @click="errorModalOpen = false"
-                            class="inline-flex w-full justify-center rounded-md bg-orange-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-orange-500 sm:w-auto">Đã
+                            class="inline-flex w-full justify-center rounded-md bg-orange-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-orange-500 sm:w-auto transition-colors">Đã
                             hiểu</button>
                     </div>
                 </div>
@@ -302,6 +309,18 @@
     </div>
 
     <script>
+        // HÀM GỌI GLOBAL CONFIRM MODAL (Từ file Layout)
+        function confirmDeleteLecturer(id) {
+            window.showConfirm(
+                'Xác nhận Ẩn Giảng viên',
+                'Tài khoản giảng viên này sẽ bị ẩn khỏi hệ thống nhưng vẫn có thể khôi phục lại sau. Bạn có chắc chắn?',
+                function() {
+                    document.getElementById('delete-form-' + id).submit();
+                },
+                'danger'
+            );
+        }
+
         // --- LOGIC JS THƯỜNG (Xử lý UI Checkbox) ---
         const selectAll = document.getElementById('select-all');
         const items = document.querySelectorAll('.select-item');

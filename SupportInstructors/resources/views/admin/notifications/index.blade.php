@@ -154,39 +154,60 @@
 
                                 <td class="px-6 py-4 align-middle">
                                     <div class="flex items-center justify-end gap-2">
-                                        @if (in_array($notify->status, ['draft', 'pending']))
-                                            <a href="{{ route($routePrefix . 'notifications.edit', $notify->id) }}"
-                                                class="px-2 py-1.5 bg-blue-50 text-blue-600 border border-blue-200 rounded text-xs font-bold hover:bg-blue-600 hover:text-white transition-colors"
-                                                title="Chỉnh sửa">
-                                                Sửa
-                                            </a>
-                                        @endif
 
-                                        @if ($notify->status == 'pending' && Auth::user()->role_id == 1)
-                                            <form id="approve-form-{{ $notify->id }}"
-                                                action="{{ route($routePrefix . 'notifications.approve', $notify->id) }}"
+                                        {{-- BIẾN KIỂM TRA QUYỀN SỞ HỮU HOẶC ADMIN --}}
+                                        @php
+                                            $isOwner = $notify->sender_id === Auth::id();
+                                            $isAdmin = (Auth::user()->role_id ?? 0) == 1;
+                                            // Admin được toàn quyền. Giảng viên chỉ được thao tác trên bài của chính mình.
+                                            $canModify = $isAdmin || $isOwner;
+                                        @endphp
+
+                                        {{-- NÚT XEM: Ai cũng được xem --}}
+                                        <a href="{{ route($routePrefix . 'notifications.show', $notify->id) }}"
+                                            class="px-2 py-1.5 bg-slate-100 text-slate-600 border border-slate-200 rounded text-xs font-bold hover:bg-slate-200 transition-colors"
+                                            title="Xem chi tiết">
+                                            Xem
+                                        </a>
+
+                                        @if ($canModify)
+                                            {{-- NÚT SỬA: Chỉ bài chưa xuất bản (hoặc Admin tự sửa bài của mình) --}}
+                                            @if (in_array($notify->status, ['draft', 'pending']))
+                                                <a href="{{ route($routePrefix . 'notifications.edit', $notify->id) }}"
+                                                    class="px-2 py-1.5 bg-blue-50 text-blue-600 border border-blue-200 rounded text-xs font-bold hover:bg-blue-600 hover:text-white transition-colors"
+                                                    title="Chỉnh sửa">
+                                                    Sửa
+                                                </a>
+                                            @endif
+
+                                            {{-- NÚT DUYỆT: Chỉ dành riêng cho Admin và khi bài đang chờ duyệt --}}
+                                            @if ($notify->status == 'pending' && $isAdmin)
+                                                <form id="approve-form-{{ $notify->id }}"
+                                                    action="{{ route($routePrefix . 'notifications.approve', $notify->id) }}"
+                                                    method="POST" class="hidden">
+                                                    @csrf
+                                                </form>
+                                                <button type="button"
+                                                    onclick="showConfirm('Xác nhận Duyệt bài', 'Hệ thống sẽ ngay lập tức xuất bản thông báo và GỬI EMAIL tự động đến sinh viên. Bạn có chắc chắn?', () => document.getElementById('approve-form-{{ $notify->id }}').submit(), 'primary')"
+                                                    class="px-2 py-1.5 bg-green-600 text-white rounded text-xs font-bold hover:bg-green-700 shadow-sm transition-colors"
+                                                    title="Duyệt & Xuất bản">
+                                                    Duyệt
+                                                </button>
+                                            @endif
+
+                                            {{-- NÚT XÓA --}}
+                                            <form id="delete-form-{{ $notify->id }}"
+                                                action="{{ route($routePrefix . 'notifications.destroy', $notify->id) }}"
                                                 method="POST" class="hidden">
-                                                @csrf
+                                                @csrf @method('DELETE')
                                             </form>
                                             <button type="button"
-                                                onclick="showConfirm('Xác nhận Duyệt bài', 'Hệ thống sẽ ngay lập tức xuất bản thông báo và GỬI EMAIL tự động đến sinh viên. Bạn có chắc chắn?', () => document.getElementById('approve-form-{{ $notify->id }}').submit(), 'primary')"
-                                                class="px-2 py-1.5 bg-green-600 text-white rounded text-xs font-bold hover:bg-green-700 shadow-sm transition-colors"
-                                                title="Duyệt & Xuất bản">
-                                                Duyệt
+                                                onclick="showConfirm('Xóa thông báo', 'Bạn có chắc chắn muốn xóa bài đăng này? Hành động này không thể hoàn tác.', () => document.getElementById('delete-form-{{ $notify->id }}').submit(), 'danger')"
+                                                class="px-2 py-1.5 bg-red-50 text-red-600 border border-red-200 rounded text-xs font-bold hover:bg-red-600 hover:text-white transition-colors"
+                                                title="Xóa bỏ">
+                                                Xóa
                                             </button>
                                         @endif
-
-                                        <form id="delete-form-{{ $notify->id }}"
-                                            action="{{ route($routePrefix . 'notifications.destroy', $notify->id) }}"
-                                            method="POST" class="hidden">
-                                            @csrf @method('DELETE')
-                                        </form>
-                                        <button type="button"
-                                            onclick="showConfirm('Xóa thông báo', 'Bạn có chắc chắn muốn xóa bài đăng này? Hành động này không thể hoàn tác.', () => document.getElementById('delete-form-{{ $notify->id }}').submit(), 'danger')"
-                                            class="px-2 py-1.5 bg-red-50 text-red-600 border border-red-200 rounded text-xs font-bold hover:bg-red-600 hover:text-white transition-colors"
-                                            title="Xóa bỏ">
-                                            Xóa
-                                        </button>
                                     </div>
                                 </td>
                             </tr>

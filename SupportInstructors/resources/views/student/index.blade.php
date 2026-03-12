@@ -208,7 +208,7 @@
                         <h4 class="font-bold text-[15px] sm:text-[16px] mb-2 text-slate-900 leading-snug">
                             {{ $notify->title }}
                         </h4>
-                        <div class="prose prose-slate max-w-none text-[14px] sm:text-[14.5px] text-slate-800 leading-relaxed prose-a:text-blue-600 hover:prose-a:underline prose-container"
+                        <div class="prose-slate max-w-none text-[14px] sm:text-[14.5px] text-slate-800 leading-relaxed prose-a:text-blue-600 hover:prose-a:underline prose-container prose-p:first-of-type:mt-0 prose-p:last-of-type:mb-0 prose-p:my-1.5 prose-ul:my-1"
                             style="word-wrap: break-word;">
                             {!! $notify->message !!}
                         </div>

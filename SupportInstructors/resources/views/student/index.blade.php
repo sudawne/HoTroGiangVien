@@ -460,9 +460,138 @@
         </div>
 
     </section>
+    <div x-data="appointmentModal()" @open-appointment.window="openModal($event.detail)" x-show="isOpen"
+        style="display: none;" class="fixed inset-0 z-[110] overflow-y-auto font-sans">
+
+        {{-- Màn mờ --}}
+        <div x-show="isOpen" x-transition.opacity
+            class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" @click="isOpen = false"></div>
+
+        <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+            <div x-show="isOpen" x-transition:enter="ease-out duration-300"
+                x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200"
+                x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                class="relative transform overflow-hidden rounded-xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-lg border border-slate-200">
+
+                <div class="bg-blue-600 px-5 py-4 flex justify-between items-center">
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <span class="material-symbols-outlined">edit_calendar</span>
+                        Đặt lịch hẹn Cố vấn
+                    </h3>
+                    <button @click="isOpen = false" class="text-blue-100 hover:text-white transition-colors">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+
+                <form @submit.prevent="submitForm" class="p-6 space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-1">Ngày hẹn <span
+                                    class="text-red-500">*</span></label>
+                            <input type="date" x-model="form.date" required
+                                class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500 shadow-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-1">Thời gian <span
+                                    class="text-red-500">*</span></label>
+                            <input type="time" x-model="form.time" required
+                                class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500 shadow-sm">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-1">Vấn đề cần tư vấn <span
+                                class="text-red-500">*</span></label>
+                        <select x-model="form.topic" required
+                            class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500 shadow-sm">
+                            <option value="Học vụ & Đăng ký tín chỉ">Học vụ & Đăng ký tín chỉ</option>
+                            <option value="Điểm rèn luyện & Ngoại khóa">Điểm rèn luyện & Ngoại khóa</option>
+                            <option value="Khó khăn cá nhân / Tâm lý">Khó khăn cá nhân / Tâm lý</option>
+                            <option value="Hướng nghiệp & Thực tập">Hướng nghiệp & Thực tập</option>
+                            <option value="Khác">Khác (Ghi rõ ở chú thích)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-1">Chú thích thêm</label>
+                        <textarea x-model="form.note" rows="3" placeholder="Ví dụ: Em muốn hỏi về việc hủy học phần..."
+                            class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500 shadow-sm resize-none"></textarea>
+                    </div>
+
+                    <div class="pt-4 flex justify-end gap-2 border-t border-slate-100">
+                        <button type="button" @click="isOpen = false"
+                            class="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">
+                            Hủy bỏ
+                        </button>
+                        <button type="submit"
+                            class="px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm flex items-center gap-1.5 transition-colors">
+                            <span class="material-symbols-outlined !text-[18px]">send</span> Tạo tin nhắn
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @section('scripts')
+    <script>
+        // SCRIPT CỦA MODAL ĐẶT LỊCH HẸN
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('appointmentModal', () => ({
+                isOpen: false,
+                advisorId: null,
+                advisorName: '',
+                form: {
+                    date: '',
+                    time: '',
+                    topic: 'Học vụ & Đăng ký tín chỉ',
+                    note: ''
+                },
+
+                openModal(data) {
+                    this.advisorId = data.id;
+                    this.advisorName = data.name;
+                    // Reset form: Set mặc định ngày mai
+                    let tomorrow = new Date();
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    this.form.date = tomorrow.toISOString().split('T')[0];
+                    this.form.time = '09:00';
+                    this.form.note = '';
+                    this.isOpen = true;
+                },
+
+                submitForm() {
+                    // Đổi format ngày (YYYY-MM-DD -> DD/MM/YYYY)
+                    const dateParts = this.form.date.split('-');
+                    const formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+
+                    // Tạo đoạn văn bản tin nhắn
+                    let message = `Dạ em chào Thầy/Cô ${this.advisorName},\n`;
+                    message += `Em muốn xin phép đặt lịch hẹn để nhờ Thầy/Cô tư vấn ạ.\n`;
+                    message += `📍 Thời gian: ${this.form.time}, ngày ${formattedDate}\n`;
+                    message += `📑 Vấn đề: ${this.form.topic}\n`;
+                    if (this.form.note.trim() !== '') {
+                        message += `💡 Ghi chú: ${this.form.note.trim()}\n`;
+                    }
+                    message +=
+                        `\nKhông biết Thầy/Cô có tiện vào khoảng thời gian này không ạ? Em cảm ơn Thầy/Cô!`;
+
+                    // Bắn sự kiện sang Khung Chat
+                    window.dispatchEvent(new CustomEvent('fill-chat-appointment', {
+                        detail: {
+                            contactId: this.advisorId,
+                            message: message
+                        }
+                    }));
+
+                    this.isOpen = false;
+                }
+            }));
+        });
+    </script>
     <script>
         document.addEventListener('alpine:init', () => {
             Alpine.data('liveSearch', () => ({

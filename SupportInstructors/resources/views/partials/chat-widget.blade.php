@@ -375,6 +375,43 @@
                         } else this.startPollingContacts();
                     } else this.stopPolling();
                 });
+
+                // Thêm Event Listener lắng nghe lệnh từ Modal Đặt lịch
+                window.addEventListener('fill-chat-appointment', (e) => {
+                    let detail = e.detail;
+                    this.isOpen = true; // Mở khung chat lên
+
+                    // Hàm xử lý mở chat và điền tin
+                    const applyMessage = () => {
+                        let contact = this.contacts.find(c => c.id == detail.contactId);
+                        if (contact) {
+                            this.openChat(contact);
+                            this.newMessage = detail.message; // Điền đoạn văn bản vào ô input
+
+                            // Đợi render xong rồi focus và chỉnh chiều cao textarea
+                            setTimeout(() => {
+                                if (this.$refs.chatInput) {
+                                    this.resizeTextarea(this.$refs.chatInput);
+                                    this.$refs.chatInput.focus();
+                                }
+                            }, 300);
+                        }
+                    };
+
+                    // Nếu danh bạ chưa load, load xong rồi mới điền
+                    if (this.contacts.length === 0) {
+                        this.isLoadingContacts = true;
+                        fetch('/chat/contacts')
+                            .then(res => res.json())
+                            .then(data => {
+                                this.contacts = data;
+                                this.isLoadingContacts = false;
+                                applyMessage();
+                            });
+                    } else {
+                        applyMessage();
+                    }
+                });
             },
 
             get filteredContacts() {

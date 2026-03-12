@@ -123,6 +123,7 @@
                     </div>
 
                     <button
+                        @click="$dispatch('open-appointment', { id: {{ $advisor->user->id }}, name: '{{ $advisor->user->name }}' })"
                         class="w-full bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 py-2 rounded-lg text-[12.5px] font-bold transition-all flex justify-center items-center gap-1.5 shadow-sm">
                         <span class="material-symbols-outlined !text-[16px]">calendar_month</span> Đặt lịch hẹn
                     </button>
@@ -134,6 +135,5 @@
                 @endif
             </div>
         </div>
-
     </div>
 </aside>

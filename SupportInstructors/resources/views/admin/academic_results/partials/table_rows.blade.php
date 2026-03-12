@@ -21,19 +21,16 @@
             </div>
         </td>
 
-        {{-- Lớp --}}
         <td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
             {{ $result->student->studentClass->code ?? 'N/A' }}
         </td>
 
-        {{-- GPA 10 --}}
         <td class="px-6 py-4 text-center">
             <span class="text-slate-700 dark:text-slate-300 font-semibold font-mono">
                 {{ number_format($result->gpa_10, 2) }}
             </span>
         </td>
 
-        {{-- GPA 4 --}}
         <td class="px-6 py-4 text-center">
             <span
                 class="bg-slate-100 text-slate-700 px-2 py-1 rounded text-xs font-bold font-mono border border-slate-200">
@@ -41,7 +38,6 @@
             </span>
         </td>
 
-        {{-- Xếp loại (Badge màu sắc) --}}
         <td class="px-6 py-4 text-center">
             @php
                 $rankColor = match ($result->classification) {

@@ -6,7 +6,6 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
-// Bỏ "implements ShouldQueue" để gửi trực tiếp
 class StudentAccountCreated extends Mailable
 {
     use Queueable, SerializesModels;

@@ -113,10 +113,6 @@ class AIController extends Controller
                 $aiText = $finalResponse->json()['choices'][0]['message']['content'] ?? 'Dạ em chưa hiểu ạ.';
                 $aiText = preg_replace('/\*\*(.*?)\*\*/', '<b>$1</b>', $aiText);
                 $aiText = preg_replace('/^\* (.*)$/m', '• $1', $aiText);
-
-                // Thêm dòng này để theo dõi AI nghĩ ra câu SQL gì (rất tốt khi báo cáo NCKH)
-                // $aiText .= "<br><br><small style='color:#ccc;'><i>[SQL]: " . htmlspecialchars($sqlQuery) . "</i></small>";
-
                 return response()->json(['reply' => nl2br($aiText)]);
             }
 

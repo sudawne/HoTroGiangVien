@@ -19,7 +19,7 @@ class TrainingPointController extends Controller
     {
         $query = TrainingPoint::with(['student.studentClass', 'semester']);
 
-        // 2. Bộ lọc (Filters)
+        // bộ lọc 
         if ($request->filled('semester_id')) {
             $query->where('semester_id', $request->semester_id);
         }
@@ -61,7 +61,7 @@ class TrainingPointController extends Controller
             }
         }
 
-        // 3. Thực thi Query & Phân trang
+        // thực thi Query
         $trainingPoints = $query->join('students', 'training_points.student_id', '=', 'students.id')
             ->orderBy('students.class_id')
             ->orderBy('students.fullname', 'asc')
@@ -73,7 +73,7 @@ class TrainingPointController extends Controller
             return view('admin.training_points.partials.table_rows', compact('trainingPoints'))->render();
         }
 
-        // 4. Thống kê (Stats)
+        // thống kê
         $statsQuery = TrainingPoint::query();
         if ($request->filled('semester_id')) $statsQuery->where('semester_id', $request->semester_id);
         if ($request->filled('class_id')) {
@@ -93,7 +93,6 @@ class TrainingPointController extends Controller
             'chuaxet' => $allScores->whereNull('final_score')->count(),
         ];
 
-        // 5. Lấy dữ liệu cho Filter Box
         $classes = Classes::all();
         $semesters = Semester::orderBy('start_date', 'desc')->get();
 
@@ -247,9 +246,8 @@ class TrainingPointController extends Controller
         if ($request->format === 'excel') {
             return Excel::download(new TrainingPointsExport($data), 'diem-ren-luyen-sv.xlsx');
         } elseif ($request->format === 'pdf') {
-            // Đã đổi thành file pdf_export
             $pdf = Pdf::loadView('admin.training_points.pdf_export', compact('data'));
-            $pdf->setOption('defaultFont', 'DejaVu Sans'); // Dùng DejaVu Sans cho mượt font Tiếng Việt
+            $pdf->setOption('defaultFont', 'DejaVu Sans'); 
             $pdf->setPaper('a4', 'portrait');
 
             return $pdf->download('diem-ren-luyen-sv.pdf');

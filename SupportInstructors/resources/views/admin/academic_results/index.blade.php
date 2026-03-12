@@ -3,7 +3,6 @@
 @section('title', 'Quản lý Kết quả học tập')
 
 @section('content')
-    {{-- THÊM x-data ĐỂ QUẢN LÝ MODAL BẰNG ALPINE.JS --}}
     <div class="max-w-[1400px] mx-auto" x-data="{ showExportModal: false }">
 
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
@@ -111,7 +110,7 @@
                     </div>
                 </div>
 
-                {{-- Filter Panel (Ẩn/Hiện) --}}
+                {{-- Filter Panel--}}
                 <div id="filterPanel"
                     class="{{ request()->hasAny(['semester_id', 'classification', 'class_id']) ? '' : 'hidden' }} mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
                     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
@@ -167,7 +166,7 @@
                             </select>
                         </div>
 
-                        {{-- 4. Nút Xóa lọc (Chuẩn theo mẫu Warning) --}}
+                        {{-- Nút Xóa lọc --}}
                         <div class="flex items-end">
                             <button type="button" onclick="resetFilters()"
                                 class="h-[28.6px] px-4 py-2 text-sm font-medium rounded-sm transition-all flex items-center gap-2
@@ -240,7 +239,7 @@
                 {{-- Form Xuất Báo Cáo --}}
                 <form action="{{ route($routePrefix . 'academic_results.export') }}" method="GET" class="p-6">
 
-                    {{-- 1. Các tiêu chí lọc --}}
+                    {{-- Các tiêu chí lọc --}}
                     <div class="space-y-4 mb-6">
                         <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">1. Phạm vi dữ liệu</p>
 
@@ -293,7 +292,7 @@
                         </div>
                     </div>
 
-                    {{-- 2. Chọn định dạng File --}}
+                    {{-- Chọn định dạng File --}}
                     <div class="mb-6">
                         <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">2. Định dạng file</p>
                         <div class="grid grid-cols-2 gap-4">
@@ -347,8 +346,6 @@
         </div>
 
     </div>
-
-    {{-- SCRIPTS (AJAX SEARCH) --}}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const searchInput = document.getElementById('searchInput');
@@ -370,7 +367,6 @@
                     url = "{{ route($routePrefix . 'academic-results.index') }}?" + params;
                 }
 
-                // Push state URL
                 window.history.pushState(null, '', url);
 
                 fetch(url, {
@@ -391,18 +387,15 @@
                     });
             }
 
-            // Event: Search Input
             searchInput.addEventListener('input', function() {
                 clearTimeout(timeout);
                 timeout = setTimeout(() => fetchResults(), 500);
             });
 
-            // Event: Filters Change
             liveFilters.forEach(select => {
                 select.addEventListener('change', () => fetchResults());
             });
 
-            // Event: Pagination Click
             document.addEventListener('click', function(e) {
                 if (e.target.closest('.pagination a')) {
                     e.preventDefault();
@@ -410,12 +403,10 @@
                 }
             });
 
-            // Event: Toggle Filter Panel
             document.getElementById('toggleFilterBtn').addEventListener('click', function() {
                 document.getElementById('filterPanel').classList.toggle('hidden');
             });
 
-            // Event: Reset Filter
             window.resetFilters = function() {
                 searchInput.value = '';
                 liveFilters.forEach(el => el.value = '');

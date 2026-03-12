@@ -12,7 +12,7 @@ class Classes extends Model
         'department_id',
         'advisor_id',
         'monitor_id',
-        'secretary_id', // Thêm trường này
+        'secretary_id', 
         'code',
         'name',
         'academic_year'

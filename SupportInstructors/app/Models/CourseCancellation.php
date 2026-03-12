@@ -11,7 +11,7 @@ class CourseCancellation extends Model
     protected $fillable = [
         'student_id',
         'semester_id',
-        'subject_id', // Thay subject_code/name bằng subject_id
+        'subject_id', 
         'reason',
     ];
 
@@ -23,7 +23,6 @@ class CourseCancellation extends Model
         return $this->belongsTo(Semester::class);
     }
 
-    // Thêm quan hệ với Môn học
     public function subject() {
         return $this->belongsTo(Subject::class);
     }

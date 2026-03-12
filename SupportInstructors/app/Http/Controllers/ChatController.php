@@ -15,10 +15,7 @@ class ChatController extends Controller
 {
     public function getContacts()
     {
-        // Lấy trực tiếp từ database bằng Model để không bị lỗi Undefined method
         $user = User::find(Auth::id());
-
-        // Cập nhật thời gian hoạt động của User hiện tại (Để tính năng "Đang hoạt động" chạy được)
         $user->last_active_at = now();
         $user->save();
 
@@ -70,8 +67,6 @@ class ChatController extends Controller
                 ->first();
 
             $latestMessage = $conversation ? $conversation->messages->first() : null;
-
-            // Đếm tin nhắn chưa đọc
             $unreadCount = 0;
             if ($conversation) {
                 $unreadCount = Message::where('conversation_id', $conversation->id)
@@ -81,8 +76,6 @@ class ChatController extends Controller
             }
 
             $contactData = $contact->toArray();
-
-            // Xử lý "Đang hoạt động": Nếu hoạt động trong vòng 3 phút trước thì coi là Online
             $contactData['is_online'] = $contact->last_active_at && \Carbon\Carbon::parse($contact->last_active_at)->diffInMinutes(now()) <= 3;
             $contactData['unread_count'] = $unreadCount;
 
@@ -122,20 +115,15 @@ class ChatController extends Controller
             ]);
         }
 
-        // Đánh dấu đã đọc
         Message::where('conversation_id', $conversation->id)
             ->where('sender_id', $userId)
             ->whereNull('read_at')
             ->update(['read_at' => now()]);
-
-        // Lấy tin nhắn (CHỈ LẤY NHỮNG TIN CHƯA BỊ XÓA BỞI MÌNH)
         $messages = Message::where('conversation_id', $conversation->id)
             ->where(function ($query) use ($currentUserId) {
-                // Nếu mình là người gửi -> deleted_by_sender phải = false
                 $query->where(function ($sub) use ($currentUserId) {
                     $sub->where('sender_id', $currentUserId)->where('deleted_by_sender', false);
                 })
-                    // Nếu mình là người nhận -> deleted_by_receiver phải = false
                     ->orWhere(function ($sub) use ($currentUserId) {
                         $sub->where('sender_id', '!=', $currentUserId)->where('deleted_by_receiver', false);
                     });
@@ -175,8 +163,6 @@ class ChatController extends Controller
     public function recallMessage($messageId)
     {
         $message = Message::find($messageId);
-
-        // Kiểm tra đúng người gửi và thời gian gửi không quá 60 phút
         if ($message && $message->sender_id === Auth::id()) {
             if (now()->diffInMinutes($message->created_at) <= 60) {
                 $message->is_recalled = true;

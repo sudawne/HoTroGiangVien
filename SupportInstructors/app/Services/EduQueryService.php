@@ -8,9 +8,6 @@ use InvalidArgumentException;
 
 class EduQueryService
 {
-    /**
-     * Tìm sinh viên theo tên (LIKE) hoặc theo mã sinh viên (exact).
-     */
     public function timSinhVienTheoTenHoacMSSV(string $q, int $limit = 15): array
     {
         $q = trim($q);
@@ -48,9 +45,6 @@ class EduQueryService
         })->toArray();
     }
 
-    /**
-     * Lấy cảnh báo học vụ cho một sinh viên (theo id hoặc mã sinh viên)
-     */
     public function layCanhBaoHocVu($studentIdentifier, int $limit = 50): array
     {
         $qb = DB::table('academic_warnings as aw')
@@ -91,9 +85,6 @@ class EduQueryService
         })->toArray();
     }
 
-    /**
-     * Lấy kết quả học tập (gpa) cho sinh viên theo học kỳ (option).
-     */
     public function layKetQuaHocTap($studentIdentifier, $semesterId = null): array
     {
         $qb = DB::table('academic_results as ar')
@@ -132,9 +123,6 @@ class EduQueryService
         })->toArray();
     }
 
-    /**
-     * Lấy lịch sử tư vấn
-     */
     public function layLichSuTuVan($studentIdentifier, int $limit = 30): array
     {
         $qb = DB::table('consultation_logs as cl')
@@ -170,9 +158,6 @@ class EduQueryService
         })->toArray();
     }
 
-    /**
-     * Redact PII nếu user không có quyền xem.
-     */
     public function redactIfNoPermission(array $rows, $canViewSensitive = false): array
     {
         if ($canViewSensitive) return $rows;
@@ -184,17 +169,11 @@ class EduQueryService
         }, $rows);
     }
 
-    /**
-     * Helper: xem xét chuỗi có thấy giống MSSV (mã) hay không.
-     */
     protected function looksLikeStudentCode(string $q): bool
     {
         return (bool) preg_match('/^[A-Za-z0-9\-]{4,20}$/', $q);
     }
 
-    /**
-     * Helper: log SQL và bindings (dùng để debug)
-     */
     protected function logQueryInfo($queryBuilder, array $meta = []): void
     {
         try {
@@ -210,10 +189,6 @@ class EduQueryService
         }
     }
 
-    /**
-     * Thực thi một "query spec" an toàn (do LLM tạo ra) và trả mảng kết quả.
-     * Spec structure: see allowed entities below.
-     */
     public function executeQuerySpec(array $spec): array
     {
         $allowed = [

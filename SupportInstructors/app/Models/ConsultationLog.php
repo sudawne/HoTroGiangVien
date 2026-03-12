@@ -9,7 +9,6 @@ class ConsultationLog extends Model
 {
     use HasFactory;
 
-    // Chỉ định tên bảng (tuỳ chọn, nhưng nên có để chắc chắn)
     protected $table = 'consultation_logs';
 
     protected $fillable = [
@@ -21,26 +20,16 @@ class ConsultationLog extends Model
         'solution',
     ];
 
-    /**
-     * Nhật ký này thuộc về một Sinh viên
-     */
     public function student()
     {
         return $this->belongsTo(Student::class);
     }
 
-    /**
-     * Nhật ký này được tạo bởi một Cố vấn học tập (Giảng viên)
-     * Dựa theo DB, advisor_id liên kết với bảng lecturers
-     */
     public function advisor()
     {
         return $this->belongsTo(Lecturer::class, 'advisor_id');
     }
 
-    /**
-     * Nhật ký này thuộc về Học kỳ nào
-     */
     public function semester()
     {
         return $this->belongsTo(Semester::class);

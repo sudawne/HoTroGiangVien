@@ -9,7 +9,6 @@ class MeetingMinute extends Model
 {
     use HasFactory;
 
-    // 1. Khai báo các cột được phép lưu
     protected $fillable = [
         'class_id',
         'semester_id',
@@ -29,16 +28,12 @@ class MeetingMinute extends Model
         'status'
     ];
 
-    // 2. Ép kiểu dữ liệu
     protected $casts = [
         'held_at' => 'datetime',
         'ended_at' => 'datetime',
         'absent_list' => 'array', 
     ];
 
-    // --- CÁC MỐI QUAN HỆ (RELATIONSHIPS) ---
-
-    // [QUAN TRỌNG] Hàm này đang bị thiếu gây ra lỗi
     public function studentClass() {
         return $this->belongsTo(Classes::class, 'class_id');
     }
@@ -48,12 +43,12 @@ class MeetingMinute extends Model
         return $this->belongsTo(Semester::class, 'semester_id');
     }
 
-    // Quan hệ với Người tạo (Giảng viên/Cán bộ)
+    // Quan hệ với Người tạo 
     public function creator() {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    // Quan hệ với Lớp trưởng (Chủ trì)
+    // Quan hệ với Lớp trưởng
     public function monitor() {
         return $this->belongsTo(Student::class, 'monitor_id');
     }

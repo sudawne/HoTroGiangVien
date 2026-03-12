@@ -32,7 +32,7 @@ class LecturerAccountCreated extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'emails.lecturer_account', // Chúng ta sẽ tạo file view này ở bước 2
+            view: 'emails.lecturer_account', 
         );
     }
 

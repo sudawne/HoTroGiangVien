@@ -19,7 +19,7 @@ class StudentsImport implements ToCollection, WithStartRow
 {
     protected $class_id;
     protected $sendEmail;
-    public $newStudentIds = []; // Mảng lưu ID sinh viên vừa tạo
+    public $newStudentIds = [];
 
     public function __construct($class_id, $sendEmail = false)
     {
@@ -101,7 +101,6 @@ class StudentsImport implements ToCollection, WithStartRow
                 }
             }
 
-            // Lưu ID của sinh viên mới vào mảng
             $student = Student::create([
                 'user_id' => $user->id,
                 'class_id' => $this->class_id,

@@ -10,7 +10,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Student extends Model
 {
-    // Kích hoạt xóa mềm
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
@@ -27,8 +26,6 @@ class Student extends Model
     protected $casts = [
         'dob' => 'date',
     ];
-
-    // --- CÁC MỐI QUAN HỆ (RELATIONSHIPS) ---
 
     public function user()
     {
@@ -49,19 +46,15 @@ class Student extends Model
     {
         return $this->hasMany(StudentDebt::class);
     }
-
-    // Đổi tên từ academicResults -> academic_results để khớp với Controller
     public function academic_results()
     {
         return $this->hasMany(AcademicResult::class);
     }
 
-    // Thêm quan hệ lấy Cảnh báo học vụ
     public function academic_warnings()
     {
         return $this->hasMany(AcademicWarning::class);
     }
-    // Thêm quan hệ lấy Lịch sử tư vấn
     public function consultation_logs()
     {
         return $this->hasMany(ConsultationLog::class);

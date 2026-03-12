@@ -2,22 +2,19 @@
 @section('title', 'Import Kết Quả Học Tập')
 
 @section('content')
-    {{-- Container mở rộng full màn hình --}}
     <div class="w-full h-[calc(100vh-80px)] flex flex-col">
 
         @if (!isset($previewData))
-            {{-- FORM GIAI ĐOẠN 1: UPLOAD & PREVIEW --}}
             <form action="{{ route($routePrefix . 'academic_results.preview') }}" method="POST" enctype="multipart/form-data"
                 class="flex flex-col h-full">
                 @csrf
-            @else
-                {{-- FORM GIAI ĐOẠN 2: CONFIRM STORE --}}
-                <form action="{{ route($routePrefix . 'academic_results.store_import') }}" method="POST"
-                    class="flex flex-col h-full">
-                    @csrf
-                    <input type="hidden" name="data" value="{{ json_encode($previewData) }}">
-                    <input type="hidden" name="semester_id" value="{{ $semester_id }}">
-                    <input type="hidden" name="class_id" value="{{ $class_id }}">
+        @else
+            <form action="{{ route($routePrefix . 'academic_results.store_import') }}" method="POST"
+                class="flex flex-col h-full">
+                @csrf
+                <input type="hidden" name="data" value="{{ json_encode($previewData) }}">
+                <input type="hidden" name="semester_id" value="{{ $semester_id }}">
+                <input type="hidden" name="class_id" value="{{ $class_id }}">
         @endif
 
         {{-- === PHẦN 1: THANH CÔNG CỤ (TOOLBAR) === --}}
@@ -74,7 +71,7 @@
                 </div>
             </div>
         </div>
-        {{-- === PHẦN 2: KHU VỰC NỘI DUNG (DƯỚI) === --}}
+        {{-- === PHẦN 2: KHU VỰC NỘI DUNG === --}}
         <div
             class="flex-1 bg-white dark:bg-[#1e1e2d] rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden relative flex flex-col">
 
@@ -206,10 +203,8 @@
                     </button>
                 </div>
             @endif
-
         </div>
-
-        </form> {{-- Đóng thẻ Form --}}
+        </form>
     </div>
 
     {{-- === MODAL THÊM SINH VIÊN NHANH === --}}
@@ -301,7 +296,6 @@
         </div>
     </div>
 
-    {{-- SCRIPT JAVASCRIPT --}}
     <script>
         function updateFileName(input) {
             const fileNameSpan = document.getElementById('toolbar-filename');
@@ -321,12 +315,8 @@
         function openQuickAddModal(mssv, fullname, dobRaw, classCode) {
             document.getElementById('qa_mssv').value = mssv;
             document.getElementById('qa_fullname').value = fullname;
-            // Xử lý ngày sinh nếu có
-            // document.getElementById('qa_dob').value = ...; 
-
-            // Auto select Class if matches
             const classSelect = document.getElementById('qa_class_id');
-            classSelect.value = ""; // Reset
+            classSelect.value = "";
 
             if (classCode) {
                 for (let i = 0; i < classSelect.options.length; i++) {
@@ -354,7 +344,6 @@
             const formData = new FormData(form);
             const data = Object.fromEntries(formData.entries());
 
-            // Lưu ý: Cần đảm bảo route này tồn tại (dùng chung route tạo sinh viên)
             fetch('{{ route('admin.students.store') }}', {
                     method: 'POST',
                     headers: {
@@ -368,7 +357,6 @@
                 .then(result => {
                     if (result.success || result.id) {
                         closeQuickAddModal();
-                        // Update UI row
                         const row = document.getElementById('row-' + data.mssv);
                         if (row) {
                             row.classList.remove('bg-red-50/50', 'dark:bg-red-900/10');

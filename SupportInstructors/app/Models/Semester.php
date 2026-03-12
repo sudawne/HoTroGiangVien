@@ -10,12 +10,12 @@ class Semester extends Model
     use HasFactory;
 
     protected $fillable = [
-        'code',           // Mã HK (VD: 2025_HK1)
-        'name',           // Tên hiển thị (VD: Học kỳ 1)
-        'academic_year',  // Năm học (VD: 2025-2026)
+        'code',      
+        'name',           
+        'academic_year',  
         'start_date',     
         'end_date',
-        'is_current'      // Đánh dấu học kỳ hiện tại
+        'is_current'  
     ];
 
     public function academicWarnings()

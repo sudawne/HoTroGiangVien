@@ -33,7 +33,7 @@
             </td>
         </tr>
         <tr>
-            <td colspan="7"></td> {{-- Dòng trống --}}
+            <td colspan="7"></td>
         </tr>
         <tr>
             <td colspan="7" style="text-align: center; font-size: 16pt; font-weight: bold;">
@@ -46,7 +46,7 @@
             </td>
         </tr>
         <tr>
-            <td colspan="7"></td> {{-- Dòng trống --}}
+            <td colspan="7"></td> 
         </tr>
 
         {{-- PHẦN TIÊU ĐỀ CÁC CỘT --}}
@@ -97,7 +97,7 @@
 
         {{-- PHẦN CHỮ KÝ Ở CUỐI BẢNG --}}
         <tr>
-            <td colspan="7"></td> {{-- Dòng trống --}}
+            <td colspan="7"></td> 
         </tr>
         <tr>
             <td colspan="4"></td>

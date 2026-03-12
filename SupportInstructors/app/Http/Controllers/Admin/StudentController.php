@@ -43,8 +43,6 @@ class StudentController extends Controller
 
         if ($request->has('search') && $request->search != '') {
             $search = trim($request->search);
-
-            // XỬ LÝ TIẾNG VIỆT: Biến khoảng trắng thành % (VD: 'khánh nguyên' -> 'khánh%nguyên')
             $searchPattern = preg_replace('/\s+/', '%', $search);
 
             $query->where(function ($q) use ($search, $searchPattern) {
@@ -78,8 +76,6 @@ class StudentController extends Controller
                 'consultation_logs.semester'
             ])
             ->findOrFail($id);
-
-        // Bảo mật: Giảng viên chỉ xem được hồ sơ sinh viên lớp mình cố vấn
         if (Auth::user()->role_id == 2) {
             $lecturer = Lecturer::where('user_id', Auth::id())->first();
             $class = Classes::find($student->class_id);
@@ -89,7 +85,6 @@ class StudentController extends Controller
         }
 
         $latestResult = $student->academic_results->first();
-
         return view('admin.students.show', compact('student', 'latestResult'));
     }
 
@@ -107,8 +102,6 @@ class StudentController extends Controller
         if (Auth::user()->role_id != 1) {
             return response()->json(['success' => false, 'message' => 'Bạn không có quyền thêm sinh viên.'], 403);
         }
-
-        // 1. Validate
         $request->validate([
             'student_code' => 'required|unique:students,student_code',
             'fullname'     => 'required|string|max:255',
@@ -121,7 +114,6 @@ class StudentController extends Controller
         DB::beginTransaction();
 
         try {
-            // 2. Logic tạo Email
             $parts = explode(' ', trim($request->fullname));
             $firstName = array_pop($parts);
             $slugName = Str::slug($firstName, '');
@@ -148,8 +140,6 @@ class StudentController extends Controller
                 'role_id' => 3,
                 'is_active' => true,
             ]);
-
-            // 3. Tạo Student
             $student = Student::create([
                 'user_id' => $user->id,
                 'class_id' => $request->class_id,

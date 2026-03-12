@@ -23,9 +23,8 @@ class HomeController extends Controller
 
         $query = Notification::with([
             'sender',
-            'classes', // Load kèm mảng các lớp để View không bị lỗi
+            'classes',
             'comments' => function ($q) {
-                // Sắp xếp comment tăng dần (cũ nằm trên, mới nằm dưới)
                 $q->whereNull('parent_id')
                     ->with(['user', 'replies' => function ($rq) {
                         $rq->orderBy('created_at', 'asc')->with(['user', 'parent.user']);
@@ -37,14 +36,11 @@ class HomeController extends Controller
             ->withCount(['likes', 'comments'])
             ->where('status', 'approved')
             ->where(function ($q) use ($student) {
-                // 1. Lấy thông báo gửi toàn trường
                 $q->where('target_audience', 'all');
 
-                // 2. Hoặc lấy thông báo gửi riêng cho lớp của sinh viên này
                 if ($student && $student->class_id) {
                     $q->orWhere(function ($sub) use ($student) {
                         $sub->where('target_audience', 'class')
-                            // Cập nhật logic: Kiểm tra lớp thông qua quan hệ bảng trung gian
                             ->whereHas('classes', function ($classQuery) use ($student) {
                                 $classQuery->where('classes.id', $student->class_id);
                             });
@@ -52,7 +48,6 @@ class HomeController extends Controller
                 }
             });
 
-        // Xử lý Search bằng chữ
         if (!empty($search)) {
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'LIKE', '%' . $search . '%')
@@ -61,7 +56,6 @@ class HomeController extends Controller
             });
         }
 
-        // Xử lý Filter loại thông báo
         if ($filter === 'urgent') {
             $query->where('type', 'urgent');
         } elseif ($filter === 'warning') {
@@ -70,7 +64,6 @@ class HomeController extends Controller
             $query->where('type', 'info');
         }
 
-        // Xử lý Filter thời gian
         if ($timeFilter === 'today') {
             $query->whereDate('created_at', Carbon::today());
         } elseif ($timeFilter === 'week') {
@@ -85,7 +78,6 @@ class HomeController extends Controller
         return view('student.index', compact('notifications', 'filter', 'timeFilter', 'search'));
     }
 
-    // API TRẢ VỀ DỮ LIỆU TÌM KIẾM NHANH (LIVE SEARCH)
     public function searchApi(Request $request)
     {
         $query = trim($request->get('q'));
@@ -115,7 +107,7 @@ class HomeController extends Controller
                     ->orWhere('attachment_name', 'LIKE', "%{$query}%");
             })
             ->latest()
-            ->take(8) // Lấy tối đa 8 kết quả để popup không bị lag
+            ->take(8) 
             ->get()
             ->map(function ($item) {
                 return [
@@ -219,7 +211,6 @@ class HomeController extends Controller
             'parent_id' => $request->parent_id
         ]);
 
-        // Load để lấy đúng relation cho Response JSON
         $comment->load('user', 'parent.user');
 
         if ($request->wantsJson()) {

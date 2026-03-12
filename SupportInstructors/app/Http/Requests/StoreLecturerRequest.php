@@ -13,7 +13,6 @@ class StoreLecturerRequest extends FormRequest
 
     public function rules()
     {
-        // Quan trọng: unique:users,email và unique:lecturers,lecturer_code
         return [
             'name' => 'required|string|max:255',
             'email' => 'nullable|email|unique:users,email',

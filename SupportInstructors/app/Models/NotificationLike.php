@@ -14,7 +14,7 @@ class NotificationLike extends Model
         return $this->belongsTo(User::class);
     }
 
-    // Lấy bài viết (thông báo) được thả tim
+    // Lấy bài viết được thả tim
     public function notification()
     {
         return $this->belongsTo(Notification::class);

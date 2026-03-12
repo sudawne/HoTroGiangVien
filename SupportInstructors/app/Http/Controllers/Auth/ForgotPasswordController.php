@@ -10,16 +10,14 @@ use Carbon\Carbon;
 
 class ForgotPasswordController extends Controller
 {
-    // Hiển thị View
     public function showLinkRequestForm()
     {
         return view('auth.forgot-password');
     }
 
-    // BƯỚC 1: Xử lý gửi OTP (Ajax)
+    // xử lý gửi OTP (Ajax)
     public function sendOtp(Request $request)
     {
-        // 1. Validate Email (Kiểm tra tồn tại)
         $validator = Validator::make($request->all(), [
             'email' => 'required|email|exists:users,email'
         ], [
@@ -35,11 +33,9 @@ class ForgotPasswordController extends Controller
             ], 422);
         }
 
-        // 2. Gửi Mail
         try {
             $otp = rand(100000, 999999);
 
-            // Lưu OTP vào DB
             DB::table('password_reset_otps')->updateOrInsert(
                 ['email' => $request->email],
                 [
@@ -49,7 +45,6 @@ class ForgotPasswordController extends Controller
                 ]
             );
 
-            // Gửi qua SMTP
             Mail::raw("Mã xác nhận (OTP) của bạn là: {$otp}", function ($message) use ($request) {
                 $message->to($request->email)->subject('Mã xác nhận khôi phục mật khẩu');
             });
@@ -67,7 +62,6 @@ class ForgotPasswordController extends Controller
         }
     }
 
-    // BƯỚC 2: Đổi mật khẩu (Form Submit)
     public function resetPassword(Request $request)
     {
         $request->validate([
@@ -85,8 +79,7 @@ class ForgotPasswordController extends Controller
         $user = User::where('email', $request->email)->first();
         $user->password = Hash::make($request->password);
         $user->save();
-        
-        // Xóa OTP sau khi dùng
+
         DB::table('password_reset_otps')->where('email', $request->email)->delete();
 
         return redirect()->route('login')->with('success', 'Đổi mật khẩu thành công! Vui lòng đăng nhập.');

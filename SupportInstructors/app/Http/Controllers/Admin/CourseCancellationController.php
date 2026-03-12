@@ -7,12 +7,14 @@ use App\Models\CourseCancellation;
 use App\Models\Student;
 use App\Models\Semester;
 use App\Models\Subject;
+use App\Models\Classes; 
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Exports\CourseCancellationsExport;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 
 class CourseCancellationController extends Controller
 {
@@ -51,42 +53,70 @@ class CourseCancellationController extends Controller
         return view('admin.course_cancellations.import', compact('semesters'));
     }
 
+    // =====================================================================
+    // HÀM STORE: LƯU VÀO DB (Có xử lý THAY THẾ hoặc BỎ QUA)
+    // =====================================================================
     public function storeImport(Request $request)
     {
         $data = json_decode($request->data, true);
         $semester_id = $request->semester_id;
-        $count = 0;
+        $importMode = $request->input('import_mode', 'skip'); 
 
-        foreach ($data as $row) {
-            $mssv = $row['student_code'];
-            $subjectCode = $row['subject_code'];
+        $addedCount = 0;
+        $updatedCount = 0;
+        $skippedCount = 0;
 
-            $student = Student::where('student_code', $mssv)->first();
-            $subject = Subject::where('code', $subjectCode)->first();
+        DB::beginTransaction();
+        try {
+            foreach ($data as $row) {
+                $mssv = $row['student_code'];
+                $subjectCode = $row['subject_code'];
 
-            if ($student && $subject) {
-                $exists = CourseCancellation::where('student_id', $student->id)
-                    ->where('semester_id', $semester_id)
-                    ->where('subject_id', $subject->id)
-                    ->exists();
+                $student = Student::where('student_code', $mssv)->first();
+                $subject = Subject::where('code', $subjectCode)->first();
 
-                if (!$exists) {
-                    CourseCancellation::create([
-                        'student_id'  => $student->id,
-                        'semester_id' => $semester_id,
-                        'subject_id'  => $subject->id, 
-                        'reason'      => $row['reason'] ?? 'Nợ học phí',
-                    ]);
-                    $count++;
+                if ($student && $subject) {
+                    $cancellation = CourseCancellation::where('student_id', $student->id)
+                        ->where('semester_id', $semester_id)
+                        ->where('subject_id', $subject->id)
+                        ->first();
+
+                    if ($cancellation) {
+                        if ($importMode === 'replace') {
+                            $cancellation->update([
+                                'reason' => $row['reason'] ?? 'Nợ học phí'
+                            ]);
+                            $updatedCount++;
+                        } else {
+                            $skippedCount++;
+                        }
+                    } else {
+                        CourseCancellation::create([
+                            'student_id'  => $student->id,
+                            'semester_id' => $semester_id,
+                            'subject_id'  => $subject->id, 
+                            'reason'      => $row['reason'] ?? 'Nợ học phí',
+                        ]);
+                        $addedCount++;
+                    }
                 }
             }
-        }
 
-        return redirect()->route('admin.course_cancellations.index')
-            ->with('success', "Đã import thành công $count dòng dữ liệu.");
+            DB::commit();
+
+            // Tạo chuỗi thông báo kết quả
+            $msg = "Import Hủy học phần thành công! Thêm mới: {$addedCount} dòng.";
+            if ($importMode === 'replace' && $updatedCount > 0) $msg .= " Đã cập nhật (ghi đè): {$updatedCount} dòng.";
+            if ($importMode === 'skip' && $skippedCount > 0) $msg .= " Bỏ qua {$skippedCount} dòng trùng lặp.";
+
+            return redirect()->route('admin.course_cancellations.index')->with('success', $msg);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Lỗi hệ thống: ' . $e->getMessage());
+        }
     }
 
-    // --- EXPORT ---
     public function export(Request $request)
     {
         $query = CourseCancellation::with(['student.studentClass', 'semester', 'subject']);
@@ -120,6 +150,10 @@ class CourseCancellationController extends Controller
         CourseCancellation::destroy($id);
         return back()->with('success', 'Đã xóa bản ghi.');
     }
+
+    // =====================================================================
+    // HÀM PREVIEW: ĐỌC FILE VÀ KIỂM TRA TRÙNG LẶP CHÉO
+    // =====================================================================
     public function preview(Request $request)
     {
         $semesters = Semester::orderBy('start_date', 'desc')->get();
@@ -134,6 +168,9 @@ class CourseCancellationController extends Controller
         $previewData = [];
         $semester_id = $request->semester_id;
         $headerFound = false;
+
+        $mssvs = [];
+        $subjectCodes = [];
 
         foreach ($rows as $row) {
             if (!$headerFound) {
@@ -153,8 +190,8 @@ class CourseCancellationController extends Controller
                 continue;
             }
 
-            $student = Student::where('student_code', $mssv)->first();
-            $subject = Subject::where('code', $subjectCode)->first();
+            $mssvs[] = $mssv;
+            $subjectCodes[] = $subjectCode;
             $credits = (int)($row[7] ?? 0);
 
             $previewData[] = [
@@ -166,16 +203,53 @@ class CourseCancellationController extends Controller
                 'credits'      => $credits,
                 'reason'       => 'Nợ học phí',
 
-                'student_exists' => $student ? true : false,
-                'subject_exists' => $subject ? true : false,
-
-                'student_id'   => $student ? $student->id : null,
-                'subject_id'   => $subject ? $subject->id : null,
+                'student_exists' => false,
+                'subject_exists' => false,
+                'cancellation_exists' => false, 
+                'student_id'   => null,
+                'subject_id'   => null,
             ];
         }
 
-        return view('admin.course_cancellations.preview', compact('previewData', 'semester_id', 'semesters'));
+        $studentsInDB = Student::whereIn('student_code', $mssvs)->get()->keyBy('student_code');
+        $subjectsInDB = Subject::whereIn('code', $subjectCodes)->get()->keyBy('code');
+
+        $existingCancellations = CourseCancellation::where('semester_id', $semester_id)
+            ->whereIn('student_id', $studentsInDB->pluck('id'))
+            ->get();
+
+        $duplicateCount = 0;
+
+        foreach ($previewData as &$item) {
+            $stuCode = $item['student_code'];
+            $subCode = $item['subject_code'];
+
+            if ($studentsInDB->has($stuCode)) {
+                $item['student_exists'] = true;
+                $item['student_id'] = $studentsInDB[$stuCode]->id;
+            }
+
+            if ($subjectsInDB->has($subCode)) {
+                $item['subject_exists'] = true;
+                $item['subject_id'] = $subjectsInDB[$subCode]->id;
+            }
+            if ($item['student_exists'] && $item['subject_exists']) {
+                $isDuplicate = $existingCancellations
+                    ->where('student_id', $item['student_id'])
+                    ->where('subject_id', $item['subject_id'])
+                    ->first();
+
+                if ($isDuplicate) {
+                    $item['cancellation_exists'] = true;
+                    $duplicateCount++;
+                }
+            }
+        }
+
+        $classes = Classes::select('id', 'code', 'name')->orderBy('code')->get();
+        return view('admin.course_cancellations.import', compact('previewData', 'semester_id', 'semesters', 'duplicateCount', 'classes'));
     }
+
     public function quickStore(Request $request)
     {
         $validator = Validator::make($request->all(), [

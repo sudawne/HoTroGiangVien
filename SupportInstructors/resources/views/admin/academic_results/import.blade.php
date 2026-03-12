@@ -357,6 +357,7 @@
                 .then(result => {
                     if (result.success || result.id) {
                         closeQuickAddModal();
+                        // Update UI row
                         const row = document.getElementById('row-' + data.mssv);
                         if (row) {
                             row.classList.remove('bg-red-50/50', 'dark:bg-red-900/10');

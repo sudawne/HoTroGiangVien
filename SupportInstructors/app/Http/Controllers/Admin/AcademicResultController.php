@@ -124,6 +124,11 @@ class AcademicResultController extends Controller
     public function storeImport(Request $request)
     {
         $data = json_decode($request->data, true);
+        if (!$data) {
+             return redirect()->route('admin.academic_results.import')
+                             ->with('error', 'Dữ liệu không hợp lệ hoặc file quá lớn.');
+        }
+
         $semester_id = $request->semester_id;
         $count = 0;
 
@@ -151,7 +156,8 @@ class AcademicResultController extends Controller
                 ->with('success', "Đã nhập thành công kết quả học tập cho $count sinh viên!");
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'Lỗi khi lưu dữ liệu: ' . $e->getMessage());
+            return redirect()->route('admin.academic_results.import')
+                             ->with('error', 'Lỗi khi lưu dữ liệu: ' . $e->getMessage());
         }
     }
     public function show($id)
@@ -181,6 +187,7 @@ class AcademicResultController extends Controller
         if ($request->format === 'excel') {
             return Excel::download(new \App\Exports\AcademicResultsExport($data), 'ket-qua-hoc-tap-sv.xlsx');
         }
+        // Xử lý xuất PDF
         elseif ($request->format === 'pdf') {
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('admin.academic_results.pdf_export', compact('data'));
             $pdf->setOption('defaultFont', 'DejaVu Sans');
@@ -188,6 +195,7 @@ class AcademicResultController extends Controller
 
             return $pdf->download('ket-qua-hoc-tap-sv.pdf');
         }
+
         return back();
     }
 }

@@ -105,7 +105,7 @@ class NotificationController extends Controller
             $notification->classes()->sync($request->class_ids);
         }
 
-        $routePrefix = $this->getRoutePrefix(); 
+        $routePrefix = $this->getRoutePrefix();
 
         if ($status === 'approved') {
             $count = $this->sendNotificationEmails($notification);
@@ -332,11 +332,10 @@ class NotificationController extends Controller
         $countRealEmails = count($realStudentEmails);
 
         if ($countRealEmails > 0) {
-            $testEmails = ['nguyen22082006204@vnkgu.edu.vn'];
-
             try {
                 Log::info("Đang tiến hành gửi mail thông báo ID: " . $notification->id);
-                Mail::bcc($testEmails)->send(new StudentNotificationMail($notification));
+                // Đổi biến $testEmails thành $realStudentEmails
+                Mail::bcc($realStudentEmails)->send(new StudentNotificationMail($notification));
             } catch (\Exception $e) {
                 Log::error("LỖI GỬI MAIL NGHIÊM TRỌNG: " . $e->getMessage());
                 session()->flash('warning', 'Đăng bài thành công nhưng GỬI MAIL THẤT BẠI.');

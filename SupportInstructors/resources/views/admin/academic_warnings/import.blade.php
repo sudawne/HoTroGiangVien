@@ -12,11 +12,14 @@
                 @csrf
             @else
                 {{-- FORM GIAI ĐOẠN 2: CONFIRM STORE --}}
-                <form action="{{ route($routePrefix . 'academic_warnings.store') }}" method="POST"
+                {{-- [THÊM] Thêm id="storeForm" vào đây --}}
+                <form id="storeForm" action="{{ route($routePrefix . 'academic_warnings.store') }}" method="POST"
                     class="flex flex-col h-full">
                     @csrf
                     <input type="hidden" name="data" value="{{ json_encode($previewData) }}">
                     <input type="hidden" name="semester_id" value="{{ $semester_id }}">
+                    {{-- [THÊM] Input ẩn lưu lựa chọn xử lý trùng lặp --}}
+                    <input type="hidden" name="import_mode" id="import_mode" value="skip">
         @endif
 
         <div class="rounded-lg mb-4 flex flex-col xl:flex-row xl:items-center justify-between gap-4 sticky top-0 z-20">
@@ -102,46 +105,26 @@
                     <table class="w-full text-left border-collapse text-sm">
                         <thead class="bg-slate-50 dark:bg-slate-800 sticky top-0 z-10 shadow-sm">
                             <tr>
-                                <th
-                                    class="p-4 font-semibold text-slate-600 dark:text-slate-400 border-b dark:border-slate-700">
-                                    MSSV</th>
-                                <th
-                                    class="p-4 font-semibold text-slate-600 dark:text-slate-400 border-b dark:border-slate-700">
-                                    Họ tên</th>
-                                <th
-                                    class="p-4 font-semibold text-slate-600 dark:text-slate-400 border-b dark:border-slate-700">
-                                    Lớp</th>
-                                <th
-                                    class="p-4 font-semibold text-slate-600 dark:text-slate-400 border-b dark:border-slate-700">
-                                    Khoa</th>
-                                <th
-                                    class="p-4 font-semibold text-slate-600 dark:text-slate-400 border-b dark:border-slate-700 text-center">
-                                    ĐTB</th>
-                                <th
-                                    class="p-4 font-semibold text-slate-600 dark:text-slate-400 border-b dark:border-slate-700 text-center">
-                                    TC Rớt</th>
-                                <th
-                                    class="p-4 font-semibold text-slate-600 dark:text-slate-400 border-b dark:border-slate-700">
-                                    Mức CB</th>
-                                <th
-                                    class="p-4 font-semibold text-slate-600 dark:text-slate-400 border-b dark:border-slate-700 text-right">
-                                    Trạng thái</th>
+                                <th class="p-4 font-semibold text-slate-600 dark:text-slate-400 border-b dark:border-slate-700">MSSV</th>
+                                <th class="p-4 font-semibold text-slate-600 dark:text-slate-400 border-b dark:border-slate-700">Họ tên</th>
+                                <th class="p-4 font-semibold text-slate-600 dark:text-slate-400 border-b dark:border-slate-700">Lớp</th>
+                                <th class="p-4 font-semibold text-slate-600 dark:text-slate-400 border-b dark:border-slate-700">Khoa</th>
+                                <th class="p-4 font-semibold text-slate-600 dark:text-slate-400 border-b dark:border-slate-700 text-center">ĐTB</th>
+                                <th class="p-4 font-semibold text-slate-600 dark:text-slate-400 border-b dark:border-slate-700 text-center">TC Rớt</th>
+                                <th class="p-4 font-semibold text-slate-600 dark:text-slate-400 border-b dark:border-slate-700">Mức CB</th>
+                                <th class="p-4 font-semibold text-slate-600 dark:text-slate-400 border-b dark:border-slate-700 text-right">Trạng thái</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                             @foreach ($previewData as $row)
                                 <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors {{ !$row['exists'] ? 'bg-red-50/50 dark:bg-red-900/10' : '' }}"
                                     id="row-{{ $row['mssv'] }}">
-                                    <td class="p-4 font-medium {{ !$row['exists'] ? 'text-red-600' : 'text-primary' }}">
-                                        {{ $row['mssv'] }}</td>
+                                    <td class="p-4 font-medium {{ !$row['exists'] ? 'text-red-600' : 'text-primary' }}">{{ $row['mssv'] }}</td>
                                     <td class="p-4 font-medium dark:text-slate-300">{{ $row['fullname'] }}</td>
                                     <td class="p-4 text-slate-500">{{ $row['class_code'] }}</td>
                                     <td class="p-4 text-slate-500">{{ $row['department'] }}</td>
-                                    <td class="p-4 text-center font-bold text-slate-700 dark:text-slate-300">
-                                        {{ $row['gpa_term'] }}</td>
-                                    <td
-                                        class="p-4 text-center {{ $row['credits_failed'] > 0 ? 'text-red-500 font-bold' : '' }}">
-                                        {{ $row['credits_failed'] }}</td>
+                                    <td class="p-4 text-center font-bold text-slate-700 dark:text-slate-300">{{ $row['gpa_term'] }}</td>
+                                    <td class="p-4 text-center {{ $row['credits_failed'] > 0 ? 'text-red-500 font-bold' : '' }}">{{ $row['credits_failed'] }}</td>
                                     <td class="p-4">
                                         @if ($row['warning_level'] == 1)
                                             <span class="badge-yellow">Lần 1</span>
@@ -155,37 +138,26 @@
                                     </td>
                                     <td class="p-4 text-right">
                                         @if ($row['exists'])
-                                            {{-- Trạng thái: Hợp lệ (Badge) --}}
-                                            <div
-                                                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/50">
-                                                <span
-                                                    class="material-symbols-outlined text-[16px] text-emerald-600 dark:text-emerald-400">check_circle</span>
-                                                <span class="text-xs font-bold text-emerald-700 dark:text-emerald-400">Hợp
-                                                    lệ</span>
-                                            </div>
+                                            {{-- [THÊM] KIỂM TRA ĐÃ TỒN TẠI HAY LÀ HỢP LỆ (MỚI) --}}
+                                            @if(isset($row['warning_exists']) && $row['warning_exists'])
+                                                <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-900/50" title="Sinh viên này đã có cảnh báo trong học kỳ này">
+                                                    <span class="material-symbols-outlined text-[16px] text-yellow-600 dark:text-yellow-400">warning</span>
+                                                    <span class="text-xs font-bold text-yellow-700 dark:text-yellow-400">Đã tồn tại</span>
+                                                </div>
+                                            @else
+                                                <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/50">
+                                                    <span class="material-symbols-outlined text-[16px] text-emerald-600 dark:text-emerald-400">check_circle</span>
+                                                    <span class="text-xs font-bold text-emerald-700 dark:text-emerald-400">Hợp lệ</span>
+                                                </div>
+                                            @endif
                                         @else
-                                            {{-- Trạng thái: Chưa có -> Nút Thêm (Style Mới) --}}
+                                            {{-- Trạng thái: Chưa có -> Nút Thêm --}}
                                             <button type="button"
                                                 onclick="openQuickAddModal('{{ $row['mssv'] }}', '{{ $row['fullname'] }}', '{{ $row['dob'] }}', '{{ $row['class_code'] ?? '' }}')"
                                                 class="group inline-flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm hover:border-primary hover:ring-1 hover:ring-primary/20 hover:text-primary transition-all duration-200">
-
-                                                {{-- Icon --}}
-                                                <span
-                                                    class="material-symbols-outlined text-[18px] text-slate-400 group-hover:text-primary transition-colors">
-                                                    person_add
-                                                </span>
-
-                                                {{-- Text --}}
-                                                <span
-                                                    class="text-xs font-semibold text-slate-600 dark:text-slate-300 group-hover:text-primary">
-                                                    Thêm hồ sơ
-                                                </span>
-
-                                                {{-- Arrow (Slide in effect) --}}
-                                                <span
-                                                    class="material-symbols-outlined text-[14px] text-primary opacity-0 -ml-2 group-hover:opacity-100 group-hover:ml-0 transition-all duration-200">
-                                                    arrow_forward
-                                                </span>
+                                                <span class="material-symbols-outlined text-[18px] text-slate-400 group-hover:text-primary transition-colors">person_add</span>
+                                                <span class="text-xs font-semibold text-slate-600 dark:text-slate-300 group-hover:text-primary">Thêm hồ sơ</span>
+                                                <span class="material-symbols-outlined text-[14px] text-primary opacity-0 -ml-2 group-hover:opacity-100 group-hover:ml-0 transition-all duration-200">arrow_forward</span>
                                             </button>
                                         @endif
                                     </td>
@@ -195,14 +167,22 @@
                     </table>
                 </div>
 
-                {{-- NÚT XÁC NHẬN Ở DƯỚI CÙNG (Sticky Bottom) --}}
+                {{-- NÚT XÁC NHẬN Ở DƯỚI CÙNG --}}
                 <div
                     class="p-4 bg-slate-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center">
                     <div class="text-sm text-slate-500">
-                        Đang xem trước <span
-                            class="font-bold text-slate-900 dark:text-white">{{ count($previewData) }}</span> dòng dữ liệu.
+                        Đang xem trước <span class="font-bold text-slate-900 dark:text-white">{{ count($previewData) }}</span> dòng dữ liệu.
+                        
+                        {{-- [THÊM] Thông báo text màu vàng khi có dữ liệu trùng --}}
+                        @if(isset($duplicateCount) && $duplicateCount > 0)
+                            <span class="ml-2 text-yellow-600 font-medium bg-yellow-50 dark:bg-yellow-900/20 px-2 py-1 rounded border border-yellow-200 dark:border-yellow-800">
+                                ⚠️ Phát hiện {{ $duplicateCount }} sinh viên trùng lặp.
+                            </span>
+                        @endif
                     </div>
-                    <button type="submit"
+
+                    {{-- [SỬA] Đổi type submit thành type="button" để kích hoạt logic kiểm tra --}}
+                    <button type="button" onclick="handleImportSubmit()"
                         class="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-8 py-2.5 rounded-lg font-bold shadow-lg shadow-green-600/20 transform hover:-translate-y-0.5 transition-all">
                         <span class="material-symbols-outlined">save</span>
                         Xác nhận & Lưu vào hệ thống
@@ -213,6 +193,46 @@
         </div>
 
         </form> {{-- Đóng thẻ Form --}}
+    </div>
+
+    {{-- === [THÊM] MODAL XÁC NHẬN XỬ LÝ TRÙNG LẶP === --}}
+    <div id="duplicateConfirmModal" class="fixed inset-0 z-[110] hidden" aria-modal="true">
+        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"></div>
+        <div class="fixed inset-0 z-10 overflow-y-auto">
+            <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+                <div class="relative transform overflow-hidden rounded-lg bg-white dark:bg-[#1e1e2d] text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-md border border-slate-200 dark:border-slate-700">
+                    <div class="bg-white dark:bg-[#1e1e2d] px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                        <div class="sm:flex sm:items-start">
+                            <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-yellow-100 sm:mx-0 sm:h-10 sm:w-10">
+                                <span class="material-symbols-outlined text-yellow-600">warning</span>
+                            </div>
+                            <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+                                <h3 class="text-lg font-bold leading-6 text-slate-900 dark:text-white" id="modal-title">
+                                    Phát hiện dữ liệu trùng lặp!
+                                </h3>
+                                <div class="mt-2">
+                                    <p class="text-sm text-slate-500 dark:text-slate-400">
+                                        Có <strong class="text-yellow-600">{{ $duplicateCount ?? 0 }}</strong> sinh viên trong file Excel đã được cập nhật cảnh báo cho học kỳ này từ trước.
+                                    </p>
+                                    <p class="text-sm text-slate-500 mt-2">Bạn muốn xử lý thế nào với các dữ liệu bị trùng này?</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-slate-50 dark:bg-slate-800/50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 gap-2">
+                        <button type="button" onclick="confirmImport('replace')" class="inline-flex w-full justify-center rounded-md bg-yellow-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-yellow-500 sm:w-auto mt-3 sm:mt-0 transition-colors">
+                            Thay thế
+                        </button>
+                        <button type="button" onclick="confirmImport('skip')" class="inline-flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 sm:w-auto mt-3 sm:mt-0 transition-colors">
+                            Chỉ thêm mới
+                        </button>
+                        <button type="button" onclick="closeDuplicateModal()" class="mt-3 inline-flex w-full justify-center rounded-md bg-white dark:bg-slate-700 px-3 py-2 text-sm font-semibold text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-600 hover:bg-slate-50 sm:mt-0 sm:w-auto transition-colors">
+                            Hủy bỏ
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     {{-- === MODAL THÊM SINH VIÊN NHANH === --}}
@@ -317,7 +337,34 @@
 
     {{-- SCRIPT JAVASCRIPT --}}
     <script>
-        // 1. Script Upload File
+        // -- 0. [THÊM] LOGIC KIỂM TRA TRÙNG LẶP --
+        const hasDuplicates = {{ isset($duplicateCount) && $duplicateCount > 0 ? 'true' : 'false' }};
+
+        function handleImportSubmit() {
+            if (hasDuplicates) {
+                // Hiện Modal Xác nhận
+                document.getElementById('duplicateConfirmModal').classList.remove('hidden');
+            } else {
+                // Không trùng thì gán mode 'skip' (hoặc gì cũng được) rồi submit
+                document.getElementById('import_mode').value = 'skip';
+                document.getElementById('storeForm').submit();
+            }
+        }
+
+        function confirmImport(mode) {
+            // Gán mode người dùng chọn vào input ẩn
+            document.getElementById('import_mode').value = mode;
+            // Ẩn modal và Submit Form lưu
+            document.getElementById('duplicateConfirmModal').classList.add('hidden');
+            document.getElementById('storeForm').submit();
+        }
+
+        function closeDuplicateModal() {
+            document.getElementById('duplicateConfirmModal').classList.add('hidden');
+        }
+
+
+        // -- 1. Script Upload File --
         function updateFileName(input) {
             const fileNameSpan = document.getElementById('toolbar-filename');
             if (input.files && input.files.length > 0) {
@@ -329,7 +376,7 @@
             }
         }
 
-        // 2. Script Modal & Ajax
+        // -- 2. Script Modal & Ajax (Thêm nhanh) --
         const modal = document.getElementById('quickAddModal');
         const form = document.getElementById('quickAddForm');
         const btnSave = document.getElementById('btn-qa-save');
@@ -353,7 +400,6 @@
         }
 
         function openQuickAddModal(mssv, fullname, dobRaw, classCodeRaw) {
-            // 1. Điền thông tin cơ bản
             document.getElementById('qa_mssv').value = mssv;
             document.getElementById('qa_fullname').value = fullname;
 
@@ -361,7 +407,6 @@
                 const parts = fullname.trim().split(/\s+/);
                 const lastName = parts[parts.length - 1];
                 const slugName = removeVietnameseTones(lastName);
-
                 document.getElementById('qa_email').value = `${slugName}${mssv}@vnkgu.edu.vn`;
             }
 
@@ -369,38 +414,24 @@
             if (dobRaw) {
                 dobInput.value = dobRaw;
             } else {
-                dobInput.value = ''; // Reset nếu không có ngày sinh
+                dobInput.value = '';
             }
-            // 2. LOGIC TỰ ĐỘNG CHỌN LỚP (AUTO-SELECT CLASS)
-            const classSelect = document.getElementById('qa_class_id');
 
-            // Reset về mặc định trước
+            const classSelect = document.getElementById('qa_class_id');
             classSelect.selectedIndex = 0;
 
             if (classCodeRaw && classCodeRaw.trim() !== '') {
-                const targetCode = classCodeRaw.trim()
-                    .toUpperCase(); // Chẩn hóa mã từ Excel (VD: "  b022tt2 ") -> "B022TT2"
-
-                // Duyệt qua tất cả các option trong Select
+                const targetCode = classCodeRaw.trim().toUpperCase(); 
                 for (let i = 0; i < classSelect.options.length; i++) {
-                    const optionText = classSelect.options[i].text
-                        .toUpperCase(); // Lấy text hiển thị (VD: "B022TT2 - KỸ THUẬT PHẦN MỀM")
-
-                    // Kiểm tra xem Text trong dropdown có CHỨA mã lớp từ Excel không
-                    // Ví dụ: "B022TT2 - ..." có chứa "B022TT2" không? -> Có
+                    const optionText = classSelect.options[i].text.toUpperCase(); 
                     if (optionText.includes(targetCode)) {
-                        classSelect.selectedIndex = i; // Chọn option này
-
-                        // Hiệu ứng visual báo hiệu đã tìm thấy (Optional)
+                        classSelect.selectedIndex = i;
                         classSelect.classList.add('border-green-500', 'bg-green-50');
                         setTimeout(() => classSelect.classList.remove('border-green-500', 'bg-green-50'), 2000);
-
-                        break; // Tìm thấy rồi thì dừng vòng lặp
+                        break; 
                     }
                 }
             }
-
-            // 3. Hiện Modal
             modal.classList.remove('hidden');
         }
 
@@ -431,8 +462,6 @@
                 .then(result => {
                     if (result.success) {
                         closeQuickAddModal();
-
-                        // Cập nhật dòng UI thành Hợp lệ
                         const row = document.getElementById('row-' + data.mssv);
                         if (row) {
                             row.classList.remove('bg-red-50/50', 'dark:bg-red-900/10');

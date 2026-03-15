@@ -43,6 +43,7 @@ Route::controller(StudentController::class)->prefix('students')->name('students.
 Route::resource('students', StudentController::class);
 
 // --- QUẢN LÝ KẾT QUẢ HỌC TẬP (ACADEMIC RESULTS) ---
+Route::get('academic-results/index', [AcademicResultController::class, 'index'])->name('academic_results.index');
 Route::get('academic-results/import', [AcademicResultController::class, 'import'])->name('academic_results.import');
 Route::get('academic-results/export', [AcademicResultController::class, 'export'])->name('academic_results.export');
 Route::post('academic-results/preview', [AcademicResultController::class, 'preview'])->name('academic_results.preview');

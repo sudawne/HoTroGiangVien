@@ -3,24 +3,25 @@
 
 @section('content')
     {{-- Container mở rộng full màn hình --}}
-    <div class="w-full h-[calc(100vh-80px)] flex flex-col">
+    <div class="w-full h-[calc(100vh-80px)] flex flex-col relative">
+
+        {{-- TOAST CONTAINER (Nơi chứa các thông báo góc phải) --}}
+        <div id="toast-container" class="fixed top-5 right-5 z-[9999] flex flex-col gap-3 pointer-events-none"></div>
 
         @if (!isset($previewData))
             {{-- FORM GIAI ĐOẠN 1: UPLOAD & PREVIEW --}}
-            <form action="{{ route($routePrefix . 'course_cancellations.preview') }}" method="POST"
-                enctype="multipart/form-data" class="flex flex-col h-full">
+            <form action="{{ route($routePrefix . 'course_cancellations.preview') }}" method="POST" enctype="multipart/form-data" class="flex flex-col h-full">
                 @csrf
-            @else
-                {{-- FORM GIAI ĐOẠN 2: CONFIRM STORE --}}
-                <form action="{{ route($routePrefix . 'course_cancellations.store_import') }}" method="POST"
-                    class="flex flex-col h-full">
-                    @csrf
-                    <input type="hidden" name="data" value="{{ json_encode($previewData) }}">
-                    <input type="hidden" name="semester_id" value="{{ $semester_id }}">
+        @else
+            {{-- FORM GIAI ĐOẠN 2: CONFIRM STORE --}}
+            <form id="storeForm" action="{{ route($routePrefix . 'course_cancellations.store_import') }}" method="POST" class="flex flex-col h-full">
+                @csrf
+                <input type="hidden" name="data" value="{{ json_encode($previewData) }}">
+                <input type="hidden" name="semester_id" value="{{ $semester_id }}">
+                <input type="hidden" name="import_mode" id="import_mode" value="skip">
         @endif
 
         <div class="rounded-lg mb-4 flex flex-col xl:flex-row xl:items-center justify-between gap-4 sticky top-0 z-20">
-
             <x-page-header title="Nhập dữ liệu" description="Tải lên file Excel để cập nhật danh sách hủy học phần"
                 :routePrefix="$routePrefix" :breadcrumbs="[
                     ['label' => 'Hủy học phần', 'url' => route($routePrefix . 'course_cancellations.index')],
@@ -28,14 +29,12 @@
                 ]" />
 
             <div class="flex flex-wrap items-center gap-4">
-
                 <div class="flex items-center gap-2 border-r border-slate-300 dark:border-slate-700 pr-4">
                     <span class="material-symbols-outlined text-slate-400 !text-[20px]">calendar_month</span>
                     <select name="semester_id"
                         class="bg-slate-50 dark:bg-slate-800 border-none text-sm font-semibold text-slate-700 dark:text-slate-200 focus:ring-0 cursor-pointer py-1 pl-2 pr-8 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
                         @foreach ($semesters as $sem)
-                            <option value="{{ $sem->id }}"
-                                {{ isset($semester_id) && $semester_id == $sem->id ? 'selected' : '' }}>
+                            <option value="{{ $sem->id }}" {{ isset($semester_id) && $semester_id == $sem->id ? 'selected' : '' }}>
                                 {{ $sem->name }} ({{ $sem->academic_year }})
                             </option>
                         @endforeach
@@ -44,28 +43,22 @@
 
                 <div class="flex items-center gap-3">
                     @if (!isset($previewData))
-                        <label for="file-upload"
-                            class="cursor-pointer flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg font-medium text-sm transition-colors border border-slate-200 dark:border-slate-600">
+                        <label for="file-upload" class="cursor-pointer flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg font-medium text-sm transition-colors border border-slate-200 dark:border-slate-600">
                             <span class="material-symbols-outlined !text-[20px] text-green-600">table_view</span>
                             <span id="toolbar-filename">Chọn file Excel</span>
-                            <input id="file-upload" name="file" type="file" class="hidden" accept=".xlsx,.xls,.csv"
-                                required onchange="updateFileName(this)" />
+                            <input id="file-upload" name="file" type="file" class="hidden" accept=".xlsx,.xls,.csv" required onchange="updateFileName(this)" />
                         </label>
 
-                        <button type="submit"
-                            class="flex items-center gap-2 bg-primary hover:bg-indigo-700 text-white px-5 py-2 rounded-lg font-medium text-sm transition-colors shadow-sm shadow-indigo-500/30">
-                            <span class="material-symbols-outlined !text-[20px]">visibility</span>
-                            Xem dữ liệu
+                        <button type="submit" class="flex items-center gap-2 bg-primary hover:bg-indigo-700 text-white px-5 py-2 rounded-lg font-medium text-sm transition-colors shadow-sm shadow-indigo-500/30">
+                            <span class="material-symbols-outlined !text-[20px]">visibility</span> Xem dữ liệu
                         </button>
                     @else
-                        <div
-                            class="px-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg text-sm font-medium border border-blue-100 dark:border-blue-800 flex items-center gap-2">
+                        <div class="px-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg text-sm font-medium border border-blue-100 dark:border-blue-800 flex items-center gap-2">
                             <span class="material-symbols-outlined !text-[18px]">description</span>
                             File: {{ $selected_file_name ?? 'Data.xlsx' }}
                         </div>
 
-                        <a href="{{ route($routePrefix . 'course_cancellations.import') }}"
-                            class="px-4 py-2 text-slate-500 hover:text-slate-700 font-medium text-sm">
+                        <a href="{{ route($routePrefix . 'course_cancellations.import') }}" class="px-4 py-2 text-slate-500 hover:text-slate-700 font-medium text-sm">
                             Chọn lại
                         </a>
                     @endif
@@ -74,27 +67,19 @@
         </div>
 
         {{-- === PHẦN 2: KHU VỰC NỘI DUNG (DƯỚI) === --}}
-        <div
-            class="flex-1 bg-white dark:bg-[#1e1e2d] rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden relative flex flex-col">
+        <div class="flex-1 bg-white dark:bg-[#1e1e2d] rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden relative flex flex-col">
 
             @if (!isset($previewData))
                 {{-- VIEW 1: DROPZONE UPLOAD --}}
-                <div class="flex-1 flex flex-col items-center justify-center p-10 border-4 border-dashed border-slate-100 dark:border-slate-800 m-4 rounded-xl bg-slate-50/50 dark:bg-slate-800/30 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group cursor-pointer"
-                    onclick="document.getElementById('file-upload').click()">
-                    <div
-                        class="bg-white dark:bg-slate-700 p-6 rounded-full shadow-sm mb-4 group-hover:scale-110 transition-transform duration-300">
-                        <span
-                            class="material-symbols-outlined text-6xl text-slate-300 dark:text-slate-500 group-hover:text-primary transition-colors">cloud_upload</span>
+                <div class="flex-1 flex flex-col items-center justify-center p-10 border-4 border-dashed border-slate-100 dark:border-slate-800 m-4 rounded-xl bg-slate-50/50 dark:bg-slate-800/30 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group cursor-pointer" onclick="document.getElementById('file-upload').click()">
+                    <div class="bg-white dark:bg-slate-700 p-6 rounded-full shadow-sm mb-4 group-hover:scale-110 transition-transform duration-300">
+                        <span class="material-symbols-outlined text-6xl text-slate-300 dark:text-slate-500 group-hover:text-primary transition-colors">cloud_upload</span>
                     </div>
-                    <h3 class="text-xl font-bold text-slate-700 dark:text-slate-200 mb-2">Tải lên danh sách Xóa Học Phần
-                    </h3>
-                    <p class="text-slate-500 dark:text-slate-400 mb-6">Kéo thả file vào đây hoặc bấm nút "Chọn file Excel" ở
-                        trên</p>
+                    <h3 class="text-xl font-bold text-slate-700 dark:text-slate-200 mb-2">Tải lên danh sách Xóa Học Phần</h3>
+                    <p class="text-slate-500 dark:text-slate-400 mb-6">Kéo thả file vào đây hoặc bấm nút "Chọn file Excel" ở trên</p>
                     <div class="flex gap-4 text-xs text-slate-400 font-mono">
-                        <span
-                            class="bg-slate-100 dark:bg-slate-900 px-2 py-1 rounded border dark:border-slate-700">.XLSX</span>
-                        <span
-                            class="bg-slate-100 dark:bg-slate-900 px-2 py-1 rounded border dark:border-slate-700">.CSV</span>
+                        <span class="bg-slate-100 dark:bg-slate-900 px-2 py-1 rounded border dark:border-slate-700">.XLSX</span>
+                        <span class="bg-slate-100 dark:bg-slate-900 px-2 py-1 rounded border dark:border-slate-700">.CSV</span>
                     </div>
                 </div>
             @else
@@ -103,84 +88,52 @@
                     <table class="w-full text-left border-collapse text-sm">
                         <thead class="bg-slate-50 dark:bg-slate-800 sticky top-0 z-10 shadow-sm">
                             <tr>
-                                <th
-                                    class="p-4 font-semibold text-slate-600 dark:text-slate-400 border-b dark:border-slate-700">
-                                    MSSV</th>
-                                <th
-                                    class="p-4 font-semibold text-slate-600 dark:text-slate-400 border-b dark:border-slate-700">
-                                    Họ tên (Excel)</th>
-                                <th
-                                    class="p-4 font-semibold text-slate-600 dark:text-slate-400 border-b dark:border-slate-700">
-                                    Mã Môn</th>
-                                <th
-                                    class="p-4 font-semibold text-slate-600 dark:text-slate-400 border-b dark:border-slate-700">
-                                    Tên Môn (Excel)</th>
-                                <th
-                                    class="p-4 font-semibold text-slate-600 dark:text-slate-400 border-b dark:border-slate-700 text-center">
-                                    Lý do</th>
-                                <th
-                                    class="p-4 font-semibold text-slate-600 dark:text-slate-400 border-b dark:border-slate-700 text-right">
-                                    Trạng thái</th>
+                                <th class="p-4 font-semibold text-slate-600 dark:text-slate-400 border-b dark:border-slate-700">MSSV</th>
+                                <th class="p-4 font-semibold text-slate-600 dark:text-slate-400 border-b dark:border-slate-700">Họ tên (Excel)</th>
+                                <th class="p-4 font-semibold text-slate-600 dark:text-slate-400 border-b dark:border-slate-700">Mã Môn</th>
+                                <th class="p-4 font-semibold text-slate-600 dark:text-slate-400 border-b dark:border-slate-700">Tên Môn (Excel)</th>
+                                <th class="p-4 font-semibold text-slate-600 dark:text-slate-400 border-b dark:border-slate-700 text-center">Lý do</th>
+                                <th class="p-4 font-semibold text-slate-600 dark:text-slate-400 border-b dark:border-slate-700 text-right">Trạng thái</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                             @foreach ($previewData as $row)
-                                <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors {{ !$row['student_exists'] || !$row['subject_exists'] ? 'bg-red-50/50 dark:bg-red-900/10' : '' }}"
-                                    id="row-{{ $row['student_code'] }}">
+                                <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors {{ !$row['student_exists'] || !$row['subject_exists'] ? 'bg-red-50/50 dark:bg-red-900/10' : '' }}" id="row-{{ $row['student_code'] }}">
+                                    <td class="p-4 font-medium font-mono {{ !$row['student_exists'] ? 'text-red-600' : 'text-primary' }}">{{ $row['student_code'] }}</td>
+                                    <td class="p-4 font-medium dark:text-slate-300">{{ $row['student_name'] }}</td>
+                                    <td class="p-4 font-mono {{ !$row['subject_exists'] ? 'text-red-600 font-bold' : 'text-slate-500' }}">{{ $row['subject_code'] }}</td>
+                                    <td class="p-4 text-slate-500 dark:text-slate-400">{{ $row['subject_name'] }}</td>
+                                    <td class="p-4 text-center"><span class="badge-gray">{{ $row['reason'] }}</span></td>
 
-                                    {{-- Cột MSSV --}}
-                                    <td
-                                        class="p-4 font-medium font-mono {{ !$row['student_exists'] ? 'text-red-600' : 'text-primary' }}">
-                                        {{ $row['student_code'] }}
-                                    </td>
-
-                                    {{-- Cột Họ tên --}}
-                                    <td class="p-4 font-medium dark:text-slate-300">
-                                        {{ $row['student_name'] }}
-                                    </td>
-
-                                    {{-- Cột Mã Môn --}}
-                                    <td
-                                        class="p-4 font-mono {{ !$row['subject_exists'] ? 'text-red-600 font-bold' : 'text-slate-500' }}">
-                                        {{ $row['subject_code'] }}
-                                    </td>
-
-                                    {{-- Cột Tên Môn --}}
-                                    <td class="p-4 text-slate-500 dark:text-slate-400">
-                                        {{ $row['subject_name'] }}
-                                    </td>
-
-                                    {{-- Cột Lý do --}}
-                                    <td class="p-4 text-center">
-                                        <span class="badge-gray">{{ $row['reason'] }}</span>
-                                    </td>
-
-                                    {{-- Cột Trạng thái & Action --}}
                                     <td class="p-4 text-right">
                                         @if ($row['student_exists'] && $row['subject_exists'])
-                                            <div
-                                                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/50">
-                                                <span
-                                                    class="material-symbols-outlined text-[16px] text-emerald-600 dark:text-emerald-400">check_circle</span>
-                                                <span class="text-xs font-bold text-emerald-700 dark:text-emerald-400">Hợp
-                                                    lệ</span>
-                                            </div>
+                                            @if(isset($row['cancellation_exists']) && $row['cancellation_exists'])
+                                                <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-900/50">
+                                                    <span class="material-symbols-outlined text-[16px] text-yellow-600 dark:text-yellow-400">warning</span>
+                                                    <span class="text-xs font-bold text-yellow-700 dark:text-yellow-400">Đã tồn tại</span>
+                                                </div>
+                                            @else
+                                                <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/50">
+                                                    <span class="material-symbols-outlined text-[16px] text-emerald-600 dark:text-emerald-400">check_circle</span>
+                                                    <span class="text-xs font-bold text-emerald-700 dark:text-emerald-400">Hợp lệ</span>
+                                                </div>
+                                            @endif
                                         @else
                                             <div class="flex flex-col items-end gap-2">
-                                                @if (!$row['subject_exists'])
-                                                    <span class="badge-orange">Sai Mã Môn</span>
-                                                @endif
-
                                                 @if (!$row['student_exists'])
-                                                    {{-- Nút Thêm Nhanh Sinh Viên --}}
                                                     <button type="button"
                                                         onclick="openQuickAddModal('{{ $row['student_code'] }}', '{{ $row['student_name'] }}', '', '{{ $row['class_code'] ?? '' }}')"
-                                                        class="group inline-flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm hover:border-primary hover:ring-1 hover:ring-primary/20 hover:text-primary transition-all duration-200">
-                                                        <span
-                                                            class="material-symbols-outlined text-[18px] text-slate-400 group-hover:text-primary transition-colors">person_add</span>
-                                                        <span
-                                                            class="text-xs font-semibold text-slate-600 dark:text-slate-300 group-hover:text-primary">Thêm
-                                                            SV</span>
+                                                        class="group inline-flex items-center gap-2 px-3 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm hover:border-primary hover:ring-1 hover:ring-primary/20 hover:text-primary transition-all duration-200">
+                                                        <span class="material-symbols-outlined text-[18px] text-slate-400 group-hover:text-primary transition-colors">person_add</span>
+                                                        <span class="text-xs font-semibold text-slate-600 dark:text-slate-300 group-hover:text-primary">Thêm SV</span>
+                                                    </button>
+                                                @endif
+                                                @if (!$row['subject_exists'])
+                                                    <button type="button"
+                                                        onclick="openQuickAddSubjectModal('{{ $row['subject_code'] }}', '{{ $row['subject_name'] }}')"
+                                                        class="group inline-flex items-center gap-2 px-3 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm hover:border-orange-500 hover:ring-1 hover:ring-orange-500/20 hover:text-orange-500 transition-all duration-200">
+                                                        <span class="material-symbols-outlined text-[18px] text-slate-400 group-hover:text-orange-500 transition-colors">library_add</span>
+                                                        <span class="text-xs font-semibold text-slate-600 dark:text-slate-300 group-hover:text-orange-500">Thêm Môn</span>
                                                     </button>
                                                 @endif
                                             </div>
@@ -192,119 +145,164 @@
                     </table>
                 </div>
 
-                {{-- NÚT XÁC NHẬN Ở DƯỚI CÙNG (Sticky Bottom) --}}
-                <div
-                    class="p-4 bg-slate-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                {{-- NÚT XÁC NHẬN Ở DƯỚI CÙNG --}}
+                <div class="p-4 bg-slate-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center">
                     <div class="text-sm text-slate-500">
-                        Đang xem trước <span
-                            class="font-bold text-slate-900 dark:text-white">{{ count($previewData) }}</span> dòng dữ liệu.
-                        <span class="ml-2 text-xs italic text-orange-500">(Chỉ lưu các dòng hợp lệ)</span>
+                        Đang xem trước <span class="font-bold text-slate-900 dark:text-white">{{ count($previewData) }}</span> dòng dữ liệu.
+                        @if(isset($duplicateCount) && $duplicateCount > 0)
+                            <span class="ml-2 text-yellow-600 font-medium bg-yellow-50 dark:bg-yellow-900/20 px-2 py-1 rounded border border-yellow-200 dark:border-yellow-800">
+                                ⚠️ Phát hiện {{ $duplicateCount }} dòng trùng lặp.
+                            </span>
+                        @endif
                     </div>
-                    <button type="submit"
-                        class="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-8 py-2.5 rounded-lg font-bold shadow-lg shadow-green-600/20 transform hover:-translate-y-0.5 transition-all">
-                        <span class="material-symbols-outlined">save</span>
-                        Xác nhận & Lưu vào hệ thống
+                    <button type="button" onclick="handleImportSubmit()" class="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-8 py-2.5 rounded-lg font-bold shadow-lg shadow-green-600/20 transform hover:-translate-y-0.5 transition-all">
+                        <span class="material-symbols-outlined">save</span> Xác nhận & Lưu
                     </button>
                 </div>
             @endif
 
         </div>
-
-        </form> {{-- Đóng thẻ Form --}}
+        </form>
     </div>
 
-    {{-- === MODAL THÊM SINH VIÊN NHANH === --}}
-    <div id="quickAddModal" class="fixed inset-0 z-[100] hidden" aria-labelledby="modal-title" role="dialog"
-        aria-modal="true">
+    {{-- === MODAL XÁC NHẬN XỬ LÝ TRÙNG LẶP === --}}
+    <div id="duplicateConfirmModal" class="fixed inset-0 z-[110] hidden" aria-modal="true">
         <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"></div>
         <div class="fixed inset-0 z-10 overflow-y-auto">
             <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
-                <div
-                    class="relative transform overflow-hidden rounded-lg bg-white dark:bg-[#1e1e2d] text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg border border-slate-200 dark:border-slate-700">
-
-                    {{-- Header Modal --}}
-                    <div
-                        class="bg-white dark:bg-[#1e1e2d] px-4 pb-4 pt-5 sm:p-6 border-b border-slate-100 dark:border-slate-700">
-                        <div class="flex items-center gap-4">
-                            <div
-                                class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
-                                <span class="material-symbols-outlined text-blue-600">person_add</span>
+                <div class="relative transform overflow-hidden rounded-lg bg-white dark:bg-[#1e1e2d] text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-md border border-slate-200 dark:border-slate-700">
+                    <div class="bg-white dark:bg-[#1e1e2d] px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                        <div class="sm:flex sm:items-start">
+                            <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-yellow-100 sm:mx-0 sm:h-10 sm:w-10">
+                                <span class="material-symbols-outlined text-yellow-600">warning</span>
                             </div>
-                            <div class="mt-3 text-center sm:ml-0 sm:mt-0 sm:text-left">
-                                <h3 class="text-lg font-bold leading-6 text-slate-900 dark:text-white" id="modal-title">
-                                    Thêm sinh viên vào CSDL
-                                </h3>
-                                <div class="mt-1">
-                                    <p class="text-sm text-slate-500">
-                                        Sinh viên này chưa có trong hệ thống. Vui lòng kiểm tra và bổ sung thông tin.
+                            <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+                                <h3 class="text-lg font-bold leading-6 text-slate-900 dark:text-white">Phát hiện dữ liệu trùng lặp!</h3>
+                                <div class="mt-2">
+                                    <p class="text-sm text-slate-500 dark:text-slate-400">
+                                        Có <strong class="text-yellow-600">{{ $duplicateCount ?? 0 }}</strong> sinh viên đã bị báo hủy môn học này từ trước.
                                     </p>
+                                    <p class="text-sm text-slate-500 mt-2">Bạn muốn xử lý thế nào với các dữ liệu bị trùng này?</p>
                                 </div>
                             </div>
                         </div>
                     </div>
+                    <div class="bg-slate-50 dark:bg-slate-800/50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 gap-2">
+                        <button type="button" onclick="confirmImport('replace')" class="inline-flex w-full justify-center rounded-md bg-yellow-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-yellow-500 sm:w-auto mt-3 sm:mt-0">
+                            Thay thế (Cập nhật lý do)
+                        </button>
+                        <button type="button" onclick="confirmImport('skip')" class="inline-flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 sm:w-auto mt-3 sm:mt-0">
+                            Bỏ qua dòng trùng
+                        </button>
+                        <button type="button" onclick="closeDuplicateModal()" class="mt-3 inline-flex w-full justify-center rounded-md bg-white dark:bg-slate-700 px-3 py-2 text-sm font-semibold text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-600 hover:bg-slate-50 sm:mt-0 sm:w-auto">
+                            Hủy bỏ
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                    {{-- Form Body --}}
+    {{-- === MODAL THÊM SINH VIÊN NHANH === --}}
+    <div id="quickAddModal" class="fixed inset-0 z-[100] hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"></div>
+        <div class="fixed inset-0 z-10 overflow-y-auto">
+            <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+                <div class="relative transform overflow-hidden rounded-lg bg-white dark:bg-[#1e1e2d] text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg border border-slate-200 dark:border-slate-700">
+                    <div class="bg-white dark:bg-[#1e1e2d] px-4 pb-4 pt-5 sm:p-6 border-b border-slate-100 dark:border-slate-700">
+                        <div class="flex items-center gap-4">
+                            <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+                                <span class="material-symbols-outlined text-blue-600">person_add</span>
+                            </div>
+                            <div class="mt-3 text-center sm:ml-0 sm:mt-0 sm:text-left">
+                                <h3 class="text-lg font-bold leading-6 text-slate-900 dark:text-white">Thêm sinh viên vào CSDL</h3>
+                                <p class="text-sm text-slate-500 mt-1">Sinh viên này chưa có trong hệ thống. Vui lòng kiểm tra và bổ sung thông tin.</p>
+                            </div>
+                        </div>
+                    </div>
                     <form id="quickAddForm">
                         <div class="px-6 py-4 space-y-4">
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label
-                                        class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Mã
-                                        số SV <span class="text-red-500">*</span></label>
-                                    <input type="text" id="qa_mssv" name="mssv" readonly
-                                        class="w-full bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded-sm text-sm focus:ring-primary focus:border-primary cursor-not-allowed text-slate-500">
+                                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Mã số SV <span class="text-red-500">*</span></label>
+                                    <input type="text" id="qa_mssv" name="mssv" readonly class="w-full bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded-sm text-sm focus:ring-primary focus:border-primary cursor-not-allowed text-slate-500">
                                 </div>
                                 <div>
-                                    <label
-                                        class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Ngày
-                                        sinh</label>
-                                    <input type="date" id="qa_dob" name="dob"
-                                        class="w-full bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded-sm text-sm focus:ring-primary focus:border-primary">
+                                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Ngày sinh</label>
+                                    <input type="date" id="qa_dob" name="dob" class="w-full bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded-sm text-sm focus:ring-primary focus:border-primary">
                                 </div>
                             </div>
                             <div>
-                                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Họ
-                                    và tên <span class="text-red-500">*</span></label>
-                                <input type="text" id="qa_fullname" name="fullname"
-                                    class="w-full bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded-sm text-sm focus:ring-primary focus:border-primary"
-                                    required>
+                                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Họ và tên <span class="text-red-500">*</span></label>
+                                <input type="text" id="qa_fullname" name="fullname" required class="w-full bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded-sm text-sm focus:ring-primary focus:border-primary">
                             </div>
                             <div>
-                                <label
-                                    class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Email
-                                    <span class="text-red-500">*</span></label>
-                                <input type="email" id="qa_email" name="email"
-                                    class="w-full bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded-sm text-sm focus:ring-primary focus:border-primary"
-                                    required>
-                                <p class="text-[10px] text-slate-400 mt-1">Mặc định: MSSV@vnkgu.edu.vn</p>
+                                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Email <span class="text-red-500">*</span></label>
+                                <input type="email" id="qa_email" name="email" required class="w-full bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded-sm text-sm focus:ring-primary focus:border-primary">
                             </div>
                             <div>
-                                <label
-                                    class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Lớp
-                                    sinh hoạt</label>
-                                <select id="qa_class_id" name="class_id"
-                                    class="w-full bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded-sm text-sm focus:ring-primary focus:border-primary">
+                                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Lớp sinh hoạt</label>
+                                <select id="qa_class_id" name="class_id" class="w-full bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded-sm text-sm focus:ring-primary focus:border-primary">
                                     <option value="">-- Chọn lớp (Nếu có) --</option>
-                                    {{-- Lưu ý: Biến $classes cần được truyền từ Controller xuống view này --}}
                                     @if (isset($classes))
                                         @foreach ($classes as $c)
-                                            <option value="{{ $c->id }}">{{ $c->code }} -
-                                                {{ $c->name }}</option>
+                                            <option value="{{ $c->id }}">{{ $c->code }} - {{ $c->name }}</option>
                                         @endforeach
                                     @endif
                                 </select>
                             </div>
                         </div>
-
-                        {{-- Footer Buttons --}}
-                        <div
-                            class="bg-slate-50 dark:bg-slate-800/50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 border-t border-slate-100 dark:border-slate-700">
-                            <button type="submit" id="btn-qa-save"
-                                class="inline-flex w-full justify-center rounded-sm bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 sm:ml-3 sm:w-auto transition-all">
-                                <span class="material-symbols-outlined !text-[18px] mr-1">save</span> Lưu vào CSDL
+                        <div class="bg-slate-50 dark:bg-slate-800/50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 border-t border-slate-100 dark:border-slate-700">
+                            <button type="submit" id="btn-qa-save" class="inline-flex w-full justify-center rounded-sm bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 sm:ml-3 sm:w-auto transition-all">
+                                <span class="material-symbols-outlined !text-[18px] mr-1">save</span> Lưu CSDL
                             </button>
-                            <button type="button" onclick="closeQuickAddModal()"
-                                class="mt-3 inline-flex w-full justify-center rounded-sm bg-white dark:bg-slate-700 px-3 py-2 text-sm font-semibold text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-600 hover:bg-slate-50 sm:mt-0 sm:w-auto">
+                            <button type="button" onclick="closeQuickAddModal()" class="mt-3 inline-flex w-full justify-center rounded-sm bg-white dark:bg-slate-700 px-3 py-2 text-sm font-semibold text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-600 hover:bg-slate-50 sm:mt-0 sm:w-auto">
+                                Hủy bỏ
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- === MODAL THÊM MÔN HỌC NHANH === --}}
+    <div id="quickAddSubjectModal" class="fixed inset-0 z-[100] hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"></div>
+        <div class="fixed inset-0 z-10 overflow-y-auto">
+            <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+                <div class="relative transform overflow-hidden rounded-lg bg-white dark:bg-[#1e1e2d] text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-md border border-slate-200 dark:border-slate-700">
+                    <div class="bg-white dark:bg-[#1e1e2d] px-4 pb-4 pt-5 sm:p-6 border-b border-slate-100 dark:border-slate-700">
+                        <div class="flex items-center gap-4">
+                            <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-orange-100 sm:mx-0 sm:h-10 sm:w-10">
+                                <span class="material-symbols-outlined text-orange-600">library_add</span>
+                            </div>
+                            <div class="mt-3 text-center sm:ml-0 sm:mt-0 sm:text-left">
+                                <h3 class="text-lg font-bold leading-6 text-slate-900 dark:text-white">Thêm môn học mới</h3>
+                                <p class="text-sm text-slate-500 mt-1">Mã môn này chưa có trong hệ thống.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <form id="quickAddSubjectForm">
+                        <div class="px-6 py-4 space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Mã môn <span class="text-red-500">*</span></label>
+                                <input type="text" id="qas_code" name="code" readonly class="w-full bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded-sm text-sm focus:ring-primary focus:border-primary cursor-not-allowed text-slate-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Tên môn học <span class="text-red-500">*</span></label>
+                                <input type="text" id="qas_name" name="name" required class="w-full bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded-sm text-sm focus:ring-primary focus:border-primary">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Số tín chỉ <span class="text-red-500">*</span></label>
+                                <input type="number" id="qas_credits" name="credits" required min="1" value="3" class="w-full bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded-sm text-sm focus:ring-primary focus:border-primary">
+                            </div>
+                        </div>
+                        <div class="bg-slate-50 dark:bg-slate-800/50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 border-t border-slate-100 dark:border-slate-700">
+                            <button type="submit" id="btn-qas-save" class="inline-flex w-full justify-center rounded-sm bg-orange-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-orange-500 sm:ml-3 sm:w-auto transition-all">
+                                <span class="material-symbols-outlined !text-[18px] mr-1">save</span> Lưu môn học
+                            </button>
+                            <button type="button" onclick="closeQuickAddSubjectModal()" class="mt-3 inline-flex w-full justify-center rounded-sm bg-white dark:bg-slate-700 px-3 py-2 text-sm font-semibold text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-600 hover:bg-slate-50 sm:mt-0 sm:w-auto">
                                 Hủy bỏ
                             </button>
                         </div>
@@ -316,7 +314,66 @@
 
     {{-- SCRIPT JAVASCRIPT --}}
     <script>
-        // 1. Script Upload File
+        // --- HÀM HIỂN THỊ TOAST THÔNG BÁO MƯỢT MÀ ---
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const borderColor = type === 'success' ? 'border-l-emerald-500' : 'border-l-red-500';
+            const icon = type === 'success' ? 'check_circle' : 'error';
+            const iconColor = type === 'success' ? 'text-emerald-500' : 'text-red-500';
+            const title = type === 'success' ? 'Thành công' : 'Có lỗi xảy ra';
+
+            toast.className = `transform transition-all duration-300 translate-x-full opacity-0 flex items-start gap-3 w-80 p-4 rounded-sm border-l-4 shadow-xl pointer-events-auto bg-white dark:bg-slate-800 dark:border-slate-700 ${borderColor}`;
+            
+            toast.innerHTML = `
+                <span class="material-symbols-outlined mt-0.5 ${iconColor}">${icon}</span>
+                <div class="flex-1 min-w-0">
+                    <h4 class="text-sm font-bold text-slate-800 dark:text-white truncate">${title}</h4>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">${message}</p>
+                </div>
+                <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-slate-600 transition-colors shrink-0">
+                    <span class="material-symbols-outlined !text-[18px]">close</span>
+                </button>
+            `;
+
+            container.appendChild(toast);
+
+            // Trigger Hiệu ứng trượt ra
+            setTimeout(() => {
+                toast.classList.remove('translate-x-full', 'opacity-0');
+            }, 10);
+
+            // Tự động đóng sau 4 giây
+            setTimeout(() => {
+                toast.classList.add('translate-x-full', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        // --- LOGIC XỬ LÝ TRÙNG LẶP IMPORT ---
+        const hasDuplicates = {{ isset($duplicateCount) && $duplicateCount > 0 ? 'true' : 'false' }};
+
+        function handleImportSubmit() {
+            if (hasDuplicates) {
+                document.getElementById('duplicateConfirmModal').classList.remove('hidden');
+            } else {
+                document.getElementById('import_mode').value = 'skip';
+                document.getElementById('storeForm').submit();
+            }
+        }
+
+        function confirmImport(mode) {
+            document.getElementById('import_mode').value = mode;
+            document.getElementById('duplicateConfirmModal').classList.add('hidden');
+            document.getElementById('storeForm').submit();
+        }
+
+        function closeDuplicateModal() {
+            document.getElementById('duplicateConfirmModal').classList.add('hidden');
+        }
+
+        // --- SCRIPT UPLOAD FILE ---
         function updateFileName(input) {
             const fileNameSpan = document.getElementById('toolbar-filename');
             if (input.files && input.files.length > 0) {
@@ -328,7 +385,7 @@
             }
         }
 
-        // 2. Script Modal & Ajax
+        // --- SCRIPT MODAL THÊM SINH VIÊN NHANH ---
         const modal = document.getElementById('quickAddModal');
         const form = document.getElementById('quickAddForm');
         const btnSave = document.getElementById('btn-qa-save');
@@ -352,7 +409,6 @@
         }
 
         function openQuickAddModal(mssv, fullname, dobRaw, classCodeRaw) {
-            // 1. Điền thông tin cơ bản
             document.getElementById('qa_mssv').value = mssv;
             document.getElementById('qa_fullname').value = fullname;
 
@@ -364,13 +420,8 @@
             }
 
             const dobInput = document.getElementById('qa_dob');
-            if (dobRaw) {
-                dobInput.value = dobRaw;
-            } else {
-                dobInput.value = '';
-            }
+            dobInput.value = dobRaw ? dobRaw : '';
 
-            // 2. Auto-select class
             const classSelect = document.getElementById('qa_class_id');
             classSelect.selectedIndex = 0;
 
@@ -384,7 +435,6 @@
                     }
                 }
             }
-
             modal.classList.remove('hidden');
         }
 
@@ -396,16 +446,12 @@
         form.addEventListener('submit', function(e) {
             e.preventDefault();
             const originalText = btnSave.innerHTML;
-            btnSave.innerHTML =
-                '<span class="material-symbols-outlined animate-spin !text-[18px] mr-1">sync</span> Đang lưu...';
+            btnSave.innerHTML = '<span class="material-symbols-outlined animate-spin !text-[18px] mr-1">sync</span> Đang lưu...';
             btnSave.disabled = true;
 
             const formData = new FormData(form);
             const data = Object.fromEntries(formData.entries());
 
-            // Lưu ý: Dùng lại route quick add của warning nếu logic giống hệt (thêm sinh viên vào bảng students)
-            // Hoặc tạo route mới cho course cancellation nếu cần.
-            // Ở đây tôi dùng lại route cũ theo yêu cầu "giống bên warning"
             fetch('{{ route('admin.academic_warnings.quick_add_student') }}', {
                     method: 'POST',
                     headers: {
@@ -418,38 +464,79 @@
                 .then(result => {
                     if (result.success) {
                         closeQuickAddModal();
-
-                        // Cập nhật dòng UI thành Hợp lệ
-                        const row = document.getElementById('row-' + data.mssv);
-                        if (row) {
-                            row.classList.remove('bg-red-50/50', 'dark:bg-red-900/10');
-                            row.classList.add('bg-green-50/30');
-
-                            // Tìm cột chứa nút và thay đổi nội dung
-                            const actionCell = row.lastElementChild;
-                            actionCell.innerHTML = `
-                            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/50 animate-pulse">
-                                <span class="material-symbols-outlined text-[16px] text-emerald-600 dark:text-emerald-400">check_circle</span>
-                                <span class="text-xs font-bold text-emerald-700 dark:text-emerald-400">Đã thêm</span>
-                            </div>`;
-
-                            // Đổi màu text cột MSSV
-                            row.firstElementChild.classList.remove('text-red-600');
-                            row.firstElementChild.classList.add('text-primary');
-                        }
+                        
+                        // Thay thế alert bằng Toast Notification
+                        showToast('Đã thêm Sinh viên thành công! Vui lòng F5 (tải lại trang) hoặc bấm "Xem dữ liệu" lần nữa để cập nhật bảng.');
+                        
                     } else {
-                        alert('Lỗi: ' + result.message);
+                        showToast('Lỗi: ' + result.message, 'error');
                     }
                 })
                 .catch(error => {
                     console.error(error);
-                    alert('Lỗi kết nối server');
+                    showToast('Lỗi kết nối server', 'error');
                 })
                 .finally(() => {
                     btnSave.innerHTML = originalText;
                     btnSave.disabled = false;
                 });
         });
+
+        // --- SCRIPT MODAL THÊM MÔN HỌC NHANH ---
+        const subjectModal = document.getElementById('quickAddSubjectModal');
+        const subjectForm = document.getElementById('quickAddSubjectForm');
+        const btnSubjectSave = document.getElementById('btn-qas-save');
+
+        function openQuickAddSubjectModal(code, name) {
+            document.getElementById('qas_code').value = code;
+            document.getElementById('qas_name').value = name;
+            document.getElementById('qas_credits').value = 3;
+            subjectModal.classList.remove('hidden');
+        }
+
+        function closeQuickAddSubjectModal() {
+            subjectModal.classList.add('hidden');
+            subjectForm.reset();
+        }
+
+        subjectForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const originalText = btnSubjectSave.innerHTML;
+            btnSubjectSave.innerHTML = '<span class="material-symbols-outlined animate-spin !text-[18px] mr-1">sync</span> Đang lưu...';
+            btnSubjectSave.disabled = true;
+
+            const formData = new FormData(subjectForm);
+            const data = Object.fromEntries(formData.entries());
+
+            fetch('{{ route('admin.subjects.quick_store') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        closeQuickAddSubjectModal();
+                        
+                        // Thay thế alert bằng Toast Notification
+                        showToast('Đã thêm Môn học thành công! Vui lòng F5 (tải lại trang) hoặc bấm "Xem dữ liệu" lần nữa để hệ thống cập nhật toàn bộ.');
+                    } else {
+                        showToast('Lỗi: ' + result.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error(error);
+                    showToast('Lỗi kết nối server', 'error');
+                })
+                .finally(() => {
+                    btnSubjectSave.innerHTML = originalText;
+                    btnSubjectSave.disabled = false;
+                });
+        });
+
     </script>
 
     {{-- STYLE --}}

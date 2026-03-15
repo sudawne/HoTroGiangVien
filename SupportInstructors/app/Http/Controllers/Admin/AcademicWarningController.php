@@ -91,6 +91,7 @@ class AcademicWarningController extends Controller
             $data = $array[0]; 
             $headerIndex = null;
             $previewData = [];
+            $mssvs = []; // Lưu danh sách MSSV để check DB 1 lần
 
             foreach ($data as $index => $row) {
                 $rowString = implode(' ', array_map(function($item) { return (string)$item; }, $row));
@@ -113,7 +114,9 @@ class AcademicWarningController extends Controller
                 }
 
                 $mssv = trim((string)$row[1]); 
-                $student = Student::where('student_code', $mssv)->first();
+                $mssvs[] = $mssv; // Add vào mảng
+                
+                // ... (Phần xử lý $dobFormatted giữ nguyên như cũ) ...
                 $dobRaw = isset($row[3]) ? $row[3] : null;
                 $dobFormatted = null;   
                 if ($dobRaw) {
@@ -129,6 +132,7 @@ class AcademicWarningController extends Controller
                         $dobFormatted = null;
                     }
                 }
+                
                 $gpa = (isset($row[6]) && is_numeric($row[6])) ? $row[6] : 0;
                 $gpa_acc = (isset($row[7]) && is_numeric($row[7])) ? $row[7] : 0;
                 $credits_failed = (isset($row[9]) && is_numeric($row[9])) ? $row[9] : 0;
@@ -146,14 +150,47 @@ class AcademicWarningController extends Controller
                     'reason' => $row[10] ?? '',
                     'warning_level' => $this->parseWarningLevel($row[11] ?? ''),
                     'note' => $row[11] ?? '',
-                    'exists' => $student ? true : false,
-                    'student_id' => $student ? $student->id : null,
-                    'raw_row' => $row 
+                    'raw_row' => $row,
+                    // Sẽ cập nhật ở bước dưới
+                    'exists' => false,
+                    'student_id' => null,
+                    'warning_exists' => false 
                 ];
             }
 
             if (empty($previewData)) {
-                return back()->with('error', 'Không đọc được dòng dữ liệu nào hợp lệ (Có thể do sai cột Mã SV).');
+                return back()->with('error', 'Không đọc được dòng dữ liệu nào hợp lệ (Có thể do sai cột Mã SV hoặc không có khoa TT&TT).');
+            }
+
+            // === TỐI ƯU QUERY: Kiểm tra Sinh viên và Cảnh báo cùng lúc ===
+            $semester_id = $request->semester_id;
+            
+            // 1. Tìm các sinh viên có trong DB
+            $studentsInDB = Student::whereIn('student_code', $mssvs)->get()->keyBy('student_code');
+            
+            // 2. Tìm các sinh viên ĐÃ CÓ cảnh báo trong học kỳ này
+            $existingWarnings = AcademicWarning::where('semester_id', $semester_id)
+                ->whereIn('student_id', $studentsInDB->pluck('id'))
+                ->pluck('student_id')
+                ->toArray();
+
+            $duplicateCount = 0;
+
+            // 3. Gắn cờ (flag) vào dữ liệu preview
+            foreach ($previewData as &$item) {
+                $studentCode = $item['mssv'];
+
+                if ($studentsInDB->has($studentCode)) {
+                    $student = $studentsInDB[$studentCode];
+                    $item['exists'] = true;
+                    $item['student_id'] = $student->id;
+
+                    // Nếu ID sinh viên này nằm trong mảng existingWarnings -> Đã có cảnh báo
+                    if (in_array($student->id, $existingWarnings)) {
+                        $item['warning_exists'] = true;
+                        $duplicateCount++;
+                    }
+                }
             }
 
             $classes = Classes::select('id', 'code', 'name')->orderBy('code')->get();
@@ -161,9 +198,10 @@ class AcademicWarningController extends Controller
             return view('admin.academic_warnings.import', [
                 'semesters' => Semester::orderBy('start_date', 'desc')->get(), 
                 'previewData' => $previewData,
-                'semester_id' => $request->semester_id,
+                'semester_id' => $semester_id,
                 'selected_file_name' => $request->file('file')->getClientOriginalName(),
                 'classes' => $classes,
+                'duplicateCount' => $duplicateCount // TRUYỀN BIẾN NÀY RA VIEW
             ]);
 
         } catch (\Exception $e) {
@@ -175,6 +213,7 @@ class AcademicWarningController extends Controller
     {
         $data = json_decode($request->input('data'), true);
         $semesterId = $request->input('semester_id');
+        $importMode = $request->input('import_mode', 'skip'); 
         $importerId = Auth::id() ?? 1; 
 
         DB::beginTransaction();
@@ -185,18 +224,42 @@ class AcademicWarningController extends Controller
                 'name' => 'Import Cảnh báo ' . now()->format('d/m/Y H:i'),
                 'type' => 'warning',
                 'status' => 'published',
-                'total_records' => count($data)
+                'total_records' => count($data) 
             ]);
+
+            $addedCount = 0;
+            $updatedCount = 0;
+            $skippedCount = 0;
+
             foreach ($data as $item) {
                 $student = Student::where('student_code', $item['mssv'])->first();
 
                 if ($student) {
-                    AcademicWarning::updateOrCreate(
-                        [
+                    $warning = AcademicWarning::where('student_id', $student->id)
+                                              ->where('semester_id', $semesterId)
+                                              ->first();
+
+                    if ($warning) {
+                        // NẾU TRÙNG DỮ LIỆU
+                        if ($importMode === 'replace') {
+                            $warning->update([
+                                'batch_id' => $batch->id, 
+                                'warning_level' => $item['warning_level'],
+                                'gpa_term' => floatval($item['gpa_term']),
+                                'gpa_cumulative' => floatval($item['gpa_cumulative']),
+                                'credits_owed' => intval($item['credits_failed']),
+                                'warning_count' => $item['warning_level'],
+                                'reason' => $item['reason'],
+                                'status' => 'pending'
+                            ]);
+                            $updatedCount++;
+                        } else {
+                            $skippedCount++;
+                        }
+                    } else {
+                        AcademicWarning::create([
                             'student_id' => $student->id,
                             'semester_id' => $semesterId,
-                        ],
-                        [
                             'batch_id' => $batch->id,
                             'warning_level' => $item['warning_level'],
                             'gpa_term' => floatval($item['gpa_term']),
@@ -205,13 +268,27 @@ class AcademicWarningController extends Controller
                             'warning_count' => $item['warning_level'],
                             'reason' => $item['reason'],
                             'status' => 'pending'
-                        ]
-                    );
+                        ]);
+                        $addedCount++;
+                    }
                 }
             }
 
+            // Cập nhật lại số lượng bản ghi thực tế của Batch
+            $batch->update(['total_records' => $addedCount + $updatedCount]);
+
             DB::commit();
-            return redirect()->route('admin.academic_warnings.index')->with('success', 'Đã import dữ liệu thành công!');
+
+            // Tạo thông báo động dựa trên kết quả
+            $msg = "Import thành công! Đã thêm mới: {$addedCount} sinh viên.";
+            if ($importMode === 'replace' && $updatedCount > 0) {
+                $msg .= " Đã cập nhật (thay thế): {$updatedCount} sinh viên.";
+            }
+            if ($importMode === 'skip' && $skippedCount > 0) {
+                $msg .= " Bỏ qua {$skippedCount} sinh viên bị trùng.";
+            }
+
+            return redirect()->route('admin.academic_warnings.index')->with('success', $msg);
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Lỗi khi lưu dữ liệu: ' . $e->getMessage());

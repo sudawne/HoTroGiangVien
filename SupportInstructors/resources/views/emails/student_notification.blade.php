@@ -13,4 +13,6 @@
         style="display: inline-block; padding: 10px 20px; background: #2563eb; color: #fff; text-decoration: none; border-radius: 5px; font-weight: bold; margin-top: 10px;">
         Đăng nhập hệ thống
     </a>
+    <p>ĐÂY LÀ MAIL TEST PHỤC VỤ CHO NGHIÊN CỨU KHOA HỌC XIN VUI LÒNG BỎ QUA MAIL NÀY</p>
+
 </div>

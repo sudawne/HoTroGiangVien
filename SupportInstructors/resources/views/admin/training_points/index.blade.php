@@ -3,6 +3,9 @@
 @section('title', 'Quản lý Điểm rèn luyện')
 
 @section('content')
+    {{-- THÊM THƯ VIỆN CHART.JS --}}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     {{-- Khai báo x-data bọc ngoài cùng để Alpine.js quản lý modal --}}
     <div class="max-w-[1400px] mx-auto" x-data="{ showExportModal: false }">
 
@@ -30,65 +33,105 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-            {{-- Card 1: Tổng sinh viên --}}
-            <div
-                class="bg-white dark:bg-[#1e1e2d] border border-slate-200 dark:border-slate-700 rounded-sm p-4 flex flex-col justify-between h-24 shadow-sm">
-                <div class="flex justify-between items-start">
-                    <p class="text-slate-500 text-xs font-bold uppercase">Tổng sinh viên</p>
-                    <span class="bg-indigo-50 text-indigo-600 p-1 rounded-sm border border-indigo-100">
-                        <span class="material-symbols-outlined !text-[16px]">group</span>
-                    </span>
+        {{-- LẤY DỮ LIỆU AN TOÀN CHO BIỂU ĐỒ --}}
+        @php
+            $total = $stats['total'] ?? 0;
+            $xs = $stats['xuatsac'] ?? 0;
+            $tot = $stats['tot'] ?? 0;
+            $kha = $stats['kha'] ?? 0;
+            $tb = $stats['trungbinh'] ?? ($stats['tb'] ?? 0);
+            $yeu = ($stats['yeu'] ?? 0) + ($stats['chuaxet'] ?? 0);
+        @endphp
+
+        {{-- KHU VỰC THỐNG KÊ & BIỂU ĐỒ --}}
+        <div class="flex flex-col xl:flex-row gap-6 mb-6">
+            
+            {{-- Cột trái: Các thẻ Card số liệu --}}
+            <div class="w-full xl:w-3/4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                {{-- Card 1: Tổng sinh viên --}}
+                <div class="bg-white dark:bg-[#1e1e2d] border border-slate-200 dark:border-slate-700 rounded-sm p-4 flex flex-col justify-between h-[104px] shadow-sm">
+                    <div class="flex justify-between items-start">
+                        <p class="text-slate-500 text-[11px] font-bold uppercase">Tổng sinh viên</p>
+                        <span class="bg-indigo-50 text-indigo-600 p-1 rounded-sm border border-indigo-100">
+                            <span class="material-symbols-outlined !text-[16px]">group</span>
+                        </span>
+                    </div>
+                    <h2 class="text-3xl font-bold text-slate-800 dark:text-white">{{ number_format($total) }}</h2>
                 </div>
-                <h2 class="text-3xl font-bold text-slate-800 dark:text-white">{{ $stats['total'] }}</h2>
+
+                {{-- Card 2: Xuất sắc --}}
+                <div class="bg-white dark:bg-[#1e1e2d] border border-slate-200 dark:border-slate-700 rounded-sm p-4 flex flex-col justify-between h-[104px] shadow-sm relative overflow-hidden">
+                    <div class="flex justify-between items-start relative z-10">
+                        <p class="text-slate-500 text-[11px] font-bold uppercase">Xuất sắc (90+)</p>
+                        <span class="bg-emerald-50 text-emerald-600 p-1 rounded-sm border border-emerald-100">
+                            <span class="material-symbols-outlined !text-[16px]">military_tech</span>
+                        </span>
+                    </div>
+                    <h2 class="text-3xl font-bold text-emerald-600 relative z-10">{{ number_format($xs) }}</h2>
+                    <div class="absolute bottom-0 left-0 h-1 bg-emerald-500" style="width: {{ $total > 0 ? ($xs/$total)*100 : 0 }}%"></div>
+                </div>
+
+                {{-- Card 3: Tốt --}}
+                <div class="bg-white dark:bg-[#1e1e2d] border border-slate-200 dark:border-slate-700 rounded-sm p-4 flex flex-col justify-between h-[104px] shadow-sm relative overflow-hidden">
+                    <div class="flex justify-between items-start relative z-10">
+                        <p class="text-slate-500 text-[11px] font-bold uppercase">Tốt (80-89)</p>
+                        <span class="bg-blue-50 text-blue-600 p-1 rounded-sm border border-blue-100">
+                            <span class="material-symbols-outlined !text-[16px]">thumb_up</span>
+                        </span>
+                    </div>
+                    <h2 class="text-3xl font-bold text-blue-600 relative z-10">{{ number_format($tot) }}</h2>
+                    <div class="absolute bottom-0 left-0 h-1 bg-blue-500" style="width: {{ $total > 0 ? ($tot/$total)*100 : 0 }}%"></div>
+                </div>
+
+                {{-- Card 4: Khá --}}
+                <div class="bg-white dark:bg-[#1e1e2d] border border-slate-200 dark:border-slate-700 rounded-sm p-4 flex flex-col justify-between h-[104px] shadow-sm relative overflow-hidden">
+                    <div class="flex justify-between items-start relative z-10">
+                        <p class="text-slate-500 text-[11px] font-bold uppercase">Khá (65-79)</p>
+                        <span class="bg-sky-50 text-sky-600 p-1 rounded-sm border border-sky-100">
+                            <span class="material-symbols-outlined !text-[16px]">sentiment_satisfied</span>
+                        </span>
+                    </div>
+                    <h2 class="text-3xl font-bold text-sky-500 relative z-10">{{ number_format($kha) }}</h2>
+                    <div class="absolute bottom-0 left-0 h-1 bg-sky-500" style="width: {{ $total > 0 ? ($kha/$total)*100 : 0 }}%"></div>
+                </div>
+
+                {{-- Card 5: Yếu/Chưa xét --}}
+                <div class="bg-white dark:bg-[#1e1e2d] border border-slate-200 dark:border-slate-700 rounded-sm p-4 flex flex-col justify-between h-[104px] shadow-sm relative overflow-hidden">
+                    <div class="flex justify-between items-start relative z-10">
+                        <p class="text-slate-500 text-[11px] font-bold uppercase">Yếu/Kém/CX</p>
+                        <span class="bg-red-50 text-red-600 p-1 rounded-sm border border-red-100">
+                            <span class="material-symbols-outlined !text-[16px]">warning</span>
+                        </span>
+                    </div>
+                    <h2 class="text-3xl font-bold text-red-500 relative z-10">{{ number_format($yeu) }}</h2>
+                    <div class="absolute bottom-0 left-0 h-1 bg-red-500" style="width: {{ $total > 0 ? ($yeu/$total)*100 : 0 }}%"></div>
+                </div>
             </div>
 
-            {{-- Card 2: Xuất sắc --}}
-            <div
-                class="bg-white dark:bg-[#1e1e2d] border border-slate-200 dark:border-slate-700 rounded-sm p-4 flex flex-col justify-between h-24 shadow-sm">
-                <div class="flex justify-between items-start">
-                    <p class="text-slate-500 text-xs font-bold uppercase">Xuất sắc (90+)</p>
-                    <span class="bg-emerald-50 text-emerald-600 p-1 rounded-sm border border-emerald-100">
-                        <span class="material-symbols-outlined !text-[16px]">military_tech</span>
-                    </span>
-                </div>
-                <h2 class="text-3xl font-bold text-emerald-600">{{ $stats['xuatsac'] }}</h2>
-            </div>
-
-            {{-- Card 3: Tốt --}}
-            <div
-                class="bg-white dark:bg-[#1e1e2d] border border-slate-200 dark:border-slate-700 rounded-sm p-4 flex flex-col justify-between h-24 shadow-sm">
-                <div class="flex justify-between items-start">
-                    <p class="text-slate-500 text-xs font-bold uppercase">Tốt (80-89)</p>
-                    <span class="bg-blue-50 text-blue-600 p-1 rounded-sm border border-blue-100">
-                        <span class="material-symbols-outlined !text-[16px]">thumb_up</span>
-                    </span>
-                </div>
-                <h2 class="text-3xl font-bold text-blue-600">{{ $stats['tot'] }}</h2>
-            </div>
-
-            {{-- Card 4: Khá --}}
-            <div
-                class="bg-white dark:bg-[#1e1e2d] border border-slate-200 dark:border-slate-700 rounded-sm p-4 flex flex-col justify-between h-24 shadow-sm">
-                <div class="flex justify-between items-start">
-                    <p class="text-slate-500 text-xs font-bold uppercase">Khá (65-79)</p>
-                    <span class="bg-sky-50 text-sky-600 p-1 rounded-sm border border-sky-100">
-                        <span class="material-symbols-outlined !text-[16px]">sentiment_satisfied</span>
-                    </span>
-                </div>
-                <h2 class="text-3xl font-bold text-sky-500">{{ $stats['kha'] }}</h2>
-            </div>
-
-            {{-- Card 5: Yếu/Chưa xét --}}
-            <div
-                class="bg-white dark:bg-[#1e1e2d] border border-slate-200 dark:border-slate-700 rounded-sm p-4 flex flex-col justify-between h-24 shadow-sm">
-                <div class="flex justify-between items-start">
-                    <p class="text-slate-500 text-xs font-bold uppercase">Yếu / Chưa xét</p>
-                    <span class="bg-red-50 text-red-600 p-1 rounded-sm border border-red-100">
-                        <span class="material-symbols-outlined !text-[16px]">warning</span>
-                    </span>
-                </div>
-                <h2 class="text-3xl font-bold text-red-500">{{ $stats['yeu'] + $stats['chuaxet'] }}</h2>
+            {{-- Cột phải: Biểu đồ phần trăm --}}
+            <div class="w-full xl:w-1/4 bg-white dark:bg-[#1e1e2d] border border-slate-200 dark:border-slate-700 rounded-sm p-4 shadow-sm flex flex-col items-center justify-center">
+                <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 mb-3 w-full text-center flex items-center justify-center gap-1.5">
+                    <span class="material-symbols-outlined !text-[18px] text-primary">pie_chart</span>
+                    Tỷ lệ xếp loại ĐRL
+                </h3>
+                
+                @if($total > 0)
+                    <div class="relative w-full max-w-[130px] aspect-square">
+                        <canvas id="rankChart"></canvas>
+                    </div>
+                    <div class="flex flex-wrap justify-center gap-2.5 mt-4 text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                        <div class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-emerald-500"></span> X.Sắc</div>
+                        <div class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-blue-500"></span> Tốt</div>
+                        <div class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-sky-400"></span> Khá</div>
+                        <div class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-orange-400"></span> T.Bình</div>
+                        <div class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-red-500"></span> Yếu</div>
+                    </div>
+                @else
+                    <div class="flex-1 flex flex-col items-center justify-center text-slate-400">
+                        <span class="material-symbols-outlined text-4xl mb-2 opacity-50">data_alert</span>
+                        <span class="text-xs">Chưa có dữ liệu</span>
+                    </div>
+                @endif
             </div>
         </div>
 
@@ -153,8 +196,8 @@
                                 </option>
                                 <option value="trungbinh" {{ request('rank') == 'trungbinh' ? 'selected' : '' }}>Trung bình
                                     (50-64)</option>
-                                <option value="yeu" {{ request('rank') == 'yeu' ? 'selected' : '' }}>Yếu/Kém (<50)<
-                                        /option>
+                                <option value="yeu" {{ request('rank') == 'yeu' ? 'selected' : '' }}>Yếu/Kém (<50)
+                                </option>
                             </select>
                         </div>
 
@@ -241,8 +284,7 @@
                         <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">1. Phạm vi dữ liệu</p>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Học
-                                    kỳ</label>
+                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Học kỳ</label>
                                 <select name="semester_id"
                                     class="w-full bg-slate-50 dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded-sm text-sm focus:ring-primary focus:border-primary">
                                     <option value="">-- Tất cả --</option>
@@ -254,8 +296,7 @@
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Xếp
-                                    loại</label>
+                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Xếp loại</label>
                                 <select name="rank"
                                     class="w-full bg-slate-50 dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded-sm text-sm focus:ring-primary focus:border-primary">
                                     <option value="">-- Tất cả --</option>
@@ -263,20 +304,18 @@
                                     <option value="tot">Tốt (80-89)</option>
                                     <option value="kha">Khá (65-79)</option>
                                     <option value="trungbinh">Trung bình (50-64)</option>
-                                    <option value="yeu">Yếu/Kém (<50)< /option>
+                                    <option value="yeu">Yếu/Kém (<50)</option>
                                 </select>
                             </div>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Lớp sinh
-                                hoạt</label>
+                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Lớp sinh hoạt</label>
                             <select name="class_id"
                                 class="w-full bg-slate-50 dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded-sm text-sm focus:ring-primary focus:border-primary">
                                 <option value="">-- Tất cả các lớp --</option>
                                 @if (isset($classes))
                                     @foreach ($classes as $class)
-                                        <option value="{{ $class->id }}">{{ $class->code }} - {{ $class->name }}
-                                        </option>
+                                        <option value="{{ $class->id }}">{{ $class->code }} - {{ $class->name }}</option>
                                     @endforeach
                                 @endif
                             </select>
@@ -290,30 +329,20 @@
                                 <input type="radio" name="format" value="excel" class="peer sr-only" checked>
                                 <div
                                     class="p-4 rounded-lg border-2 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 peer-checked:border-green-500 peer-checked:bg-green-50/50 dark:peer-checked:bg-green-900/10 transition-all flex flex-col items-center gap-2 text-center group">
-                                    <span
-                                        class="material-symbols-outlined text-3xl text-slate-400 group-hover:text-green-600 peer-checked:text-green-600 transition-colors">table_view</span>
-                                    <span
-                                        class="text-sm font-bold text-slate-600 dark:text-slate-300 peer-checked:text-green-700">Xuất
-                                        Excel</span>
+                                    <span class="material-symbols-outlined text-3xl text-slate-400 group-hover:text-green-600 peer-checked:text-green-600 transition-colors">table_view</span>
+                                    <span class="text-sm font-bold text-slate-600 dark:text-slate-300 peer-checked:text-green-700">Xuất Excel</span>
                                 </div>
-                                <div
-                                    class="absolute top-2 right-2 w-4 h-4 rounded-full border border-slate-300 bg-white peer-checked:bg-green-500 peer-checked:border-green-500 transition-colors">
-                                </div>
+                                <div class="absolute top-2 right-2 w-4 h-4 rounded-full border border-slate-300 bg-white peer-checked:bg-green-500 peer-checked:border-green-500 transition-colors"></div>
                             </label>
 
                             <label class="cursor-pointer relative">
                                 <input type="radio" name="format" value="pdf" class="peer sr-only">
                                 <div
                                     class="p-4 rounded-lg border-2 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 peer-checked:border-red-500 peer-checked:bg-red-50/50 dark:peer-checked:bg-red-900/10 transition-all flex flex-col items-center gap-2 text-center group">
-                                    <span
-                                        class="material-symbols-outlined text-3xl text-slate-400 group-hover:text-red-600 peer-checked:text-red-600 transition-colors">picture_as_pdf</span>
-                                    <span
-                                        class="text-sm font-bold text-slate-600 dark:text-slate-300 peer-checked:text-red-700">Xuất
-                                        PDF</span>
+                                    <span class="material-symbols-outlined text-3xl text-slate-400 group-hover:text-red-600 peer-checked:text-red-600 transition-colors">picture_as_pdf</span>
+                                    <span class="text-sm font-bold text-slate-600 dark:text-slate-300 peer-checked:text-red-700">Xuất PDF</span>
                                 </div>
-                                <div
-                                    class="absolute top-2 right-2 w-4 h-4 rounded-full border border-slate-300 bg-white peer-checked:bg-red-500 peer-checked:border-red-500 transition-colors">
-                                </div>
+                                <div class="absolute top-2 right-2 w-4 h-4 rounded-full border border-slate-300 bg-white peer-checked:bg-red-500 peer-checked:border-red-500 transition-colors"></div>
                             </label>
                         </div>
                     </div>
@@ -333,6 +362,58 @@
         </div>
     </div>
 
+    {{-- SCRIPT RENDER BIỂU ĐỒ TRÒN --}}
+    @if($total > 0)
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const ctx = document.getElementById('rankChart');
+            if (ctx) {
+                new Chart(ctx.getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Xuất sắc', 'Tốt', 'Khá', 'Trung bình', 'Yếu/Kém/CX'],
+                        datasets: [{
+                            data: [{{ $xs }}, {{ $tot }}, {{ $kha }}, {{ $tb }}, {{ $yeu }}],
+                            backgroundColor: [
+                                '#10b981', // Emerald 500
+                                '#3b82f6', // Blue 500
+                                '#38bdf8', // Sky 400
+                                '#fb923c', // Orange 400
+                                '#ef4444'  // Red 500
+                            ],
+                            borderWidth: 0,
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        cutout: '72%', // Độ mỏng vòng tròn
+                        plugins: {
+                            legend: { display: false }, // Ẩn chú thích mặc định
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        let val = context.parsed;
+                                        let percent = total > 0 ? Math.round((val / total) * 100) : 0;
+                                        return ' ' + context.label + ': ' + val + ' SV (' + percent + '%)';
+                                    }
+                                }
+                            }
+                        },
+                        animation: {
+                            animateScale: true,
+                            animateRotate: true
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+    @endif
+
+    {{-- SCRIPT LIVE SEARCH VÀ LIVE FILTER GIỮ NGUYÊN --}}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const searchInput = document.querySelector('input[name="search"]');
@@ -342,6 +423,7 @@
             const liveFilters = document.querySelectorAll('.live-filter');
             let timeout = null;
 
+            // Hàm gọi Ajax cập nhật danh sách
             function fetchResults(url) {
                 tableOverlay.classList.remove('hidden');
 
@@ -368,17 +450,15 @@
                         tableOverlay.classList.add('hidden');
                     });
             }
-
             searchInput.addEventListener('input', function() {
                 clearTimeout(timeout);
                 timeout = setTimeout(() => {
                     fetchResults();
                 }, 500);
             });
-
             liveFilters.forEach(select => {
                 select.addEventListener('change', function() {
-                    fetchResults();
+                    filterForm.submit(); 
                 });
             });
 
@@ -395,9 +475,7 @@
             });
 
             window.resetFilters = function() {
-                searchInput.value = '';
-                liveFilters.forEach(el => el.value = '');
-                fetchResults();
+                window.location.href = "{{ route($routePrefix . 'training_points.index') }}";
             }
         });
     </script>

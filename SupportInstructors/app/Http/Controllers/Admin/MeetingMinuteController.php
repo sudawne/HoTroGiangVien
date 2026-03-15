@@ -59,7 +59,7 @@ class MeetingMinuteController extends Controller
         $data['attendees_count'] = $total - count($request->absent_list ?? []);
 
         MeetingMinute::create($data);
-        return redirect()->route('admin.minutes.index')->with('success', 'Lưu thành công');
+        return redirect()->route('lecturer.minutes.index')->with('success', 'Lưu thành công');
     }
 
     public function show($id)

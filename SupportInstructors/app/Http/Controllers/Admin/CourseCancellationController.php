@@ -13,19 +13,49 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use App\Exports\CourseCancellationsExport;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Auth;
 
 class CourseCancellationController extends Controller
 {
+    private function getRoutePrefix()
+    {
+        return (Auth::user()->role_id == 1) ? 'admin.' : 'lecturer.';
+    }
+
     public function index(Request $request)
     {
-        $query = CourseCancellation::with(['student.studentClass', 'semester', 'subject']);
+        $user = Auth::user();
+        $routePrefix = $this->getRoutePrefix();
 
-        $cancellations = $query->orderBy('created_at', 'desc')->paginate(15)->withQueryString();
-        if ($request->ajax()) {
-            return view('admin.course_cancellations.partials.table_rows', compact('cancellations'))->render();
+        // 1. Phân quyền: Lấy danh sách lớp học được phép truy cập
+        if ($user->role_id == 1) {
+            // Nếu là Admin: Lấy tất cả các lớp
+            $myClasses = \App\Models\Classes::orderBy('code', 'asc')->get();
+        } else {
+            // Nếu là Cố vấn học tập: Chỉ lấy các lớp do giảng viên này phụ trách
+            $lecturer = \App\Models\Lecturer::where('user_id', $user->id)->first();
+            $myClasses = \App\Models\Classes::where('advisor_id', $lecturer->id)->orderBy('code', 'asc')->get();
         }
 
-        if ($request->filled('semester_id')) $query->where('semester_id', $request->semester_id);
+        $myClassIds = $myClasses->pluck('id')->toArray();
+
+        // 2. Xử lý bộ lọc theo Lớp học
+        $selectedClass = $request->input('class_id', 'all');
+        $filterClassIds = $selectedClass === 'all' ? $myClassIds : [$selectedClass];
+
+        // 3. Khởi tạo Query lấy danh sách Xóa học phần
+        $query = CourseCancellation::with(['student.studentClass', 'semester', 'subject']);
+
+        // BẢO MẬT: Ép buộc Query chỉ lấy sinh viên thuộc các lớp được phép xem
+        $query->whereHas('student', function ($q) use ($filterClassIds) {
+            $q->whereIn('class_id', $filterClassIds);
+        });
+
+        // 4. Các bộ lọc khác (Học kỳ, Tìm kiếm)
+        if ($request->filled('semester_id')) {
+            $query->where('semester_id', $request->semester_id);
+        }
+
         if ($request->filled('search')) {
             $search = $request->search;
             $query->whereHas('student', function ($q) use ($search) {
@@ -34,15 +64,47 @@ class CourseCancellationController extends Controller
             });
         }
 
+        // 5. Xử lý dữ liệu Thống kê & Biểu đồ
+        $totalStudents = Student::whereIn('class_id', $filterClassIds)->count();
+
+        // Lấy số sinh viên đang nợ học phí trong (các) lớp đang chọn
+        $debtStudentsCount = Student::whereIn('class_id', $filterClassIds)
+            ->whereHas('courseCancellations', function ($q) use ($request) {
+                $q->where('reason', 'like', '%Nợ học phí%');
+                if ($request->filled('semester_id')) {
+                    $q->where('semester_id', $request->semester_id);
+                }
+            })->count();
+
+        // Tính toán phần trăm (Quy đổi ra %)
+        $debtPercentage = $totalStudents > 0 ? round(($debtStudentsCount / $totalStudents) * 100, 2) : 0;
+        $cleanPercentage = 100 - $debtPercentage;
+
         $cancellations = $query->orderBy('created_at', 'desc')->paginate(15)->withQueryString();
+
+        if ($request->ajax()) {
+            return view('admin.course_cancellations.partials.table_rows', compact('cancellations'))->render();
+        }
+
         $semesters = Semester::orderBy('start_date', 'desc')->get();
 
         $stats = [
-            'total' => CourseCancellation::count(),
-            'unique_students' => CourseCancellation::distinct('student_id')->count(),
+            'total' => $cancellations->total(),
+            'unique_students' => CourseCancellation::whereIn('student_id', Student::whereIn('class_id', $filterClassIds)->pluck('id'))->distinct('student_id')->count(),
         ];
 
-        return view('admin.course_cancellations.index', compact('cancellations', 'semesters', 'stats'));
+        return view('admin.course_cancellations.index', compact(
+            'cancellations',
+            'semesters',
+            'stats',
+            'routePrefix',
+            'myClasses',
+            'selectedClass',
+            'totalStudents',
+            'debtStudentsCount',
+            'debtPercentage',
+            'cleanPercentage'
+        ));
     }
 
     public function showImportForm()
@@ -74,7 +136,7 @@ class CourseCancellationController extends Controller
                     CourseCancellation::create([
                         'student_id'  => $student->id,
                         'semester_id' => $semester_id,
-                        'subject_id'  => $subject->id, 
+                        'subject_id'  => $subject->id,
                         'reason'      => $row['reason'] ?? 'Nợ học phí',
                     ]);
                     $count++;
@@ -82,14 +144,33 @@ class CourseCancellationController extends Controller
             }
         }
 
-        return redirect()->route('admin.course_cancellations.index')
+        $routePrefix = $this->getRoutePrefix();
+        return redirect()->route($routePrefix . 'course_cancellations.index')
             ->with('success', "Đã import thành công $count dòng dữ liệu.");
     }
 
     // --- EXPORT ---
     public function export(Request $request)
     {
+        $user = Auth::user();
+
+        // Phân quyền cho Export (Không cho phép GV xuất báo cáo của lớp khác)
+        if ($user->role_id == 1) {
+            $myClassIds = \App\Models\Classes::pluck('id')->toArray();
+        } else {
+            $lecturer = \App\Models\Lecturer::where('user_id', $user->id)->first();
+            $myClassIds = \App\Models\Classes::where('advisor_id', $lecturer->id)->pluck('id')->toArray();
+        }
+
+        $selectedClass = $request->input('class_id', 'all');
+        $filterClassIds = $selectedClass === 'all' ? $myClassIds : [$selectedClass];
+
         $query = CourseCancellation::with(['student.studentClass', 'semester', 'subject']);
+
+        // Lọc dữ liệu xuất theo lớp
+        $query->whereHas('student', function ($q) use ($filterClassIds) {
+            $q->whereIn('class_id', $filterClassIds);
+        });
 
         if ($request->filled('semester_id')) {
             $query->where('semester_id', $request->semester_id);
@@ -120,6 +201,7 @@ class CourseCancellationController extends Controller
         CourseCancellation::destroy($id);
         return back()->with('success', 'Đã xóa bản ghi.');
     }
+
     public function preview(Request $request)
     {
         $semesters = Semester::orderBy('start_date', 'desc')->get();
@@ -145,7 +227,7 @@ class CourseCancellationController extends Controller
             }
 
             $mssv = trim($row[1] ?? '');
-            $classCode = trim($row[3] ?? ''); 
+            $classCode = trim($row[3] ?? '');
             $subjectCode = trim($row[4] ?? '');
 
             if (empty($mssv) || empty($classCode)) continue;
@@ -176,6 +258,7 @@ class CourseCancellationController extends Controller
 
         return view('admin.course_cancellations.preview', compact('previewData', 'semester_id', 'semesters'));
     }
+
     public function quickStore(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -192,7 +275,7 @@ class CourseCancellationController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => $validator->errors()->first() 
+                'message' => $validator->errors()->first()
             ]);
         }
 

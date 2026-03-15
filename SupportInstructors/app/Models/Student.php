@@ -59,12 +59,18 @@ class Student extends Model
     {
         return $this->hasMany(ConsultationLog::class);
     }
+
+    public function courseCancellations()
+    {
+        return $this->hasMany(CourseCancellation::class, 'student_id');
+    }
     public function studentClass()
     {
         return $this->belongsTo(Classes::class, 'class_id', 'id');
     }
 
-    public function trainingPoints() {
+    public function trainingPoints()
+    {
         return $this->hasMany(TrainingPoint::class, 'student_id', 'id');
     }
     public function academicWarnings(): HasMany
